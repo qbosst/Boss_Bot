@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object `8BallCommand` : Command(

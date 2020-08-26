@@ -1,134 +1,139 @@
 package me.qbosst.bossbot.config
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.util.isNumeric
-import org.json.JSONException
+import me.qbosst.bossbot.util.getOrNull
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import kotlin.system.exitProcess
 
-object Config {
-
+object Config
+{
     private const val indentFactor = 4
     private val config: File = File("config.json")
-    private lateinit var json: JSONObject
+    private var json: JSONObject
 
     init
     {
-        // Check if config exists
-        if(!config.exists()) {
-            create()
-        }
-
-        // Loads the config file
-        BossBot.LOG.info("Using config file at path: '${config.absolutePath}'")
-        reload()
-    }
-
-    fun reload(shutdown: Boolean = false): Collection<Values>
-    {
-        try
+        if(!config.exists())
         {
-            val content = Files.readAllLines(config.toPath()).joinToString("")
-            json = JSONObject(content)
-        }
-        catch (e: JSONException)
-        {
-            BossBot.LOG.error("There was a problem while trying to read the config file. A new blank one has been generated: $e")
-            config.delete()
-            create(shutdown)
-        }
-        return validate(shutdown)
-    }
-
-    private fun create(shutdown: Boolean = true)
-    {
-        // Tries to create a new config file
-        if(config.createNewFile())
-        {
-            generate()
-            BossBot.LOG.info("A config file has been generated at '${config.absolutePath}'. Please fill in the required missing values.")
+            if(config.createNewFile())
+            {
+                generate()
+                BossBot.LOG.info("A config file has been generated at '${config.absolutePath}'. Please fill in the required missing values.")
+                exitProcess(0)
+            }
+            else
+                throw IOException("A config file could not be generated.")
         }
         else
         {
-            throw IOException("A config file could not be generated.")
+            val content = Files.readAllLines(config.toPath()).joinToString("")
+            json = JSONObject(content)
+
+            val invalid = validate()
+            if(invalid.isNotEmpty())
+            {
+                BossBot.LOG.error("The following values are invalid; ${invalid.joinToString(", ") { it.name.toLowerCase() }}")
+
+                for(value in invalid)
+                    if(!json.has(value.name.toLowerCase()))
+                        json.put(value.name.toLowerCase(), value.defaultValue)
+
+                Files.write(config.toPath(), json.toString(indentFactor).toByteArray())
+                exitProcess(0)
+            }
         }
-        if(shutdown) exitProcess(0)
     }
 
-    // Generates a new config file
+    fun reload(): Collection<Values>
+    {
+        val content = Files.readAllLines(config.toPath()).joinToString("")
+        json = JSONObject(content)
+
+        return validate()
+    }
+
     private fun generate()
     {
         json = JSONObject()
-        for(value in Values.values())
-        {
-            json.put(value.valueName, value.defaultValue)
-        }
+
+        for(value in enumValues<Values>())
+            json.put(value.name.toLowerCase(), value.defaultValue)
+
         Files.write(config.toPath(), json.toString(indentFactor).toByteArray())
     }
 
-    // Validates the current config file, making sure all needed values are present
-    private fun validate(shutdown: Boolean = true): Collection<Values>
+    private fun validate(): Collection<Values>
     {
-        val invalid = mutableListOf<Values>()
-
-        // Loops through every required value and checks if it is present, if not it will add it to the config
-        for(v in Values.values())
+        val invalid = mutableSetOf<Values>()
+        for(value in enumValues<Values>())
         {
-            if(!json.has(v.valueName))
-            {
-                json.put(v.valueName, v.defaultValue)
-                if(!v.nullable && v.defaultValue.isEmpty())
-                {
-                    invalid.add(v)
-                }
-            }
-            else if(json.get(v.valueName).toString().isEmpty() && !v.nullable)
-            {
-                invalid.add(v)
-            }
+            val name = value.name.toLowerCase()
+            if(!value.isValid.invoke(if(json.has(name)) json.get(name) else null))
+                invalid.add(value)
         }
-        Files.write(config.toPath(), json.toString(indentFactor).toByteArray())
-
-        if(invalid.isNotEmpty() && shutdown)
-        {
-            BossBot.LOG.error("Please fill in the required config values: ${invalid.joinToString(", ") { it.valueName }}");
-            exitProcess(0)
-        }
-
         return invalid
-
     }
-    enum class Values(val valueName: String, val defaultValue: String, val nullable: Boolean)
+
+    enum class Values(val defaultValue: Any, val isValid: (Any?) -> Boolean = { it?.toString()?.isNotEmpty() ?: false })
     {
-        DISCORD_TOKEN("discord.token", "", false),
-        DATABASE_USER("database.user", "", false),
-        DATABASE_PASSWORD("database.password", "", false),
-        DATABASE_HOST("database.host", "", false),
-        DEFAULT_PREFIX("default.prefix", "!", true),
-        DEFAULT_CACHE_SIZE("default.cache.size", "1000", true),
-        DEFAULT_GREETING("default.greeting", "This is the default greeting!", true),
-        DEVELOPER_ID("developer.id", "0", true),
-        DEEPAI_TOKEN("deepai.token", "", true),
-        THREADPOOL_SIZE("threadpool.size", "3", true),
-        MAX_COLOURS_PER_GUILD("guild.max_colours", "100", true)
+        DISCORD_TOKEN(""),
+        DATABASE_USER(""),
+        DATABASE_PASSWORD(""),
+        DATABASE_URL(""),
+        DEFAULT_PREFIX("!", { run()
+        {
+            val length = it?.toString()?.length ?: 0
+            length > 0 && length < me.qbosst.bossbot.database.tables.GuildSettingsDataTable.max_prefix_length
+        }}),
+        DEFAULT_CACHE_SIZE(500, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
+        THREADPOOL_SIZE(3, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
+        DEVELOPER_ID(0, { if(it?.toString()?.isNotEmpty() == true) it.toString().toLongOrNull() != null else true}),
+        DEEPAI_TOKEN(""),
+        DEFAULT_GREETING("")
         ;
 
-        fun getInt(): Int
+        fun get(): Any?
         {
-            return if(json.has(valueName) && !json.getString(valueName).isNumeric()) json.getInt(valueName) else defaultValue.toInt()
+            return json.getOrNull(name.toLowerCase())
         }
 
-        fun getLong(): Long
+        fun getString(): String?
         {
-            return if(json.has(valueName) && !json.getString(valueName).isNumeric()) json.getLong(valueName) else defaultValue.toLong()
+            return get()?.toString()
         }
 
-        override fun toString(): String
+        fun getInt(): Int?
         {
-            return if(json.has(valueName)) json.get(valueName).toString() else defaultValue
+            return get()?.toString()?.toIntOrNull()
+        }
+
+        fun getLong(): Long?
+        {
+            return get()?.toString()?.toLongOrNull()
+        }
+
+        fun getOrDefault(): Any
+        {
+            return get() ?: defaultValue
+        }
+
+        fun getStringOrDefault(): String
+        {
+            return getString() ?: defaultValue.toString()
+        }
+
+        fun getIntOrDefault(): Int
+        {
+            return getInt() ?: (defaultValue as Int)
+        }
+
+        fun getLongOrDefault(): Long
+        {
+            return getLong() ?: (defaultValue as Long)
         }
     }
+
 }

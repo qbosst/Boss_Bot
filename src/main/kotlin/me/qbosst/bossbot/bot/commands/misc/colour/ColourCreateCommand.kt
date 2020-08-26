@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
-import me.qbosst.bossbot.bot.commands.Command
-import me.qbosst.bossbot.database.data.GuildColoursData
+import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.exception.ReachedMaxAmountException
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.makeSafe

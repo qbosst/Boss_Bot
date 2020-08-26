@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.bot.commands.economy
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.Listener
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.database.data.GuildUserData
+import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.getMemberByString
 import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder

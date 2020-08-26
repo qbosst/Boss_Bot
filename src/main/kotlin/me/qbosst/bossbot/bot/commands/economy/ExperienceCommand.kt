@@ -1,8 +1,8 @@
 package me.qbosst.bossbot.bot.commands.economy
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.database.data.GuildUserData
+import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.getMemberByString
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

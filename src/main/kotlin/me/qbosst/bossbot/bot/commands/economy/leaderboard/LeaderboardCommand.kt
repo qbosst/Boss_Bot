@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.economy.leaderboard
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.makeSafe

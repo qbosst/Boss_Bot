@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.database.data
+package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.database.tables.GuildPunishmentDataTable
 import net.dv8tion.jda.api.entities.Guild
@@ -9,8 +9,8 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Instant
 
 data class GuildPunishment (
-        val target_id: Long,
-        val issuer_id: Long,
+        val targetId: Long,
+        val issuerId: Long,
         val reason: String?,
         val duration: Long,
         val date: Instant,
@@ -22,8 +22,8 @@ data class GuildPunishment (
         GuildPunishmentDataTable
                 .insert {
                     it[guild_id] = guild.idLong
-                    it[target_id] = this@GuildPunishment.target_id
-                    it[issuer_id] = this@GuildPunishment.issuer_id
+                    it[target_id] = this@GuildPunishment.targetId
+                    it[issuer_id] = this@GuildPunishment.issuerId
                     it[reason] = this@GuildPunishment.reason
                     it[duration] = this@GuildPunishment.duration
                     it[date] = this@GuildPunishment.date.epochSecond
@@ -42,12 +42,12 @@ data class GuildPunishment (
 
     fun getTarget(guild: Guild): Member?
     {
-        return guild.getMemberById(target_id)
+        return guild.getMemberById(targetId)
     }
 
     fun getIssuer(guild: Guild): Member?
     {
-        return guild.getMemberById(issuer_id)
+        return guild.getMemberById(issuerId)
     }
 
     companion object
@@ -58,20 +58,20 @@ data class GuildPunishment (
         }
     }
 
-    enum class Type(val pastTenseName: String)
+    enum class Type(val colourRaw: Int, val pastTenseName: String, val displayName: String, val isTimed: Boolean)
     {
-        WARN("warned"),
-        MUTE("muted"),
-        KICK("kicked"),
-        TEMPORARY_BAN("temporarily banned"),
-        BAN("banned")
+        WARN(0xffff00, "warned", "warn", false),
+        MUTE(0xffd200, "muted", "mute", true),
+        KICK(0xffa500, "kicked", "kick", false),
+        TEMP_BAN(0xff5300, "temporarily banned", "temporary ban", true),
+        BAN(0xff0000, "banned", "ban", false)
         ;
 
         companion object
         {
             fun ordinalOf(ordinal: Int): Type?
             {
-                return values().firstOrNull { it.ordinal == ordinal }
+                return enumValues<Type>().firstOrNull { it.ordinal == ordinal }
             }
         }
     }

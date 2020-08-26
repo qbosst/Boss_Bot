@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.settings.set
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.settings.set.abstractsetters.SetterCommand
 import me.qbosst.bossbot.bot.commands.settings.set.setters.*
 import me.qbosst.bossbot.util.makeSafe

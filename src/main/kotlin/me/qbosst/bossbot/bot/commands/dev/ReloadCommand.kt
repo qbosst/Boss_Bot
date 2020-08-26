@@ -13,14 +13,14 @@ object ReloadCommand : DeveloperCommand(
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         event.channel.sendMessage("Reloading config...").queue {
-            val invalid = Config.reload(false)
+            val invalid = Config.reload()
             if(invalid.isNotEmpty()) {
-                it.editMessage("There has been an error while reloading the config.\nThe config is missing the values(s); `${invalid.joinToString("`, `") { v -> v.valueName }}`.\nThe bot will shut down").queue(
+                it.editMessage("There has been an error while reloading the config.\nThe config is missing the values(s); `${invalid.joinToString("`, `") { v -> v.name.toLowerCase() }}`.\nThe bot will shut down").queue(
                         {
                             exitProcess(0)
                         },
                         { t ->
-                            BossBot.LOG.error("Please fill in the required config values: ${invalid.joinToString(", ") { v ->  v.valueName }}: $t");
+                            BossBot.LOG.error("Please fill in the required config values: ${invalid.joinToString(", ") { v ->  v.name.toLowerCase() }}: $t");
                             exitProcess(0)
                         }
                 )

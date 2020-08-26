@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.database.data
+package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.GuildColoursDataTable
@@ -40,7 +40,7 @@ data class GuildColoursData private constructor(
 
     companion object
     {
-        private val cache = FixedCache<Long, GuildColoursData>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+        private val cache = FixedCache<Long, GuildColoursData>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
         private val EMPTY = GuildColoursData(mapOf())
 
         fun get(guild: Guild?): GuildColoursData
@@ -131,7 +131,7 @@ data class GuildColoursData private constructor(
                         .select { GuildColoursDataTable.guild_id.eq(guild.idLong) }
                         .map { it[GuildColoursDataTable.name].toLowerCase() }
 
-                if(names.size > Config.Values.MAX_COLOURS_PER_GUILD.getInt())
+                if(names.size > 100)
                 {
                     throw ReachedMaxAmountException("This guild has reached the max amount of colours it can have!")
                 }

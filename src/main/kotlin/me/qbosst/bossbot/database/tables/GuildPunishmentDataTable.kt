@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.database.tables
 
-import me.qbosst.bossbot.database.data.GuildPunishment
+import me.qbosst.bossbot.entities.database.GuildPunishment
 import net.dv8tion.jda.api.entities.Member
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.Table
@@ -36,8 +36,8 @@ object GuildPunishmentDataTable : Table() {
                     .select { if(!reason.isNullOrEmpty()) search and Op.build { GuildPunishmentDataTable.reason.eq(reason) } else search }
                     .map {
                         GuildPunishment(
-                                target_id = it[target_id],
-                                issuer_id = it[issuer_id],
+                                targetId = it[target_id],
+                                issuerId = it[issuer_id],
                                 reason = it[GuildPunishmentDataTable.reason],
                                 duration = it[GuildPunishmentDataTable.duration],
                                 date = Instant.ofEpochSecond(it[date]),

@@ -1,146 +1,177 @@
-package me.qbosst.bossbot.bot.commands.moderation
+package me.qbosst.fbiagent.bot.commands.moderation
 
-import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
-import me.qbosst.bossbot.bot.noMentionedUser
-import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.database.data.GuildPunishment
-import me.qbosst.bossbot.database.tables.GuildPunishmentDataTable
-import me.qbosst.bossbot.exception.FailedCheckException
+import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.bot.exception.MissingArgumentException
+import me.qbosst.bossbot.entities.database.GuildPunishment
+import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.getMemberByString
+import me.qbosst.bossbot.util.makeSafe
 import me.qbosst.bossbot.util.secondsToString
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
+import java.time.OffsetDateTime
+import java.util.concurrent.ScheduledFuture
 
 abstract class ModerationCommand(
-        name: String,
-        description: String = "none",
-        usage: List<String> = listOf("<reason>"),
-        examples: List<String> = listOf("spam", "toxicity"),
-        aliases: List<String> = listOf(),
-        userPermissions: List<Permission> = listOf(),
-        botPermissions: List<Permission> = listOf(),
-        val type: GuildPunishment.Type
+    name: String,
+    description: String = "none",
+    usages: List<String> = listOf(),
+    examples: List<String> = listOf(),
+    aliases: List<String> = listOf(),
+    userPermissions: List<Permission> = listOf(),
+    botPermissions: List<Permission> = listOf()
 
-): Command(name, description,
-        usage.map { "@member $it" },
-        examples.map { "@boss $it" },
-        aliases, true, userPermissions,
-        botPermissions.plus(Permission.MESSAGE_MANAGE)) {
+): Command(name, description, usages, examples, aliases, true, userPermissions, botPermissions)
+{
 
-    final override fun execute(event: MessageReceivedEvent, args: List<String>)
-    {
-        try
-        {
-            checks(event.guild)
-        }
-        catch (e: FailedCheckException)
-        {
-            if(!e.message.isNullOrEmpty())
-            {
-                event.channel.sendMessage(e.message).queue()
-            }
-            return
-        }
+    protected val timers = mutableMapOf<String, ScheduledFuture<*>>()
 
+    override fun execute(event: MessageReceivedEvent, args: List<String>) {
         if(args.isNotEmpty())
         {
-            val target = event.guild.getMemberByString(args[0])
-            if(target != null)
+            val target = event.guild.getMemberByString(args[0]) ?: kotlin.run()
             {
-                if(!event.guild.selfMember.canInteract(target))
-                {
-                    event.channel.sendMessage("I cannot interact with this member!").queue()
-                }
-                else if(!event.member!!.canInteract(target))
-                {
-                    event.channel.sendMessage("You cannot interact with this member!").queue()
-                }
-                else if(target.hasPermission(Permission.BAN_MEMBERS, Permission.KICK_MEMBERS))
-                {
-                    event.channel.sendMessage("I cannot punish a moderator!").queue()
-                }
-                else
-                {
-                    val p = getPunishment(event, target, args.drop(1))
-                    if(p != null)
-                        punish(event.guild, event.textChannel, event.message, p.first, p.second)
-                } }
-            else
+                event.channel.sendMessage("I could not find anyone by the id, tag or name of `${args[0].makeSafe()}`").queue()
+                return
+            }
+
+            when
             {
-                event.channel.sendMessage(userNotFound(args[0])).queue()
+                // Checks whether author can punish the target user
+                !event.guild.selfMember.canInteract(target) ->
+                    event.channel.sendMessage("I cannot punish this user!").queue()
+                !event.member!!.canInteract(target) ->
+                    event.channel.sendMessage("You cannot punish this user!").queue()
+                target.hasPermission(Permission.BAN_MEMBERS, Permission.KICK_MEMBERS) ->
+                    event.channel.sendMessage("I cannot punish a user with ban and kick permissions!").queue()
+                else ->
+                {
+                    try
+                    {
+                        val punishment = getPunishment(
+                                target = target,
+                                issuer = event.member!!,
+                                args = args.drop(1)
+                        )
+
+                        punish(
+                                target = target,
+                                issuer = event.member!!,
+                                channel = event.textChannel,
+                                message = event.message,
+                                reason = punishment.reason,
+                                duration = punishment.duration,
+                                type = punishment.type
+                        )
+                    }
+                    catch (e: Exception)
+                    {
+                        if(e.message != null)
+                        {
+                            event.channel.sendMessage(e.message!!).queue()
+                        }
+                        else
+                        {
+                            event.channel.sendMessage("An error has occurred while trying to punish...").queue()
+                        }
+                    }
+                }
             }
         }
         else
         {
-            event.channel.sendMessage(noMentionedUser()).queue()
+            event.channel.sendMessage("Please mention the user you would like to punish!").queue()
         }
     }
 
-    private fun punish(guild: Guild, channel: TextChannel?, message: Message?, action: RestAction<*>, punishment: GuildPunishment)
+    protected abstract fun getRestAction(target: Member): RestAction<*>?
+
+    protected abstract fun getPunishment(target: Member, issuer: Member, args: List<String>): GuildPunishment
+
+    fun punish(target: Member, issuer: Member, channel: TextChannel? = null, message: Message? = null,
+        reason: String? = null, duration: Long = 0L, type: GuildPunishment.Type)
     {
-        if((punishment.reason?.length ?: 0)> GuildPunishmentDataTable.max_reason_length)
+        if(reason.isNullOrEmpty() && GuildSettingsData.get(target.guild).requireReasonForPunish)
         {
-            channel?.sendMessage("Reasons cannot be more than ${GuildPunishmentDataTable.max_reason_length} characters long!")?.queue()
+            throw MissingArgumentException("You must provide a reason!")
         }
         else
         {
-            val restAction = if(action is AuditableRestAction)
+            val action = when(val restAction = getRestAction(target))
             {
-                val reason = "${punishment.issuer_id}\n${punishment.reason}"
-                action.reason(if(reason.length > 512) reason.substring(0, 512) else reason)
-            } else action
+                null ->
+                {
+                    message?.delete()?.queue()
+                    log(target, issuer, reason, duration, type)
+                    onSuccessfulPunish(target, issuer, channel, message, reason, duration, type, Unit)
+                    return
+                }
+                is AuditableRestAction -> restAction.reason(reason)
+                else -> restAction
+            }
 
-            restAction.queue(
+            action.queue(
                     {
-                        //TODO add option whether to delete message
-                        if(true)
-                        {
-                            message?.delete()?.queue()
-                        }
-                        onSuccessfulPunish(guild, channel, message, punishment)
+                        message?.delete()?.queue()
+                        channel?.sendMessage("${target.user.asTag} has been ${type.pastTenseName} by ${issuer.user.asTag}" + if(reason != null) " for `$reason`" else "")?.queue()
 
-                        val sb = StringBuilder("You have been ${punishment.type.pastTenseName}")
-                        if(punishment.reason != null)
-                        {
-                            sb.append(" for `${punishment.reason}`")
-                        }
-                        if(punishment.duration > 0)
-                        {
-                            sb.append("\nThis punishment will last for ${secondsToString(punishment.duration)}")
-                        }
-                        sb.append("\nThis punishment has been issued by ${BossBot.shards.getUserById(punishment.target_id)?.asTag ?: "User `${punishment.target_id}`"}")
-                        punishment.getTarget(guild)?.user?.openPrivateChannel()?.flatMap { it.sendMessage(sb) }?.queue({}, {})
+                        val tc = GuildSettingsData.get(target.guild).getModerationLogsChannel(target.guild)
+                        if(tc != null && target.guild.selfMember.hasPermission(tc, Permission.MESSAGE_WRITE, Permission.MESSAGE_EMBED_LINKS))
+                            tc.sendMessage(log(target, issuer, reason, duration, type).build()).queue()
+
+                        target.user.openPrivateChannel().flatMap()
+                        { privateChannel ->
+                            val sb = StringBuilder("You have been issued a `${type.displayName}` by `${issuer.user.asTag}")
+                            if(reason != null)
+                                sb.append("\nReason: `$reason`")
+                            if(duration > 0)
+                                sb.append("\nThis punishment will last ${secondsToString(duration)}")
+                            privateChannel.sendMessage(sb)
+                        }.queue({}, {})
+
+                        onSuccessfulPunish(target, issuer, channel, message, reason, duration, type, it)
                     },
-                    { throwable ->
-                        onFailedPunish(guild, channel, message, punishment, throwable)
-                    })
+                    {
+                        onFailedPunish(target, issuer, channel, message, reason, duration, type, it)
+                    }
+            )
         }
     }
 
-    fun punish(target: Member, channel: TextChannel?, message: Message?, punishment: GuildPunishment)
+    protected open fun onSuccessfulPunish(
+            target: Member, issuer: Member, channel: TextChannel? = null, message: Message? = null, reason: String? = null,
+            duration: Long = 0L, type: GuildPunishment.Type, result: Any)
     {
-        punish(target.guild, channel, message, getRestAction(target, punishment), punishment)
+        //TODO LOG
     }
 
-    protected open fun onSuccessfulPunish(guild: Guild, channel: MessageChannel?, message: Message?, punishment: GuildPunishment) {
-        punishment.log(guild)
-        channel?.sendMessage("${BossBot.shards.getUserById(punishment.target_id)?.asTag ?: "User `${punishment.target_id}`"} has been ${punishment.type.pastTenseName} by ${BossBot.shards.getUserById(punishment.issuer_id)?.asTag ?: "User `${punishment.issuer_id}`"}")?.queue()
-    }
+    protected open fun onFailedPunish(
+        target: Member, issuer: Member, channel: TextChannel? = null, message: Message? = null, reason: String? = null,
+        duration: Long = 0L, type: GuildPunishment.Type, throwable: Throwable)
+    {}
 
-    protected open fun onFailedPunish(guild: Guild, channel: MessageChannel?, message: Message?, punishment: GuildPunishment, throwable: Throwable)
+    private fun log(
+        target: Member, issuer: Member, reason: String? = null, duration: Long = 0L, type: GuildPunishment.Type): EmbedBuilder
     {
-        channel?.sendMessage("An error has occurred")?.queue()
+        return EmbedBuilder()
+            .setTitle("${type.displayName} by ${issuer.user.asTag}")
+            .appendDescription(kotlin.run()
+            {
+                val sb = StringBuilder("Target: ${target.user.asTag}")
+                if(reason != null)
+                    sb.append("\nReason: $reason")
+                if(duration > 0)
+                    sb.append("\nDuration: $duration")
+                sb
+            })
+            .setColor(type.colourRaw)
+            .setTimestamp(OffsetDateTime.now())
     }
 
-    protected abstract fun getPunishment(event: MessageReceivedEvent, target: Member, args: List<String>): Pair<RestAction<*>, GuildPunishment>?
-
-    @Throws(FailedCheckException::class)
-    open fun checks(guild: Guild): Boolean { return true }
-
-    @Throws(FailedCheckException::class)
-    abstract fun getRestAction(target: Member, punishment: GuildPunishment): RestAction<*>
 }

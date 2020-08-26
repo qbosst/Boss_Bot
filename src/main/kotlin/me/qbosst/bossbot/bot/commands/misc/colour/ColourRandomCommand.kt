@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.util.isBoolFalse
 import me.qbosst.bossbot.util.isBoolTrue
 import net.dv8tion.jda.api.Permission

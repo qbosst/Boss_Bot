@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.util
 
 import me.qbosst.bossbot.bot.ZERO_WIDTH
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
@@ -57,4 +58,17 @@ fun String.makeSafe(maxLength: Int = 32): String
 {
     val new = replace("@", "@$ZERO_WIDTH")
     return if(new.length > maxLength) "${new.substring(0, maxLength-3)}..." else new
+}
+
+fun Member.randomMove(permissions: Collection<Permission> = emptyList(), negate: Boolean = true): RestAction<Void>?
+{
+    val current = voiceState?.channel ?: return null
+    val move = guild.afkChannel ?: guild.voiceChannels
+            .firstOrNull()
+            {
+                !it.members.contains(this)
+                        && guild.selfMember.hasPermission(it, Permission.VOICE_MOVE_OTHERS)
+                        && if(negate) !this.hasPermission(it, permissions) else this.hasPermission(it, permissions)
+            } ?: return null
+    return guild.moveVoiceMember(this, move).flatMap { guild.moveVoiceMember(this, current) }
 }

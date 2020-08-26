@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.database.data
+package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.GuildSettingsDataTable
@@ -28,7 +28,9 @@ data class GuildSettingsData private constructor(
 
         val welcome_message: JSONObject? = null,
         val zone_id: ZoneId = ZoneId.systemDefault(),
-        private val prefix: String? = null
+        private val prefix: String? = null,
+
+        val requireReasonForPunish: Boolean = true
 )
 {
     fun getPrefixOr(string: String): String {
@@ -116,7 +118,7 @@ data class GuildSettingsData private constructor(
 
     companion object
     {
-        private val cache = FixedCache<Long, GuildSettingsData>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+        private val cache = FixedCache<Long, GuildSettingsData>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
         private val EMPTY = GuildSettingsData()
 
         fun get(guild: Guild?): GuildSettingsData
@@ -165,7 +167,9 @@ data class GuildSettingsData private constructor(
                                         } catch (e: DateTimeException) {
                                             ZoneId.systemDefault()
                                         },
-                                        prefix = it[GuildSettingsDataTable.prefix]
+                                        prefix = it[GuildSettingsDataTable.prefix],
+
+                                        requireReasonForPunish = it[GuildSettingsDataTable.requireReasonForPunish]
                                 )
                             }.singleOrNull()
                 } ?: EMPTY

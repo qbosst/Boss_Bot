@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.Listener
-import me.qbosst.bossbot.database.data.GuildSettingsData
+import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.dateTimeFormatter
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission

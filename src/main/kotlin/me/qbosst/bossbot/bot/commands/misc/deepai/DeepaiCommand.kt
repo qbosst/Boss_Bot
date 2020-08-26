@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.deepai
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.Config
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -32,7 +32,7 @@ abstract class DeepaiCommand(
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        if(Config.Values.DEEPAI_TOKEN.toString().isNullOrEmpty())
+        if(Config.Values.DEEPAI_TOKEN.getString().isNullOrEmpty())
         {
             event.channel.sendMessage("This command cannot be used as there is no deepai token provided").queue()
         }

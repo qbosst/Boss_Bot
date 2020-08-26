@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.dev
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.Config
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild

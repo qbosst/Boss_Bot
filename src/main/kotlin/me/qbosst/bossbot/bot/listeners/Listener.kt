@@ -1,13 +1,13 @@
 package me.qbosst.bossbot.bot.listeners
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
-import me.qbosst.bossbot.bot.commands.ICommandManager
+import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.bot.commands.meta.ICommandManager
 import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.database.data.GuildSettingsData
-import me.qbosst.bossbot.database.data.GuildUserData
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
 import me.qbosst.bossbot.entities.MessageCache
+import me.qbosst.bossbot.entities.database.GuildSettingsData
+import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -48,13 +48,13 @@ object Listener : EventListener, ICommandManager
     private const val seconds_until_eligible = 60L
     private const val xp_to_give = 10 //TODO make adjustable
 
-    private var textTimerCache = FixedCache<Key, OffsetDateTime>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
-    private var textCounterCache = FixedCache<Key, Int>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
-    private val messageCache = MessageCache(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+    private var textTimerCache = FixedCache<Key, OffsetDateTime>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
+    private var textCounterCache = FixedCache<Key, Int>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
+    private val messageCache = MessageCache(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
 
     private val voiceCache = mutableMapOf<Key, VoiceMemberStatus>()
 
-    private val rateLimiter = FixedCache<Key, RateLimitStatus>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+    private val rateLimiter = FixedCache<Key, RateLimitStatus>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
 
     init
     {
@@ -102,122 +102,127 @@ object Listener : EventListener, ICommandManager
                 if(event.author.isBot)
                 {
                     onNonCommandEvent(event)
-                    return
                 }
-
-                val content = event.message.contentRaw
-                val prefix = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.toString())
-
-                // Checks if the message starts with the bot's prefix
-                if(content.startsWith(prefix) && content.length > prefix.length)
+                else if(event.isWebhookMessage)
                 {
-                    // Checks if the author entered a bot command
-                    var args = content.substring(prefix.length).split("\\s+".toRegex())
-                    var command = getCommand(args[0])
+                    onNonCommandEvent(event)
+                }
+                else
+                {
+                    val content = event.message.contentRaw
+                    val prefix = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.getStringOrDefault())
 
-                    // If the command is not null, that means its a valid command
-                    if(command != null)
+                    // Checks if the message starts with the bot's prefix
+                    if(content.startsWith(prefix) && content.length > prefix.length)
                     {
-                        // Checks if the author entered sub-commands
-                        var index = 1
-                        while(args.size > index)
-                        {
-                            val cmd = command?.getCommand(args[index])
-                            if(cmd != null)
-                            {
-                                command = cmd
-                                index++
-                            } else break
-                        }
+                        // Checks if the author entered a bot command
+                        var args = content.substring(prefix.length).split("\\s+".toRegex())
+                        var command = getCommand(args[0])
 
-                        val key = Key.Type.USER_GUILD.genKey("", event.author.idLong, event.guild.idLong)
-                        if(!rateLimiter.contains(key))
+                        // If the command is not null, that means its a valid command
+                        if(command != null)
                         {
-                            rateLimiter.put(key, RateLimitStatus(event.message.timeCreated))
-                        }
-
-                        if(rateLimiter.get(key)!!.update(event.message.timeCreated) < 6)
-                        {
-                            // Checks if the author has any special permission requirements that the command may have
-                            if(!command!!.hasPermission(if(event.isFromGuild) event.guild else null, event.author))
+                            // Checks if the author entered sub-commands
+                            var index = 1
+                            while(args.size > index)
                             {
-                                event.channel.sendMessage("You do not have permission for this command!").queue()
-                                return
+                                val cmd = command?.getCommand(args[index])
+                                if(cmd != null)
+                                {
+                                    command = cmd
+                                    index++
+                                } else break
                             }
 
-                            if(event.isFromGuild)
+                            val key = Key.Type.USER_GUILD.genKey("", event.author.idLong, event.guild.idLong)
+                            if(!rateLimiter.contains(key))
                             {
-                                if(!event.guild.selfMember.hasPermission(command.fullBotPermissions) || !event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions))
+                                rateLimiter.put(key, RateLimitStatus(event.message.timeCreated))
+                            }
+
+                            if(rateLimiter.get(key)!!.update(event.message.timeCreated) < 6)
+                            {
+                                // Checks if the author has any special permission requirements that the command may have
+                                if(!command!!.hasPermission(if(event.isFromGuild) event.guild else null, event.author))
                                 {
-                                    if(event.guild.selfMember.hasPermission(event.textChannel, Permission.MESSAGE_WRITE))
+                                    event.channel.sendMessage("You do not have permission for this command!").queue()
+                                    return
+                                }
+
+                                if(event.isFromGuild)
+                                {
+                                    if(!event.guild.selfMember.hasPermission(command.fullBotPermissions) || !event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions))
                                     {
-                                        event.channel.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").queue()
+                                        if(event.guild.selfMember.hasPermission(event.textChannel, Permission.MESSAGE_WRITE))
+                                        {
+                                            event.channel.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").queue()
+                                        }
+                                        else
+                                        {
+                                            event.author.openPrivateChannel()
+                                                    .flatMap { it.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`") }
+                                                    .queue({}, {})
+                                        }
+                                        return
                                     }
-                                    else
+
+                                    // Checks if the author has permission to use the command in the guild
+                                    if(!event.member!!.hasPermission(command.fullUserPermissions) || !event.member!!.hasPermission(event.textChannel, command.fullUserPermissions))
                                     {
-                                        event.author.openPrivateChannel()
-                                                .flatMap { it.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`") }
-                                                .queue({}, {})
+                                        return
                                     }
-                                    return
                                 }
-
-                                // Checks if the author has permission to use the command in the guild
-                                if(!event.member!!.hasPermission(command.fullUserPermissions) || !event.member!!.hasPermission(event.textChannel, command.fullUserPermissions))
+                                else
                                 {
-                                    return
-                                }
-                            }
-                            else
-                            {
-                                // Checks if the command is a guild-only command
-                                if(command.guildOnly)
-                                {
-                                    event.channel.sendMessage("This command is a guild-only command!").queue()
-                                    return
-                                }
-                            }
-
-                            args = args.drop(index)
-
-                            try
-                            {
-                                command.execute(event, args)
-                            }
-                            catch (e: Exception)
-                            {
-                                event.channel.sendMessage("An error has occurred...").queue()
-
-                                val sw = StringWriter()
-                                e.printStackTrace(PrintWriter(sw))
-                                BossBot.LOG.error("$sw")
-
-                                BossBot.shards.getUserById(Config.Values.DEVELOPER_ID.getLong())?.openPrivateChannel()?.map {
-                                    val message: String = kotlin.run {
-                                        val message = "A problem has happened with me! Check console for more details... ```$sw```"
-                                        if(message.length > Message.MAX_CONTENT_LENGTH) message.substring(0, Message.MAX_CONTENT_LENGTH-3)+"```" else message
+                                    // Checks if the command is a guild-only command
+                                    if(command.guildOnly)
+                                    {
+                                        event.channel.sendMessage("This command is a guild-only command!").queue()
+                                        return
                                     }
-                                    it.sendMessage(message).queue()
-                                }?.queue()
+                                }
+
+                                args = args.drop(index)
+
+                                try
+                                {
+                                    command.execute(event, args)
+                                }
+                                catch (e: Exception)
+                                {
+                                    event.channel.sendMessage("An error has occurred...").queue()
+
+                                    val sw = StringWriter()
+                                    e.printStackTrace(PrintWriter(sw))
+                                    BossBot.LOG.error("$sw")
+
+                                    BossBot.shards.getUserById(Config.Values.DEVELOPER_ID.getLongOrDefault())?.openPrivateChannel()?.map {
+                                        val message: String = kotlin.run {
+                                            val message = "A problem has happened with me! Check console for more details... ```$sw```"
+                                            if(message.length > Message.MAX_CONTENT_LENGTH) message.substring(0, Message.MAX_CONTENT_LENGTH-3)+"```" else message
+                                        }
+                                        it.sendMessage(message).queue()
+                                    }?.queue()
+                                }
+
                             }
 
+                            // If the author has been rate limiting the bot but hasn't been warned yet, it will tell them to slow down.
+                            else if(!rateLimiter.get(key)!!.warned)
+                            {
+                                event.channel.sendMessage("Slow down a bit...").queue()
+                                rateLimiter.get(key)!!.warned = true
+                            }
                         }
-
-                        // If the author has been rate limiting the bot but hasn't been warned yet, it will tell them to slow down.
-                        else if(!rateLimiter.get(key)!!.warned)
+                        else
                         {
-                            event.channel.sendMessage("Slow down a bit...").queue()
-                            rateLimiter.get(key)!!.warned = true
+                            onNonCommandEvent(event)
                         }
                     }
                     else
                     {
                         onNonCommandEvent(event)
                     }
-                }
-                else
-                {
-                    onNonCommandEvent(event)
                 }
             }
 
@@ -356,7 +361,7 @@ object Listener : EventListener, ICommandManager
                 {
                     event.jda.presence.setPresence(
                             OnlineStatus.ONLINE,
-                            Activity.of(Activity.ActivityType.DEFAULT, "${Config.Values.DEFAULT_PREFIX.toString()}help")
+                            Activity.of(Activity.ActivityType.DEFAULT, "${Config.Values.DEFAULT_PREFIX.getStringOrDefault()}help")
                     )
                 }
 
@@ -427,7 +432,7 @@ object Listener : EventListener, ICommandManager
         // Checks if the message is pinging the bot, if so it will return the prefix that it is using
         if(event.message.contentRaw.matches(Regex("<@!?${event.jda.selfUser.idLong}>$")))
         {
-            val prefix = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.toString())
+            val prefix = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.getStringOrDefault())
             event.channel.sendMessage("My prefix is `${prefix}`!").queue()
         }
 

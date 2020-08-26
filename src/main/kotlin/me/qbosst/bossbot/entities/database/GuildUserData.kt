@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.database.data
+package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
@@ -19,7 +19,7 @@ data class GuildUserData(
 {
     companion object
     {
-        private val cache = FixedCache<Key, GuildUserData>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+        private val cache = FixedCache<Key, GuildUserData>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
         private val EMPTY = GuildUserData()
 
         fun get(member: Member): GuildUserData

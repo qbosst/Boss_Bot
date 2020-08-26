@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.database.data
+package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.UserDataTable
@@ -16,7 +16,7 @@ data class UserData private constructor(
 {
     companion object
     {
-        private val cache = FixedCache<Long, UserData>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+        private val cache = FixedCache<Long, UserData>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
         private val EMPTY = UserData()
 
         fun get(user: User): UserData
@@ -57,7 +57,7 @@ data class UserData private constructor(
                 {
                     UserDataTable
                             .insert {
-                                it[UserDataTable.user_id] = user.idLong
+                                it[user_id] = user.idLong
                                 it[column] = value
                             }
                     return@transaction null

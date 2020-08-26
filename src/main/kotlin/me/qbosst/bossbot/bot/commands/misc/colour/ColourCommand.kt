@@ -3,8 +3,8 @@ package me.qbosst.bossbot.bot.commands.misc.colour
 import com.google.common.base.Splitter
 import javafx.scene.paint.Color
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
-import me.qbosst.bossbot.database.data.GuildColoursData
+import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.util.isHex
 import me.qbosst.bossbot.util.makeSafe
 import me.qbosst.bossbot.util.toHex

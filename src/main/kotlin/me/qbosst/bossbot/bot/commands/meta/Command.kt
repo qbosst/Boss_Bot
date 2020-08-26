@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.bot.commands
+package me.qbosst.bossbot.bot.commands.meta
 
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -49,7 +49,8 @@ abstract class Command (
             return set.reversed().joinToString(" ")
         }
 
-    val fullUserPermissions: List<Permission> = kotlin.run {
+    val fullUserPermissions: List<Permission> = kotlin.run()
+    {
         val set = mutableSetOf<Permission>()
         var command: Command? = this
         while(command != null)
@@ -60,7 +61,8 @@ abstract class Command (
         set.distinct()
     }
 
-    val fullBotPermissions: List<Permission> = kotlin.run {
+    val fullBotPermissions: List<Permission> = kotlin.run()
+    {
         val set = mutableSetOf<Permission>()
         var command: Command? = this
         while(command != null)
@@ -82,26 +84,31 @@ abstract class Command (
         }
     }
 
-    final override fun getCommand(name: String): Command? {
+    final override fun getCommand(name: String): Command?
+    {
         val label = name.toLowerCase()
         return commands[label] ?: commandsAlias[label]
     }
 
-    final override fun getCommands(): Collection<Command> {
+    final override fun getCommands(): Collection<Command>
+    {
         return commands.values
     }
 
-    final override fun addCommands(vararg commands: Command) {
+    final override fun addCommands(vararg commands: Command)
+    {
         for(command in commands) addCommand(command)
     }
 
-    final override fun addCommands(commands: Collection<Command>) {
+    final override fun addCommands(commands: Collection<Command>)
+    {
         for(command in commands) addCommand(command)
     }
 
     abstract fun execute(event: MessageReceivedEvent, args: List<String>)
 
-    final override fun equals(other: Any?): Boolean {
+    final override fun equals(other: Any?): Boolean
+    {
         return if(other is Command)
         {
             fullName == other.fullName || super.equals(other)
@@ -119,17 +126,4 @@ abstract class Command (
     final override fun toString(): String {
         return fullName
     }
-}
-
-interface ICommandManager
-{
-    fun getCommand(name: String): Command?
-
-    fun getCommands(): Collection<Command>
-
-    fun addCommand(command: Command)
-
-    fun addCommands(vararg commands: Command)
-
-    fun addCommands(commands: Collection<Command>)
 }

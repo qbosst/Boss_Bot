@@ -2,8 +2,8 @@ package me.qbosst.bossbot.bot.commands.misc.greeting
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.dev.DeveloperCommand
-import me.qbosst.bossbot.database.data.UserData
 import me.qbosst.bossbot.database.tables.UserDataTable
+import me.qbosst.bossbot.entities.database.UserData
 import me.qbosst.bossbot.util.getUserByString
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

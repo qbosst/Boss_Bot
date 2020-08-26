@@ -1,35 +1,26 @@
 package me.qbosst.bossbot.bot.commands.moderation
 
-import me.qbosst.bossbot.database.data.GuildPunishment
-import net.dv8tion.jda.api.Permission
+import me.qbosst.bossbot.entities.database.GuildPunishment
+import me.qbosst.fbiagent.bot.commands.moderation.ModerationCommand
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
 import java.time.Instant
 
-object KickCommand : ModerationCommand(
-        "kick",
-        "Kicks a user from the guild",
-        userPermissions = listOf(Permission.KICK_MEMBERS),
-        botPermissions = listOf(Permission.KICK_MEMBERS),
-        type = GuildPunishment.Type.KICK
+object KickCommand: ModerationCommand(
+    "kick"
 ) {
-    override fun getRestAction(target: Member, punishment: GuildPunishment): RestAction<*> {
+    override fun getRestAction(target: Member): RestAction<*> {
         return target.kick()
     }
 
-    override fun getPunishment(event: MessageReceivedEvent, target: Member, args: List<String>): Pair<RestAction<*>, GuildPunishment>?
-    {
-        return if(args.isNotEmpty())
-        {
-            val reason = args.joinToString(" ")
-
-            Pair(event.guild.kick(target).reason(reason), GuildPunishment.create(target, event.member!!, reason, 0, Instant.now(), type))
-        }
-        else
-        {
-            event.channel.sendMessage("Please provide the reason you would like to kick them for!")
-            null
-        }
+    override fun getPunishment(target: Member, issuer: Member, args: List<String>): GuildPunishment {
+        return GuildPunishment(
+            targetId = target.idLong,
+            issuerId = issuer.idLong,
+            reason = if(args.isNotEmpty()) args.joinToString(" ") else null,
+            duration = 0,
+            date = Instant.now(),
+            type = GuildPunishment.Type.KICK
+        )
     }
 }

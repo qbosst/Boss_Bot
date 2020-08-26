@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc.embed
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission

@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.util.getUserByString
 import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.EmbedBuilder

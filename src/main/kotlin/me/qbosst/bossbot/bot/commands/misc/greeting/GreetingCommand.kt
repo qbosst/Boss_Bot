@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.bot.commands.misc.greeting
 
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.database.data.UserData
 import me.qbosst.bossbot.database.tables.UserDataTable
+import me.qbosst.bossbot.entities.database.UserData
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -36,7 +36,7 @@ object GreetingCommand : Command(
         else
         {
             val greeting = UserData.get(event.author).greeting ?: kotlin.run {
-                val default = Config.Values.DEFAULT_GREETING.toString()
+                val default = Config.Values.DEFAULT_GREETING.getString()
                 if(default.isNullOrEmpty()) "You do not have a greeting setup!" else default
             }
 

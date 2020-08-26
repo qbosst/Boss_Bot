@@ -9,7 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object Database
 {
     private val tables: Collection<Table>
-        get() = loadClasses("qbosst.bossbot.database.tables", Table::class.java)
+        get() = loadClasses("me.qbosst.bossbot.database.tables", Table::class.java)
 
     /**
      *  Connects to the database that the bot will be using to store data
@@ -28,11 +28,10 @@ object Database
         )
 
         // Creates missing tables and columns
-        transaction {
-            tables.forEach()
-            {
-                SchemaUtils.createMissingTablesAndColumns(it)
-            }
+        transaction()
+        {
+            for(table in tables)
+                SchemaUtils.createMissingTablesAndColumns(table)
         }
     }
 }

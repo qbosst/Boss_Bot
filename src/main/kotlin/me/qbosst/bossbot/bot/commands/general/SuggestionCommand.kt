@@ -1,10 +1,10 @@
 package me.qbosst.bossbot.bot.commands.general
 
 import me.qbosst.bossbot.bot.*
-import me.qbosst.bossbot.bot.commands.Command
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.mixColours
 import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.database.data.GuildSettingsData
+import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.FixedCache
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -30,7 +30,7 @@ object SuggestionCommand: Command(
     private const val seconds_until_next_edit = 20L
     private const val max_suggestion_length = 512
 
-    private val rateLimiter = FixedCache<Long, SuggestionPair>(Config.Values.DEFAULT_CACHE_SIZE.getInt())
+    private val rateLimiter = FixedCache<Long, SuggestionPair>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {

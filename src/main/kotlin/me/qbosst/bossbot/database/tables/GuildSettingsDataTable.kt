@@ -9,7 +9,7 @@ object GuildSettingsDataTable : Table()
 {
     val max_welcome_message_length = Message.MAX_CONTENT_LENGTH + MessageEmbed.EMBED_MAX_LENGTH_BOT
     const val max_prefix_length = 8
-    private val max_zone_id_length: Int = ZoneId.getAvailableZoneIds().maxBy { it.length }?.length ?: 32
+    private val max_zone_id_length: Int = ZoneId.getAvailableZoneIds().maxByOrNull { it.length }?.length ?: 32
 
     val guild_id = long("GUILD_ID").default(0L)
 
@@ -25,6 +25,8 @@ object GuildSettingsDataTable : Table()
     val welcome_message = varchar("WELCOME_MESSAGE", max_welcome_message_length).nullable()
     val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable()
     val prefix = varchar("PREFIX", max_prefix_length).nullable()
+
+    val requireReasonForPunish = bool("REQUIRE_REASON_FOR_PUNISH").default(true)
 
     override val tableName
         get() = "GUILD_SETTINGS_DATA"
