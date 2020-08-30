@@ -16,10 +16,10 @@ object EmbedTemplateCommand : Command(
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>) {
-        event.channel.sendFile(createTemplate(event.author).toString(4).toByteArray(), "template.json").queue()
+        event.channel.sendFile(JSONObject(createTemplate(event.author).decodeToString()).toString(4).toByteArray(), "template.json").queue()
     }
 
-    private fun createTemplate(author: User): JSONObject
+    private fun createTemplate(author: User): ByteArray
     {
         val jda = author.jda
         return EmbedBuilder()
@@ -47,6 +47,6 @@ object EmbedTemplateCommand : Command(
                         "This is the value of the fourth field!",
                         false
                 )
-                .build().getJson()
+                .build().toData().toJson()
     }
 }

@@ -2,10 +2,11 @@ package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.GuildSettingsDataTable
-import me.qbosst.bossbot.entities.JSONEmbedBuilder
 import me.qbosst.bossbot.util.FixedCache
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.*
+import net.dv8tion.jda.api.utils.data.DataObject
+import net.dv8tion.jda.internal.entities.EntityBuilder
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
@@ -69,10 +70,9 @@ data class GuildSettingsData private constructor(
         return guild.getTextChannelById(welcome_channel_id)
     }
 
-    fun getWelcomeMessage(member: Member): Message
+    fun getWelcomeMessage(member: Member): Message?
     {
 
-        val builder = MessageBuilder()
         val content = welcome_message?.toString()
                 ?.replace("%user_mention%", member.asMention)
                 ?.replace("%user_name%", member.user.name)
@@ -84,24 +84,27 @@ data class GuildSettingsData private constructor(
                 ?.replace("%guild_icon_url%", member.guild.iconUrl ?: member.user.defaultAvatarUrl)
                 ?.replace("%user_join%", member.timeJoined.toEpochSecond().toString())
 
-        val json = try { JSONObject(content) } catch (e: JSONException) { null }
-
-        if(json != null)
+        return try
         {
-            if(json.has("content"))
+            val obj = DataObject.fromJson(content ?: "")
+            val builder = MessageBuilder()
+            if(obj.hasKey("content"))
             {
-                builder.setContent(json.get("content").toString())
+                builder.setContent(obj.get("content").toString())
             }
 
-            if(json.has("embed"))
+            if(obj.hasKey("embed"))
             {
-                if(json.get("embed") is JSONObject)
-                    builder.setEmbed(JSONEmbedBuilder(json.getJSONObject("embed")).build())
-                else if(!json.get("embed").toString().isNullOrBlank())
-                    throw IllegalStateException("Embed must be a JSONObject!")
+                if(!obj.getObject("embed").hasKey("type"))
+                    obj.getObject("embed").put("type", "rich")
+                builder.setEmbed(EntityBuilder(member.jda).createMessageEmbed(obj.getObject("embed")))
             }
+            builder.build()
         }
-        return builder.build()
+        catch (e: Exception)
+        {
+            null
+        }
     }
 
 

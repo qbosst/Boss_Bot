@@ -2,11 +2,12 @@ package me.qbosst.bossbot.bot.commands.settings.set.setters
 
 import me.qbosst.bossbot.bot.commands.settings.set.abstractsetters.SetterCommand
 import me.qbosst.bossbot.database.tables.GuildSettingsDataTable
-import me.qbosst.bossbot.entities.JSONEmbedBuilder
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.data.DataObject
+import net.dv8tion.jda.internal.entities.EntityBuilder
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -62,19 +63,17 @@ object SetWelcomeMessageCommand : SetterCommand<JSONObject>(
                     .replace("%user_join%", member.timeJoined.toEpochSecond().toString())
             try
             {
-                val json = JSONObject(content)
+                val json = DataObject.fromJson(content)
 
-                if(json.has("content"))
+                if(json.hasKey("content"))
                 {
                     builder.setContent(json.get("content").toString())
                 }
-
-                if(json.has("embed"))
+                if(json.hasKey("embed"))
                 {
-                    if(json.get("embed") is JSONObject)
-                        builder.setEmbed(JSONEmbedBuilder(json.getJSONObject("embed")).build())
-                    else if(!json.get("embed").toString().isNullOrBlank())
-                        throw IllegalStateException("Embed must be a JSONObject!")
+                    if(!json.getObject("embed").hasKey("type"))
+                        json.getObject("embed").put("type", "rich")
+                    builder.setEmbed(EntityBuilder(member.jda).createMessageEmbed(json.getObject("embed")))
                 }
 
                 builder.build()

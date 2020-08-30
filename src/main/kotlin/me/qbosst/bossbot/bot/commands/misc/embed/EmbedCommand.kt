@@ -1,13 +1,14 @@
 package me.qbosst.bossbot.bot.commands.misc.embed
 
+import com.fasterxml.jackson.core.JsonParseException
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.JSONEmbedBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.MessageEmbed.EMBED_MAX_LENGTH_BOT
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.json.JSONException
-import org.json.JSONObject
-import java.nio.file.Files
+import net.dv8tion.jda.api.exceptions.ParsingException
+import net.dv8tion.jda.api.utils.data.DataObject
+import net.dv8tion.jda.internal.entities.EntityBuilder
 
 object EmbedCommand: Command(
         "embed",
@@ -20,108 +21,56 @@ object EmbedCommand: Command(
         addCommands(EmbedTemplateCommand, EmbedGetCommand)
     }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>) {
+    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    {
         if(args.isNotEmpty())
         {
-            val json = try
-            {
-                args.joinToString(" ").toJson()
-            } catch (e: JSONException)
-            {
-                event.channel.sendMessage("Caught Exception while trying to create json object: $e").queue()
-                return
-            }
-            if(json.isEmpty)
-            {
-                event.channel.sendMessage("This json is empty!").queue()
-            }
-            else
-            {
-                process(json, event)
-            }
-        }
-        else if(event.message.attachments.isNotEmpty())
-        {
-            val first = event.message.attachments.first { it.fileExtension == "json" }
-            if(first == null)
-            {
-                event.channel.sendMessage("bruh").queue()
-            }
-            else
-            {
-                first.downloadToFile().thenAccept()
-                {
-                    val content = Files.readAllLines(it.toPath()).joinToString("")
-                    val json = try
-                    {
-                        content.toJson()
-                    } catch (e: JSONException)
-                    {
-                        event.channel.sendMessage("Caught Exception while trying to create json object: $e").queue()
-                        return@thenAccept
-                    }
-                    if(json.isEmpty)
-                    {
-                        event.channel.sendMessage("This json is empty!").queue()
-                    }
-                    else
-                    {
-                        process(json, event)
-                    }
-                }
-            }
+            process(event.channel, args.joinToString(" ").toByteArray())
         }
         else
         {
-            event.channel.sendMessage("nothing recieved").queue()
-        }
-    }
-
-    private fun String.toJson(): JSONObject
-    {
-        return try
-        {
-            JSONObject(this)
-        }
-        catch (e: JSONException)
-        {
-            if(e.message != null)
+            val first = event.message.attachments.firstOrNull { it.fileExtension == "json" }
+            if(first != null)
             {
-                val first = e.message!!.split(Regex("\\s+")).mapNotNull { it.toIntOrNull() }.firstOrNull()
-                if(first != null)
-                    throw JSONException("${e.message} @ `${this.substring(if(first-10 > 0) first-10 else 0, if(first+10 < this.length) first+10 else this.length)}`")
-                else throw e
-            } else throw e
-        }
-    }
-
-    private fun process(json: JSONObject, event: MessageReceivedEvent)
-    {
-        val embed = try
-        {
-            JSONEmbedBuilder(json)
-        }
-        catch (e: Exception)
-        {
-            if(e is IllegalStateException || e is IllegalArgumentException)
-            {
-                event.channel.sendMessage("Caught exception while trying to create embed: `${e.message}`").queue()
-                return
+                first.downloadToFile().thenAccept()
+                {
+                    process(event.channel, it.readBytes())
+                }
             }
-            else throw e
-        }
-
-        when
-        {
-            embed.isEmpty() -> event.channel.sendMessage("Cannot build an empty embed!").queue()
-
-            embed.description.length > MessageEmbed.TEXT_MAX_LENGTH ->
-                event.channel.sendMessage("Descriptions cannot be longer than ${MessageEmbed.TEXT_MAX_LENGTH}! Please limit your input!").queue()
-
-            embed.length() > MessageEmbed.EMBED_MAX_LENGTH_BOT ->
-                event.channel.sendMessage("Cannot build an embed with more than ${MessageEmbed.EMBED_MAX_LENGTH_BOT} characters!").queue()
-
-            else -> event.channel.sendMessage(embed.build()).queue()
+            else
+            {
+                event.channel.sendMessage("invalid!").queue()
+            }
         }
     }
+
+    private fun process(channel: MessageChannel, content: ByteArray)
+    {
+        try
+        {
+            val obj = DataObject.fromJson(content)
+            if(!obj.hasKey("type"))
+                obj.put("type", "rich")
+
+            val embed = EntityBuilder(channel.jda).createMessageEmbed(obj)
+            when
+            {
+                embed.isEmpty -> channel.sendMessage("This embed is empty!").queue()
+                embed.length > EMBED_MAX_LENGTH_BOT -> channel.sendMessage("This embed is too large!").queue()
+                else -> channel.sendMessage(embed).queue()
+            }
+        }
+        catch (e: ParsingException)
+        {
+            if(e.cause is JsonParseException)
+            {
+                channel.sendMessage("Exception caught while trying to parse json ```${(e.cause as JsonParseException).message}```").queue()
+            }
+            else
+            {
+                channel.sendMessage("Caught Exception: $e").queue()
+            }
+        }
+    }
+
 }

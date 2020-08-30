@@ -90,7 +90,7 @@ object Config
         }}),
         DEFAULT_CACHE_SIZE(500, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
         THREADPOOL_SIZE(3, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
-        DEVELOPER_ID(0, { if(it?.toString()?.isNotEmpty() == true) it.toString().toLongOrNull() != null else true}),
+        DEVELOPER_ID(0L, { if(it?.toString()?.isNotEmpty() == true) it.toString().toLongOrNull() != null else true}),
         DEEPAI_TOKEN(""),
         DEFAULT_GREETING("")
         ;

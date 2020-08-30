@@ -411,10 +411,10 @@ object Listener : EventListener, ICommandManager
             {
                 val settings = GuildSettingsData.get(event.guild)
                 val tc = settings.getWelcomeChannel(event.guild) ?: return
-                val message = try { settings.getWelcomeMessage(event.member) } catch (e: Exception) { return }
+                val message = settings.getWelcomeMessage(event.member) ?: return
 
                 val permissions = mutableSetOf(Permission.MESSAGE_WRITE)
-                if(message.embeds.isNotEmpty())
+                if(message.embeds.isEmpty())
                     permissions.add(Permission.MESSAGE_EMBED_LINKS)
 
                 if(!event.guild.selfMember.hasPermission(permissions) || !event.guild.selfMember.hasPermission(tc, permissions))
