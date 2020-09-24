@@ -35,7 +35,7 @@ object Config
             val invalid = validate()
             if(invalid.isNotEmpty())
             {
-                BossBot.LOG.error("The following values are invalid; ${invalid.joinToString(", ") { it.name.toLowerCase() }}")
+                BossBot.LOG.error("The following values are invalid (using config at '${config.absolutePath}'); ${invalid.joinToString(", ") { it.name.toLowerCase() }}")
 
                 for(value in invalid)
                     if(!json.has(value.name.toLowerCase()))
@@ -88,8 +88,14 @@ object Config
             val length = it?.toString()?.length ?: 0
             length > 0 && length < me.qbosst.bossbot.database.tables.GuildSettingsDataTable.max_prefix_length
         }}),
-        DEFAULT_CACHE_SIZE(500, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
-        THREADPOOL_SIZE(3, { (it?.toString()?.toIntOrNull() ?: 0) > 0 }),
+        DEFAULT_CACHE_SIZE(500,
+                {
+                    (it?.toString()?.toIntOrNull() ?: 0) > 0
+                }),
+        THREADPOOL_SIZE(3,
+                {
+                    (it?.toString()?.toIntOrNull() ?: 0) > 0
+                }),
         DEVELOPER_ID(0L, { if(it?.toString()?.isNotEmpty() == true) it.toString().toLongOrNull() != null else true}),
         DEEPAI_TOKEN(""),
         DEFAULT_GREETING("")

@@ -19,6 +19,7 @@ import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.entities.TextChannel
 import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.util.concurrent.LinkedBlockingQueue
@@ -280,5 +281,10 @@ class GuildMusicManager private constructor(
         {
             return map.keys.first { map[it] == manager }
         }
+    }
+
+    fun getChannel(guild: Guild): TextChannel?
+    {
+        return guild.getTextChannelById(lastChannelIdSent)
     }
 }

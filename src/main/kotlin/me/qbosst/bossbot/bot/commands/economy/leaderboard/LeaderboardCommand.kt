@@ -63,6 +63,7 @@ object LeaderboardCommand : Command(
                     .setTitle("${event.guild.name} ${type.formatName} Leaderboard")
                     .setTimestamp(OffsetDateTime.now())
                     .setFooter("Page ${page+1} / ${getMaxPages(count)+1}")
+                    .setColor(event.guild.selfMember.colorRaw)
 
             list.forEach { embed.appendDescription(it) }
             event.channel.sendMessage(embed.build()).queue()

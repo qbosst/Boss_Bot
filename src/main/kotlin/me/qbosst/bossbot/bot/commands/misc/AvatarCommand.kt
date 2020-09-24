@@ -2,15 +2,18 @@ package me.qbosst.bossbot.bot.commands.misc
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import me.qbosst.bossbot.util.getUserByString
 import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.time.OffsetDateTime
+import java.awt.Color
+import kotlin.random.Random
 
 object AvatarCommand: Command(
-        "avatar"
+        "avatar",
+        aliases = listOf("av")
 ) {
 
     override fun execute(event: MessageReceivedEvent, args: List<String>) {
@@ -23,15 +26,15 @@ object AvatarCommand: Command(
             }
         } else event.author
 
-        event.channel.sendMessage(avatarEmbed(target).build()).queue()
+        event.channel.sendMessage(avatarEmbed(target, if(event.isFromGuild) event.guild.selfMember.color else Random.nextColour()).build()).queue()
     }
 
-    private fun avatarEmbed(user: User): EmbedBuilder
+    private fun avatarEmbed(user: User, colour: Color?): EmbedBuilder
     {
         return EmbedBuilder()
-                .setTitle(user.asTag, user.avatarUrl)
+                .setDescription("[${user.asTag}](${user.avatarUrl})")
                 .setImage(user.avatarUrl + "?size=256")
-                .setTimestamp(OffsetDateTime.now())
+                .setColor(colour)
     }
 
 }

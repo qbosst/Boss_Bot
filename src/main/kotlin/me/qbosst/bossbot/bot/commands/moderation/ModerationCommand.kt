@@ -1,4 +1,4 @@
-package me.qbosst.fbiagent.bot.commands.moderation
+package me.qbosst.bossbot.bot.commands.moderation
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.exception.MissingArgumentException
@@ -72,14 +72,9 @@ abstract class ModerationCommand(
                     }
                     catch (e: Exception)
                     {
-                        if(e.message != null)
-                        {
-                            event.channel.sendMessage(e.message!!).queue()
-                        }
-                        else
-                        {
-                            event.channel.sendMessage("An error has occurred while trying to punish...").queue()
-                        }
+                        if (e is MissingArgumentException || e is IllegalArgumentException || e is IllegalStateException)
+                            event.channel.sendMessage(e.message ?: "An error has occured while trying to punish...").queue()
+                        else throw e
                     }
                 }
             }

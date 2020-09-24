@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.StatusChangeEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
@@ -47,17 +48,27 @@ object DisconnectCommand: MusicCommand(
             {
                 if(event.member == event.guild.selfMember)
                 {
-                    GuildMusicManager.remove(event.guild)
+                    GuildMusicManager.remove(event.guild)?.getChannel(event.guild)?.sendMessage("I have left `${event.channelLeft.name}`")?.queue()
                 }
                 else if(event.channelLeft == event.guild.audioManager.connectedChannel)
                 {
                     if(getMembersConnected(event.guild, false).isEmpty())
                     {
-                        println(true)
-                        val task = BossBot.threadpool.schedule({
-                            event.guild.audioManager.closeAudioConnection()
-                        }, 2, TimeUnit.MINUTES)
+                        val task = BossBot.threadpool.schedule(
+                                {
+                                    event.guild.audioManager.closeAudioConnection()
+                                }, 30, TimeUnit.SECONDS)
                         scheduledLeave.put(event.guild.idLong, task)?.cancel(true)
+                    }
+                }
+            }
+            is GuildVoiceJoinEvent ->
+            {
+                if(event.member != event.guild.selfMember)
+                {
+                    if(event.channelJoined == event.guild.audioManager.connectedChannel)
+                    {
+                        scheduledLeave.remove(event.guild.idLong)?.cancel(true)
                     }
                 }
             }

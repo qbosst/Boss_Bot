@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot
 
+import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import me.qbosst.bossbot.bot.listeners.EventWaiter
@@ -60,12 +61,14 @@ object BossBot {
                             .setStatus(OnlineStatus.DO_NOT_DISTURB)
                             .setActivity(Activity.of(Activity.ActivityType.DEFAULT, "Loading..."))
                             .addEventListeners(EventWaiter, Listener)
+                            .setAudioSendFactory(NativeAudioSendFactory())
                             .build()
                 }
                 catch (e: Exception)
                 {
                     LOG.error("Caught Exception: $e")
-                    runBlocking {
+                    runBlocking()
+                    {
                         delay(5000)
                     }
                 }

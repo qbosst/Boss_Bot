@@ -36,5 +36,6 @@ object StatsCommand : Command(
                 .addField("Messages Sent", (stats.message_count + Listener.getCachedMessageCount(member)).toString(), true)
                 .addField("Text Chat Time", secondsToString(stats.text_chat_time), true)
                 .addField("Voice Chat Time", secondsToString(stats.voice_chat_time + Listener.getCachedVoiceChatTime(member)), true)
+                .setColor(member.colorRaw)
     }
 }

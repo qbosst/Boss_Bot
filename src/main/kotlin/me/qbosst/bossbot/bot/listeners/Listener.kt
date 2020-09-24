@@ -230,26 +230,23 @@ object Listener : EventListener, ICommandManager
             {
                 if(event.isFromGuild)
                 {
-                    if(event.author.isBot) return
-                    val old = messageCache.putMessage(event.message) ?: return
+                    if(event.author.isBot)
+                        return
+                    val old = messageCache.putMessage(event.message)
 
-                    GuildSettingsData.get(event.guild).getMessageLogsChannel(event.guild)?.sendMessage(EmbedBuilder()
-                            .setAuthor(event.author.asTag, null, event.author.avatarUrl)
-                            .setDescription("**A message has been edited in ${event.textChannel.asMention} by ${event.author.asMention}**\n[Jump To Message](${event.message.jumpUrl})")
-                            .setThumbnail(event.author.avatarUrl)
-
-                            .addField("Before", if(old.content.length > MessageEmbed.VALUE_MAX_LENGTH) {
-                                val dot = "..."
-                                old.content.substring(0, MessageEmbed.VALUE_MAX_LENGTH-dot.length)+dot
-                            } else old.content, false)
-
-                            .addField("After", if(event.message.contentRaw.length > MessageEmbed.VALUE_MAX_LENGTH) {
-                                val dot = "..."
-                                event.message.contentRaw.substring(0, MessageEmbed.VALUE_MAX_LENGTH-dot.length)+dot
-                            } else event.message.contentRaw, false)
-
-                            .setFooter("User Id: ${event.author.idLong} | Message Id: ${event.message.idLong}")
-                            .setTimestamp(event.message.timeEdited).build())?.queue()
+                    GuildSettingsData.get(event.guild).getMessageLogsChannel(event.guild)
+                            ?.sendMessage(EmbedBuilder()
+                                    .setAuthor("Message Edited", event.message.jumpUrl, event.author.effectiveAvatarUrl)
+                                    .setThumbnail(event.author.avatarUrl)
+                                    .setDescription("**Author**: ${event.author.asMention}\n**Channel**:${event.textChannel.asMention}\n[Jump to Message](${event.message.jumpUrl})")
+                                    .addField("Message Content Before", old?.content?.makeSafe(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
+                                    .addField("Message Content After", event.message.contentRaw.makeSafe(MessageEmbed.VALUE_MAX_LENGTH), false)
+                                    .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.message.idLong}")
+                                    .setThumbnail(event.author.effectiveAvatarUrl)
+                                    .setTimestamp(event.message.timeEdited)
+                                    .setColor(Color.YELLOW)
+                                    .build())
+                            ?.queue()
                 }
             }
 
@@ -262,21 +259,23 @@ object Listener : EventListener, ICommandManager
 
                     val author = old.getAuthor(BossBot.shards)
 
-                    if(author?.isBot == true) return
-                    val name = author?.asTag ?: "${old.username}#${old.discriminator}"
+                    if(author?.isBot == true)
+                        return
 
                     val embed = EmbedBuilder()
-                            .setAuthor(name, null, author?.avatarUrl)
-                            .appendDescription("**A message has been deleted in ${event.textChannel.asMention} by ${author?.asMention ?: name}**\n")
-                            .setFooter("User Id: ${old.authorIdLong}")
+                            .setAuthor("Message Deleted", null, author?.effectiveAvatarUrl)
+                            .addField("Author", author?.asMention ?: "${old.username}#${old.discriminator}", true)
+                            .addField("Channel", event.textChannel.asMention, true)
+                            .setFooter("User ID: ${old.authorIdLong} | Message ID: ${event.messageId}")
+                            .setThumbnail(author?.effectiveAvatarUrl)
                             .setTimestamp(OffsetDateTime.now())
-
-                    embed.appendDescription(old.content.makeSafe(MessageEmbed.TEXT_MAX_LENGTH-embed.descriptionBuilder.length))
+                            .setColor(Color.RED)
 
                     val attachments = old.getAttachmentFiles()
-                    if(attachments.isNotEmpty()) {
-                        embed.addField("Attachments", attachments.size.toString(), false)
-                    }
+                    if(attachments.isNotEmpty())
+                        embed.addField("Attachments", attachments.size.toString(), true)
+
+                    embed.addField("Message Content", old.content.makeSafe(MessageEmbed.VALUE_MAX_LENGTH), false)
 
                     val message = tc.sendMessage(embed.build())
                     for(file in attachments) message.addFile(file)
@@ -293,9 +292,10 @@ object Listener : EventListener, ICommandManager
 
                 GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                        .setDescription("**${event.member.user.asTag}** has joined `${event.channelJoined.name}`")
+                        .setDescription("**${event.member.asMention}** has joined `${event.channelJoined.name}`")
                         .setFooter("User ID : ${event.member.idLong}")
                         .setTimestamp(OffsetDateTime.now())
+                        .setThumbnail(event.member.user.effectiveAvatarUrl)
                         .setColor(Color.GREEN)
                         .build())?.queue()
             }
@@ -329,10 +329,11 @@ object Listener : EventListener, ICommandManager
 
                 GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                        .setDescription("**${event.member.user.asTag}** has left `${event.channelLeft.name}`")
+                        .setDescription("**${event.member.user.asMention}** has left `${event.channelLeft.name}`")
                         .setFooter("User ID : ${event.member.idLong}")
                         .setTimestamp(OffsetDateTime.now())
                         .setColor(Color.RED)
+                        .setThumbnail(event.member.user.effectiveAvatarUrl)
                         .build())?.queue()
             }
 
@@ -340,10 +341,11 @@ object Listener : EventListener, ICommandManager
             {
                 GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                        .setDescription("**${event.member.user.asTag}** has switched channels: `${event.channelLeft.name}` -> `${event.channelJoined.name}`")
+                        .setDescription("**${event.member.user.asMention}** has switched channels: `${event.channelLeft.name}` -> `${event.channelJoined.name}`")
                         .setFooter("User ID : ${event.member.idLong}")
                         .setTimestamp(OffsetDateTime.now())
                         .setColor(Color.YELLOW)
+                        .setThumbnail(event.member.user.effectiveAvatarUrl)
                         .build())?.queue()
             }
 
@@ -367,6 +369,7 @@ object Listener : EventListener, ICommandManager
 
                 if(event.newStatus == JDA.Status.SHUTTING_DOWN)
                 {
+                    //TODO
                 }
             }
 
@@ -414,7 +417,7 @@ object Listener : EventListener, ICommandManager
                 val message = settings.getWelcomeMessage(event.member) ?: return
 
                 val permissions = mutableSetOf(Permission.MESSAGE_WRITE)
-                if(message.embeds.isEmpty())
+                if(message.embeds.isNotEmpty())
                     permissions.add(Permission.MESSAGE_EMBED_LINKS)
 
                 if(!event.guild.selfMember.hasPermission(permissions) || !event.guild.selfMember.hasPermission(tc, permissions))
@@ -476,14 +479,7 @@ object Listener : EventListener, ICommandManager
     fun getCachedVoiceChatTime(member: Member): Long
     {
         val time = voiceCache[Key.Type.USER_GUILD.genKey("", member.idLong, member.guild.idLong)]?.join
-        return if(time == null)
-        {
-            0L
-        }
-        else
-        {
-            Duration.between(time, OffsetDateTime.now()).seconds
-        }
+        return if(time == null) 0L else Duration.between(time, OffsetDateTime.now()).seconds
     }
 
     override fun getCommand(name: String): Command?
@@ -523,9 +519,7 @@ object Listener : EventListener, ICommandManager
         fun update(time: OffsetDateTime): Int
         {
             if(this.time.plusSeconds(secondsUntilUpdate).isAfter(time))
-            {
                 count++
-            }
             else
             {
                 count = 0
@@ -552,9 +546,8 @@ object Listener : EventListener, ICommandManager
         fun update(mute: OffsetDateTime?)
         {
             if(this.mute != null)
-            {
                 secondsMuted += Duration.between(this.mute, OffsetDateTime.now()).seconds
-            }
+
             this.mute = mute
         }
     }
