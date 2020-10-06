@@ -19,7 +19,7 @@ object QueueCommand : MusicCommand(
 {
     init
     {
-        addCommands(QueueRemoveCommand, QueueReverseCommand, QueueLoopCommand, QueueShuffleCommand, QueueMoveCommand)
+        addCommands(setOf(QueueRemoveCommand, QueueReverseCommand, QueueLoopCommand, QueueShuffleCommand, QueueMoveCommand))
     }
 
     override fun onSelfNotConnected(event: MessageReceivedEvent, args: List<String>) {

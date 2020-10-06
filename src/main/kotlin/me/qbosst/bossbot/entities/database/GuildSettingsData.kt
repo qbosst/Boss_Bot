@@ -78,9 +78,7 @@ data class GuildSettingsData private constructor(
             val obj = DataObject.fromJson(content ?: "")
             val builder = MessageBuilder()
             if(obj.hasKey("content"))
-            {
                 builder.setContent(obj.get("content").toString())
-            }
 
             if(obj.hasKey("embed"))
             {

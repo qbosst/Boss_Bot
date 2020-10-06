@@ -56,7 +56,7 @@ object Listener : EventListener, ICommandManager
     init
     {
         // Get all commands using reflection
-        val commands = loadObjects("${BossBot::class.java.`package`}.commands", Command::class.java)
+        val commands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
 
         // Add all the 'main' commands to the map
         addCommands(commands.filter { it.parent == null })

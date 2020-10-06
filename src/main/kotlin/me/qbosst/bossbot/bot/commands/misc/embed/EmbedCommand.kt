@@ -18,7 +18,7 @@ object EmbedCommand: Command(
 {
     init
     {
-        addCommands(EmbedTemplateCommand, EmbedGetCommand)
+        addCommands(setOf(EmbedTemplateCommand, EmbedGetCommand))
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)

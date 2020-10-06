@@ -15,11 +15,11 @@ object SetCommand: Command(
 
     init
     {
-        addCommands(
+        addCommands(setOf(
                 SetMessageLogsChannelCommand, SetMuteRoleCommand, SetPrefixCommand, SetSuggestionChannelCommand,
                 SetTimeZoneCommand, SetVoiceLogsChannelCommand, SetModerationLogsChannelCommand,
                 SetWelcomeChannelCommand, SetWelcomeMessageCommand
-        )
+        ))
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)

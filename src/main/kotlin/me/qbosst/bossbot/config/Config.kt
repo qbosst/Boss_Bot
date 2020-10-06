@@ -8,6 +8,9 @@ import java.io.IOException
 import java.nio.file.Files
 import kotlin.system.exitProcess
 
+/**
+ *  Object that stores config values
+ */
 object Config
 {
     private const val indentFactor = 4
@@ -16,6 +19,7 @@ object Config
 
     init
     {
+        // Creates config if it doesn't exist
         if(!config.exists())
         {
             if(config.createNewFile())
@@ -27,6 +31,8 @@ object Config
             else
                 throw IOException("A config file could not be generated.")
         }
+
+        // Validates config file
         else
         {
             val content = Files.readAllLines(config.toPath()).joinToString("")
@@ -47,6 +53,9 @@ object Config
         }
     }
 
+    /**
+     *  Re-reads contents in the config file and saves them
+     */
     fun reload(): Collection<Values>
     {
         val content = Files.readAllLines(config.toPath()).joinToString("")
@@ -55,6 +64,9 @@ object Config
         return validate()
     }
 
+    /**
+     *  Writes to the config file all the values that it should have
+     */
     private fun generate()
     {
         json = JSONObject()
@@ -65,6 +77,9 @@ object Config
         Files.write(config.toPath(), json.toString(indentFactor).toByteArray())
     }
 
+    /**
+     *  Validates the config file
+     */
     private fun validate(): Collection<Values>
     {
         val invalid = mutableSetOf<Values>()
@@ -77,6 +92,12 @@ object Config
         return invalid
     }
 
+    /**
+     *  Class that holds all the config variables
+     *
+     *  @param defaultValue The default value
+     *  @param isValid Consumer for checking if the value is valid
+     */
     enum class Values(val defaultValue: Any, val isValid: (Any?) -> Boolean = { it?.toString()?.isNotEmpty() ?: false })
     {
         DISCORD_TOKEN(""),

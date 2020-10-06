@@ -8,6 +8,9 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Instant
 
+/**
+ *  Class to keep track of member punishment data
+ */
 data class GuildPunishment (
         val targetId: Long,
         val issuerId: Long,
@@ -17,6 +20,12 @@ data class GuildPunishment (
         val type: Type
 ) {
 
+    /**
+     *  Logs a punishment to the database
+     *
+     *  @param guild The guild of which the punishment took place
+     *  @param transaction The database transaction to use to log the punishment
+     */
     fun log(guild: Guild, transaction: Transaction)
     {
         GuildPunishmentDataTable
@@ -34,11 +43,8 @@ data class GuildPunishment (
 
     fun log(guild: Guild)
     {
-        transaction {
-            log(guild, this)
-        }
+        transaction { log(guild, this) }
     }
-
 
     fun getTarget(guild: Guild): Member?
     {

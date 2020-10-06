@@ -14,7 +14,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.util.loadClasses
+import me.qbosst.bossbot.util.loadObjects
 import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Guild
@@ -43,15 +43,16 @@ class GuildMusicManager private constructor(
 
     var paused: Boolean
         get() = player.isPaused
-        set(value)
-        {
+        set(value) {
             player.isPaused = value
         }
 
     init
     {
+        // Adds listeners
         player.addListener(this)
-        loadClasses("me.qbosst.bossbot.bot.commands.music", GuildAudioEventListener::class.java).forEach { listeners.add(it) }
+        for(listener in loadObjects("${BossBot::class.java.`package`.name}.commands.music", GuildAudioEventListener::class.java))
+            listeners.add(listener)
     }
 
     fun getSendHandler(): AudioSendHandler
@@ -87,28 +88,29 @@ class GuildMusicManager private constructor(
     fun loadAndPlay(message: Message, trackUrl: String, handler: AudioLoadResultHandler =
             object : AudioLoadResultHandler
             {
-                override fun trackLoaded(track: AudioTrack) {
+                override fun trackLoaded(track: AudioTrack)
+                {
                     queue(track)
                     if(currentTrack != track)
-                    {
                         message.editMessage("Added to queue: `${track.info.title}`").queue()
-                    }
                     else
-                    {
                         message.delete().queue()
-                    }
                 }
 
-                override fun playlistLoaded(playlist: AudioPlaylist) {
-                    playlist.tracks.forEach { queue(it) }
+                override fun playlistLoaded(playlist: AudioPlaylist)
+                {
+                    for(track in playlist.tracks)
+                        queue(track)
                     message.editMessage("Added `${playlist.tracks.size}` songs from playlist `${playlist.name}`").queue()
                 }
 
-                override fun noMatches() {
+                override fun noMatches()
+                {
                     message.editMessage("I could not find anything from `${trackUrl.makeSafe()}`").queue()
                 }
 
-                override fun loadFailed(exception: FriendlyException) {
+                override fun loadFailed(exception: FriendlyException)
+                {
                     message.editMessage("Could not play track: `${exception.message}`").queue()
                 }
             })
@@ -116,12 +118,10 @@ class GuildMusicManager private constructor(
         if(lastChannelIdSent != message.channel.idLong)
         {
             if(lastMessageIdSent != 0L)
-            {
                 message.guild.getTextChannelById(lastChannelIdSent)?.deleteMessageById(lastMessageIdSent)?.queue()
                 {
                     lastMessageIdSent = 0L
                 }
-            }
             lastChannelIdSent = message.channel.idLong
         }
         playerManager.loadItemOrdered(this, trackUrl, handler)
@@ -130,9 +130,7 @@ class GuildMusicManager private constructor(
     fun queue(track: AudioTrack)
     {
         if(!player.startTrack(track, true))
-        {
             queue.offer(track)
-        }
     }
 
     fun nextTrack()
@@ -143,9 +141,8 @@ class GuildMusicManager private constructor(
     fun getQueue(includeCurrentTrack: Boolean = true): List<AudioTrack> {
         val queue = queue.toMutableList()
         if(includeCurrentTrack && currentTrack != null)
-        {
             queue.add(0, currentTrack)
-        }
+
         return queue
     }
 
@@ -171,9 +168,7 @@ class GuildMusicManager private constructor(
             val reversed = queue.reversed()
             queue.clear()
             for(track in reversed)
-            {
                 queue(track)
-            }
         }
     }
 
@@ -190,9 +185,7 @@ class GuildMusicManager private constructor(
             val shuffled = queue.shuffled()
             queue.clear()
             for(track in shuffled)
-            {
                 queue(track)
-            }
         }
     }
 
@@ -203,9 +196,7 @@ class GuildMusicManager private constructor(
             is TrackEndEvent ->
             {
                 if(event.endReason.mayStartNext)
-                {
                     nextTrack()
-                }
                 else if(event.endReason == AudioTrackEndReason.STOPPED)
                 {
                     val channel = BossBot.shards.getGuildById(guildId)?.getTextChannelById(lastChannelIdSent)
@@ -219,9 +210,7 @@ class GuildMusicManager private constructor(
                 }
 
                 if(event.endReason != AudioTrackEndReason.LOAD_FAILED && loop)
-                {
                     queue(event.track.makeClone())
-                }
             }
 
             is TrackStartEvent ->
@@ -230,9 +219,8 @@ class GuildMusicManager private constructor(
                 if(channel != null)
                 {
                     if(lastMessageIdSent != 0L)
-                    {
                         channel.deleteMessageById(lastMessageIdSent).queue({}, {})
-                    }
+
                     channel.sendMessage("Now playing: ${event.track.info.title}").queue()
                     {
                         lastMessageIdSent = it.idLong
@@ -240,7 +228,15 @@ class GuildMusicManager private constructor(
                 }
             }
         }
-        listeners.forEach { it.onEvent(event, guildId) }
+        for(listener in listeners)
+            try
+            {
+                listener.onEvent(event, guildId)
+            }
+            catch (e: Exception)
+            {
+                BossBot.LOG.error("Caught unhandled exception in music listener: $e")
+            }
     }
 
     companion object
@@ -257,9 +253,7 @@ class GuildMusicManager private constructor(
         fun get(guild: Guild): GuildMusicManager
         {
             val manager = if(map.containsKey(guild.idLong))
-            {
                 map[guild.idLong]!!
-            }
             else
             {
                 val manager = GuildMusicManager(playerManager)
@@ -273,8 +267,9 @@ class GuildMusicManager private constructor(
 
         fun remove(guild: Guild): GuildMusicManager?
         {
-            map[guild.idLong]?.player?.destroy()
-            return map.remove(guild.idLong)
+            val manager = map.remove(guild.idLong)
+            manager?.player?.destroy()
+            return manager
         }
 
         private fun getGuildId(manager: GuildMusicManager): Long

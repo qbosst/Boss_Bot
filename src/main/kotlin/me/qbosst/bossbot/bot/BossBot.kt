@@ -19,6 +19,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import javax.security.auth.login.LoginException
 
+/**
+ *  Main class for starting boss bot
+ */
 object BossBot {
 
     val LOG: Logger = LoggerFactory.getLogger(BossBot::class.java)
@@ -35,7 +38,7 @@ object BossBot {
                 password = Config.Values.DATABASE_PASSWORD.getStringOrDefault()
         )
         // Connects to discord
-        shards = connect(Config.Values.DISCORD_TOKEN.getString())
+        shards = connectDiscord(Config.Values.DISCORD_TOKEN.getString())
 
         Runtime.getRuntime().addShutdownHook(object : Thread("Boss Bot Shutdown Hook")
         {
@@ -47,7 +50,10 @@ object BossBot {
         })
     }
 
-    private fun connect(token: String?, intents: Collection<GatewayIntent> = enumValues<GatewayIntent>().toMutableSet()): ShardManager
+    /**
+     *  Used to connect the bot to discord
+     */
+    private fun connectDiscord(token: String?, intents: Collection<GatewayIntent> = enumValues<GatewayIntent>().toMutableSet()): ShardManager
     {
         if(token.isNullOrEmpty())
             throw LoginException("The token may not be null or empty!")

@@ -19,6 +19,6 @@ object SetPrefixCommand: SetStringCommand(
 
     override fun get(guild: Guild): String?
     {
-        return GuildSettingsData.get(guild).getPrefixOr(Config.Values.DEFAULT_PREFIX.getStringOrDefault())
+        return GuildSettingsData.get(guild).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
     }
 }

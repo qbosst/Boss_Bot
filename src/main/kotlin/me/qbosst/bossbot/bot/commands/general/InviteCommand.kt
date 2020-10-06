@@ -1,7 +1,8 @@
 package me.qbosst.bossbot.bot.commands.general
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.util.loadClasses
+import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -11,7 +12,7 @@ object InviteCommand : Command(
 {
     private val permissions: Collection<Permission> = kotlin.run {
         val perms = mutableListOf<Permission>()
-        loadClasses("me.qbosst.bossbot.bot.commands", Command::class.java)
+        loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
                 .map{ it.fullBotPermissions }
                 .forEach{ perms.addAll(it) }
 

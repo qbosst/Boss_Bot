@@ -33,7 +33,7 @@ object ColourCommand: Command(
 
     init
     {
-        addCommands(ColourRandomCommand, ColourBlendCommand, ColourCreateCommand, ColourRemoveCommand, ColourMixCommand)
+        addCommands(setOf(ColourRandomCommand, ColourBlendCommand, ColourCreateCommand, ColourRemoveCommand, ColourMixCommand))
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)

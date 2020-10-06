@@ -1,12 +1,14 @@
 package me.qbosst.bossbot.bot.commands.general
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.Listener
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
-import me.qbosst.bossbot.util.loadClasses
+import me.qbosst.bossbot.util.loadObjects
 import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.safeGetGuild
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -19,7 +21,7 @@ object HelpCommand: Command(
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
-    private val allCommands = loadClasses("me.qbosst.bossbot.bot.commands", Command::class.java)
+    private val allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
@@ -66,7 +68,7 @@ object HelpCommand: Command(
         var commands = allCommands.filter { it.hasPermission(if(event.isFromGuild) event.guild else null, event.author) }
         if(event.isFromGuild) commands = commands.filter { event.member!!.hasPermission(it.fullUserPermissions) }
 
-        return FieldMenuEmbed(5, commands.map { it.getHelpField(GuildSettingsData.get(if (event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.getStringOrDefault()), event.isFromGuild) }).createPage(EmbedBuilder(), page)
+        return FieldMenuEmbed(5, commands.map { it.getHelpField(GuildSettingsData.get(event.safeGetGuild()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault(), event.isFromGuild) }).createPage(EmbedBuilder(), page)
     }
 
     private fun Command.getHelpField(prefix: String, isFromGuild: Boolean): MessageEmbed.Field
@@ -83,7 +85,7 @@ object HelpCommand: Command(
                 .setTitle(fullName.split(" ".toRegex()).joinToString(" ") { it.capitalize() })
                 .appendDescription("**$description**")
 
-        val prefix = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).getPrefixOr(Config.Values.DEFAULT_PREFIX.getStringOrDefault())
+        val prefix = GuildSettingsData.get(event.safeGetGuild()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
 
         if(usage.isNotEmpty()) embed.addField("Usages", "${prefix}${usage.joinToString("\n$prefix")}", true)
         if(examples.isNotEmpty()) embed.addField("Examples", "${prefix}${examples.joinToString("\n$prefix")}", true)
