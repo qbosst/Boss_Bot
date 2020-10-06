@@ -29,22 +29,11 @@ data class GuildSettingsData private constructor(
 
         val welcome_message: JSONObject? = null,
         val zone_id: ZoneId = ZoneId.systemDefault(),
-        private val prefix: String? = null,
+        val prefix: String? = null,
 
         val requireReasonForPunish: Boolean = true
 )
 {
-    fun getPrefixOr(string: String): String {
-        return prefix ?: if(string.isEmpty())
-        {
-            throw IllegalArgumentException("Prefixes cannot be blank!")
-        }
-        else
-        {
-            string
-        }
-    }
-
     fun getSuggestionChannel(guild: Guild): TextChannel?
     {
         return guild.getTextChannelById(suggestion_channel_id)
@@ -127,13 +116,9 @@ data class GuildSettingsData private constructor(
         fun get(guild: Guild?): GuildSettingsData
         {
             if(guild == null)
-            {
                 return EMPTY
-            }
-            if(cache.contains(guild.idLong))
-            {
+            else if(cache.contains(guild.idLong))
                 return cache.get(guild.idLong)!!
-            }
             else
             {
                 val data = transaction {

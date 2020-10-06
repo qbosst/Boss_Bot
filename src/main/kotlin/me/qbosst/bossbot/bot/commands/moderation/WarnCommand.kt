@@ -10,7 +10,8 @@ object WarnCommand: ModerationCommand(
         "warn",
         userPermissions = listOf(Permission.MESSAGE_MANAGE),
         aliases = listOf("verbal")
-) {
+)
+{
     override fun getRestAction(target: Member): RestAction<*>?
     {
         return null

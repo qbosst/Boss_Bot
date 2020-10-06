@@ -7,7 +7,7 @@ import java.time.ZoneId
 
 object GuildSettingsDataTable : Table()
 {
-    val max_welcome_message_length = Message.MAX_CONTENT_LENGTH + MessageEmbed.EMBED_MAX_LENGTH_BOT
+    const val max_welcome_message_length = Message.MAX_CONTENT_LENGTH + MessageEmbed.EMBED_MAX_LENGTH_BOT
     const val max_prefix_length = 8
     private val max_zone_id_length: Int = ZoneId.getAvailableZoneIds().maxByOrNull { it.length }?.length ?: 32
 

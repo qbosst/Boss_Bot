@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
 import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.database.tables.GuildColoursDataTable
 import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.exception.ReachedMaxAmountException
 import me.qbosst.bossbot.util.assertNumber
@@ -62,28 +63,34 @@ object ColourCreateCommand: Command(
     {
         if(args.isNotEmpty())
         {
-            if(systemColours[args[0]] == null)
+            when
             {
-                try
+                args[0].length > GuildColoursDataTable.max_colour_name_length ->
                 {
-                    if(GuildColoursData.add(event.guild, args[0], colour))
+                    event.channel.sendMessage("Colour names cannot be longer than ${GuildColoursDataTable.max_colour_name_length} characters long!").queue()
+                }
+                systemColours[args[0]] == null ->
+                {
+                    try
                     {
-                        event.channel.sendMessage("${args[0].makeSafe()} has successfully been created!").queue()
+                        if(GuildColoursData.add(event.guild, args[0], colour))
+                        {
+                            event.channel.sendMessage("${args[0].makeSafe()} has successfully been created!").queue()
+                        }
+                        else
+                        {
+                            event.channel.sendMessage("${args[0].makeSafe()} already exists!").queue()
+                        }
                     }
-                    else
+                    catch (e: ReachedMaxAmountException)
                     {
-                        event.channel.sendMessage("${args[0].makeSafe()} already exists!").queue()
+                        event.channel.sendMessage("This guild has reached the max amount of colours that it can have!").queue()
                     }
                 }
-                catch (e: ReachedMaxAmountException)
+                else ->
                 {
-                    event.channel.sendMessage("This guild has reached the max amount of colours that it can have!").queue()
+                    event.channel.sendMessage("${args[0].makeSafe()} is a system default colour and cannot be modified.").queue()
                 }
-            }
-            else
-            {
-                event.channel.sendMessage("${args[0].makeSafe()} is a system default colour and cannot be modified.").queue()
-                return
             }
         }
         else

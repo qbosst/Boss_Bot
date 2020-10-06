@@ -5,6 +5,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.Listener
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.dateTimeFormatter
+import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
@@ -46,21 +47,11 @@ object DebugCommand : DeveloperCommand(
                 {
                     val sw = StringWriter()
                     e.printStackTrace(PrintWriter(sw))
-                    var exception = "Caught Exception: ```$sw```"
-                    exception = if(exception.length > Message.MAX_CONTENT_LENGTH)
-                    {
-                        val msg = "...\nCheck console for full details```"
-                        exception.substring(0, Message.MAX_CONTENT_LENGTH - msg.length) + msg
-                    }
-                    else exception
-
-                    event.channel.sendMessage(exception).queue()
+                    event.channel.sendMessage("Caught Exception: ```$sw```".makeSafe(Message.MAX_CONTENT_LENGTH)).queue()
                 }
             }
             else
-            {
                 event.channel.sendMessage("Could not find command `${args[0]}`").queue()
-            }
         }
         else
         {

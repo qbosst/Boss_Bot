@@ -18,22 +18,23 @@ import java.time.OffsetDateTime
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import javax.security.auth.login.LoginException
-import kotlin.system.exitProcess
 
 object BossBot {
 
-    val LOG: Logger = LoggerFactory.getLogger(BossBot.javaClass)
+    val LOG: Logger = LoggerFactory.getLogger(BossBot::class.java)
     val shards: ShardManager
     val startUp: OffsetDateTime = OffsetDateTime.now()
     val threadpool: ScheduledExecutorService = Executors.newScheduledThreadPool(Config.Values.THREADPOOL_SIZE.getIntOrDefault())
 
     init
     {
+        // Connects to the database
         Database.connect(
                 host = Config.Values.DATABASE_URL.getStringOrDefault(),
                 user = Config.Values.DATABASE_USER.getStringOrDefault(),
                 password = Config.Values.DATABASE_PASSWORD.getStringOrDefault()
         )
+        // Connects to discord
         shards = connect(Config.Values.DISCORD_TOKEN.getString())
 
         Runtime.getRuntime().addShutdownHook(object : Thread("Boss Bot Shutdown Hook")
@@ -52,7 +53,11 @@ object BossBot {
             throw LoginException("The token may not be null or empty!")
         else
         {
-            for(x in 0..5)
+            var exception = Throwable("Could not login to discord.")
+            val range = 0..5
+
+            // Attempts to return ShardManager a few times before throwing exception if unsuccessful.
+            for(x in range)
             {
                 try
                 {
@@ -66,6 +71,10 @@ object BossBot {
                 }
                 catch (e: Exception)
                 {
+                    exception = e
+                    if(range.last == x)
+                        break
+
                     LOG.error("Caught Exception: $e")
                     runBlocking()
                     {
@@ -73,7 +82,7 @@ object BossBot {
                     }
                 }
             }
-            exitProcess(0)
+            throw exception
         }
     }
 }

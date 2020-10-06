@@ -10,7 +10,8 @@ object KickCommand: ModerationCommand(
         "kick",
         userPermissions = listOf(Permission.KICK_MEMBERS),
         botPermissions = listOf(Permission.KICK_MEMBERS)
-) {
+)
+{
     override fun getRestAction(target: Member): RestAction<*>
     {
         return target.kick()
