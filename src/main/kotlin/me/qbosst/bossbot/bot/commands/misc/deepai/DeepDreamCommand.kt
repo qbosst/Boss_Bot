@@ -1,52 +1,39 @@
 package me.qbosst.bossbot.bot.commands.misc.deepai
 
-import me.qbosst.bossbot.util.getMemberByString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.apache.http.NameValuePair
-import org.apache.http.message.BasicNameValuePair
 import org.json.JSONObject
-import java.util.concurrent.CompletableFuture
 
-object DeepDreamCommand: DeepaiCommand(
+object DeepDreamCommand: DeepAiCommand(
         "deepdream",
-        url = "https://api.deepai.org/api/deepdream",
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
-) {
-    override fun execute(event: MessageReceivedEvent, json: CompletableFuture<JSONObject>)
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        url = "https://api.deepai.org/api/deepdream"
+)
+{
+    override fun execute(event: MessageReceivedEvent, json: JSONObject)
     {
-        json.thenAccept {
-            val newUrl: String = when
-            {
-                it.has("output_url") -> it.getString("output_url")
-                else ->
-                {
-                    event.channel.sendMessage("An error has occurred...").queue()
-                    return@thenAccept
-                }
-            }
-            event.channel.sendMessage(EmbedBuilder().setImage(newUrl).build()).queue()
-        }
+        // Checks if json includes an output url, if so this is the url to the processed image.
+        if(json.has("output_url"))
+            event.channel.sendMessage(EmbedBuilder()
+                    .setImage(json.getString("output_url"))
+                    .build()).queue()
+        else
+            event.channel.sendMessage("Could not deep-dream image; I have not received the new image :(").queue()
     }
 
-    override fun getParameters(event: MessageReceivedEvent, args: List<String>): List<NameValuePair>
+    override fun getParameters(event: MessageReceivedEvent, args: List<String>): Map<String, String>?
     {
-        val url = if(args.isNotEmpty())
-        {
-            val target = event.guild.getMemberByString(args[0])
-            if(target != null) target.user.avatarUrl + "?size=256" else args[0]
-        }
-        else if(event.message.attachments.getOrNull(0)?.isImage == true)
-        {
-            event.message.attachments[0].url
-        }
-        else
-        {
-            event.channel.sendMessage("Please attach an image or a specify a url link!").queue()
-            return listOf()
-        }
+        // Gets the url for the image to process, null if no url was given
+        val url = event.message.attachments.firstOrNull { it.isImage}?.url ?:
+                event.message.mentionedMembers.firstOrNull()?.user?.effectiveAvatarUrl?.plus("?size=256") ?:
+                if(args.isNotEmpty()) args.joinToString(" ") else null
 
-        return listOf(BasicNameValuePair("image", url))
+        return if(url != null)
+            mapOf(Pair("image", url))
+        else {
+            event.channel.sendMessage("Please provide a valid url for the picture you want to process").queue()
+            null
+        }
     }
 }

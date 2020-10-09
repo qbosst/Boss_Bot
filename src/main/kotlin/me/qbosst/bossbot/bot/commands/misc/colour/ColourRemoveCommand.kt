@@ -10,24 +10,25 @@ object ColourRemoveCommand: Command(
         "remove",
         "Removes a custom guild colour",
         usage = listOf("<name>"),
-        userPermissions = listOf(Permission.MANAGE_EMOTES, Permission.MANAGE_SERVER)
-) {
+        userPermissions = listOf(Permission.MANAGE_EMOTES, Permission.MANAGE_SERVER),
+        guildOnly = true
+)
+{
+
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         if(args.isNotEmpty())
         {
-            if(GuildColoursData.remove(event.guild, args[0]))
-            {
-                event.channel.sendMessage("successfully removed ${args[0].makeSafe()}").queue()
-            }
+            // Name of colour
+            val name = args[0]
+
+            // Tries to remove colour from database.
+            if(GuildColoursData.remove(event.guild, name))
+                event.channel.sendMessage("Successfully removed `${name.makeSafe()}`").queue()
             else
-            {
-                event.channel.sendMessage("could not find ${args[0].makeSafe()}").queue()
-            }
+                event.channel.sendMessage("There is no colour in this guild named `${name.makeSafe()}`").queue()
         }
         else
-        {
             event.channel.sendMessage("Please provide the name of the colour you would like to remove.").queue()
-        }
     }
 }

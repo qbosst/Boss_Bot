@@ -4,10 +4,11 @@ import org.jetbrains.exposed.sql.Table
 
 object GuildColoursDataTable: Table()
 {
-    const val max_colour_name_length = 32
+    const val MAX_COLOUR_NAME_LENGTH = 32
+    const val MAX_COLOURS_PER_GUILD = 100
 
     val guild_id = long("GUILD_ID").default(0L)
-    val name = varchar("COLOUR_NAME", max_colour_name_length)
+    val name = varchar("COLOUR_NAME", MAX_COLOUR_NAME_LENGTH)
     val red = integer("RED").default(255)
     val green = integer("GREEN").default(255)
     val blue = integer("BLUE").default(255)

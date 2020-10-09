@@ -6,9 +6,9 @@ import me.qbosst.bossbot.bot.listeners.Listener
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
+import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.loadObjects
 import me.qbosst.bossbot.util.makeSafe
-import me.qbosst.bossbot.util.safeGetGuild
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -68,7 +68,7 @@ object HelpCommand: Command(
         var commands = allCommands.filter { it.hasPermission(if(event.isFromGuild) event.guild else null, event.author) }
         if(event.isFromGuild) commands = commands.filter { event.member!!.hasPermission(it.fullUserPermissions) }
 
-        return FieldMenuEmbed(5, commands.map { it.getHelpField(GuildSettingsData.get(event.safeGetGuild()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault(), event.isFromGuild) }).createPage(EmbedBuilder(), page)
+        return FieldMenuEmbed(5, commands.map { it.getHelpField(GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault(), event.isFromGuild) }).createPage(EmbedBuilder(), page)
     }
 
     private fun Command.getHelpField(prefix: String, isFromGuild: Boolean): MessageEmbed.Field
@@ -85,20 +85,29 @@ object HelpCommand: Command(
                 .setTitle(fullName.split(" ".toRegex()).joinToString(" ") { it.capitalize() })
                 .appendDescription("**$description**")
 
-        val prefix = GuildSettingsData.get(event.safeGetGuild()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+        val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
 
-        if(usage.isNotEmpty()) embed.addField("Usages", "${prefix}${usage.joinToString("\n$prefix")}", true)
-        if(examples.isNotEmpty()) embed.addField("Examples", "${prefix}${examples.joinToString("\n$prefix")}", true)
+        if(usage.isNotEmpty())
+            embed.addField("Usages", "${prefix}${usage.joinToString("\n$prefix")}", true)
+        if(examples.isNotEmpty())
+            embed.addField("Examples", "${prefix}${examples.joinToString("\n$prefix")}", true)
+
         val children = getCommands()
                 .filter { it.hasPermission(if(event.isFromGuild) event.guild else null, event.author) }
                 .filter { if(event.isFromGuild) event.member!!.hasPermission(fullUserPermissions) else true }
 
-        if(children.isNotEmpty()) embed.addField("Sub Commands", "`${children.joinToString("`, `") { it.name }}`", true)
+        if(children.isNotEmpty())
+            embed.addField("Sub Commands", "`${children.joinToString("`, `") { it.name }}`", true)
 
-        if(aliases.isNotEmpty()) embed.setFooter("Aliases : ${aliases.joinToString(", ") { it.capitalize() }}")
+        if(aliases.isNotEmpty())
+            embed.setFooter("Aliases : ${aliases.joinToString(", ") { it.capitalize() }}")
 
-        if(fullUserPermissions.isNotEmpty()) embed.addField("User Permissions", "`${fullUserPermissions.joinToString("`, `")}`", true)
-        if(fullBotPermissions.isNotEmpty()) embed.addField("Bot Permissions", "`${fullBotPermissions.joinToString(", ")}`", true)
+        if(fullUserPermissions.isNotEmpty())
+            embed.addField("User Permissions", "`${fullUserPermissions.joinToString("`, `")}`", true)
+        if(fullBotPermissions.isNotEmpty())
+            embed.addField("Bot Permissions", "`${fullBotPermissions.joinToString("`, `")}`", true)
+
+        embed.setColor(event.getGuildOrNull()?.selfMember?.color)
 
         return embed.build()
     }

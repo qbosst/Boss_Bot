@@ -8,15 +8,19 @@ import me.qbosst.bossbot.util.makeSafe
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.awt.Color
 import kotlin.random.Random
 
 object AvatarCommand: Command(
         "avatar",
-        aliases = listOf("av")
-) {
+        "Displays a user's avatar",
+        aliases = listOf("av"),
+        guildOnly = false
+)
+{
+    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    {
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>) {
+        // Gets the user
         val target: User = if(args.isNotEmpty())
         {
             val arguments = args.joinToString(" ")
@@ -24,17 +28,15 @@ object AvatarCommand: Command(
                 event.channel.sendMessage("I could not find anyone by the id or tag of `${arguments.makeSafe()}`").queue()
                 return
             }
-        } else event.author
+        } else
+            event.author
 
-        event.channel.sendMessage(avatarEmbed(target, if(event.isFromGuild) event.guild.selfMember.color else Random.nextColour()).build()).queue()
-    }
-
-    private fun avatarEmbed(user: User, colour: Color?): EmbedBuilder
-    {
-        return EmbedBuilder()
-                .setDescription("[${user.asTag}](${user.avatarUrl})")
-                .setImage(user.avatarUrl + "?size=256")
-                .setColor(colour)
+        // Sends the avatar
+        event.channel.sendMessage(EmbedBuilder()
+                .setDescription("[${target.asTag}](${target.effectiveAvatarUrl})")
+                .setImage(target.effectiveAvatarUrl + "?size=256")
+                .setColor(if(event.isFromGuild) event.guild.selfMember.color else Random.nextColour())
+                .build()).queue()
     }
 
 }

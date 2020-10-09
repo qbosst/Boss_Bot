@@ -6,8 +6,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object PingCommand : Command(
         "ping",
         "Checks bot's ping"
-) {
-
+)
+{
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         val ping = System.currentTimeMillis()

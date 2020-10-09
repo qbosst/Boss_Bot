@@ -57,6 +57,7 @@ object Listener : EventListener, ICommandManager
     {
         // Get all commands using reflection
         val commands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
+        BossBot.LOG.debug("Found ${commands.size} commands: ${commands.joinToString(", ") { it.fullName }}")
 
         // Add all the 'main' commands to the map
         addCommands(commands.filter { it.parent == null })
@@ -78,7 +79,7 @@ object Listener : EventListener, ICommandManager
             }
             catch (e: Exception)
             {
-                BossBot.LOG.error("Caught unhandled exception in one of the command listeners: $e")
+                BossBot.LOG.error("Caught unhandled exception in one of the command listeners", e)
             }
     }
     
@@ -102,7 +103,7 @@ object Listener : EventListener, ICommandManager
 
     private fun onMessageReceivedEvent(event: MessageReceivedEvent)
     {
-        val settings = GuildSettingsData.get(event.safeGetGuild())
+        val settings = GuildSettingsData.get(event.getGuildOrNull())
 
         if(event.isFromGuild)
         {
@@ -126,12 +127,12 @@ object Listener : EventListener, ICommandManager
             }
         }
 
-        if(event.author.isBot || event.isWebhookMessage)
+        if(event.author.isBot || (event.isFromGuild && event.member == null))
             onNonCommandEvent(event, settings)
         else
         {
             val content = event.message.contentRaw
-            val prefix = GuildSettingsData.get(event.safeGetGuild()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+            val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
 
             // Checks if the message starts with the bots prefix (checks if message is command)
             if(content.startsWith(prefix) && content.length > prefix.length)
@@ -158,18 +159,18 @@ object Listener : EventListener, ICommandManager
                     command = command!!
 
                     // Checks permissions
-                    if(!command.hasPermission(event.safeGetGuild(), event.author))
+                    if(!command.hasPermission(event.getGuildOrNull(), event.author))
                         event.channel.sendMessage("You do not have permission for this command!").queue()
 
-                    else if(event.isFromGuild && (!event.guild.selfMember.hasPermission(command.fullBotPermissions) || !event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions)))
+                    else if(event.isFromGuild && !(event.guild.selfMember.hasPermission(command.fullBotPermissions) || event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions)))
                         if(event.guild.selfMember.hasPermission(event.textChannel, Permission.MESSAGE_WRITE))
                             event.channel.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").queue()
                         else
                             event.author.openPrivateChannel().submit()
                                     .thenCompose { it.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").submit() }
 
-                    else if(event.isFromGuild && (!event.member!!.hasPermission(command.fullUserPermissions) || !event.member!!.hasPermission(event.textChannel, command.fullUserPermissions)))
-                        event.channel.sendMessage("You do not have permission for this command!")
+                    else if(event.isFromGuild && !(event.member!!.hasPermission(command.fullUserPermissions) || event.member!!.hasPermission(event.textChannel, command.fullUserPermissions)))
+                        event.channel.sendMessage("You do not have permission for this command!").queue()
 
                     else if(command.guildOnly && !event.isFromGuild)
                         event.channel.sendMessage("This command is a guild-only command!").queue()
@@ -182,7 +183,7 @@ object Listener : EventListener, ICommandManager
                         }
                         catch (e: Throwable)
                         {
-                            BossBot.LOG.error("An unhandled exception has occurred while trying to execute a command: $e")
+                            BossBot.LOG.error("An unhandled exception has occurred while trying to execute a command", e)
                             if(event.isFromGuild && event.guild.selfMember.hasPermission(event.textChannel, listOf(Permission.MESSAGE_WRITE)))
                                 event.channel.sendMessage("An error has occurred... The developer has been informed").queue()
                         }
@@ -261,7 +262,13 @@ object Listener : EventListener, ICommandManager
                 }
             }
             else
-                textChannel.sendMessage("A message has been deleted.").queue()
+                textChannel.sendMessage(EmbedBuilder()
+                        .setColor(Color.RED)
+                        .setDescription("A message has been deleted.")
+                        .addField("Channel", event.textChannel.asMention, true)
+                        .setTimestamp(OffsetDateTime.now())
+                        .build()
+                ).queue()
         }
     }
 
@@ -294,9 +301,8 @@ object Listener : EventListener, ICommandManager
             val stats = voiceCache.remove(key) ?: return
             val now = OffsetDateTime.now()
             if(event.voiceState.isMuted)
-            {
                 stats.update(now)
-            }
+
             val total = Duration.between(stats.join, now).seconds
             val loop: Long = (total - stats.secondsMuted) / seconds_until_eligible
 
@@ -393,7 +399,7 @@ object Listener : EventListener, ICommandManager
         }
     }
 
-    private fun onNonCommandEvent(event: MessageReceivedEvent, settings: GuildSettingsData = GuildSettingsData.get(event.safeGetGuild()))
+    private fun onNonCommandEvent(event: MessageReceivedEvent, settings: GuildSettingsData = GuildSettingsData.get(event.getGuildOrNull()))
     {
         // Ignore bot input
         if(event.author.isBot)

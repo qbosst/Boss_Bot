@@ -10,7 +10,6 @@ object BanCommand: ModerationCommand(
         "ban",
         userPermissions = listOf(Permission.BAN_MEMBERS),
         botPermissions = listOf(Permission.BAN_MEMBERS)
-
 )
 {
     override fun getRestAction(target: Member): RestAction<*>

@@ -5,8 +5,10 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object `8BallCommand` : Command(
         "8ball",
+        "Asks 8ball something :flushed:",
         guildOnly = false
-){
+)
+{
     private val responses = listOf(
             "As I see it, yes.",
             "Ask again later.",
@@ -30,14 +32,11 @@ object `8BallCommand` : Command(
             "You may rely on it."
     )
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>) {
+    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    {
         if(args.isNotEmpty())
-        {
             event.channel.sendMessage(responses.random()).queue()
-        }
         else
-        {
             event.channel.sendMessage("Ask your question.").queue()
-        }
     }
 }

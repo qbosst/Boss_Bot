@@ -19,47 +19,61 @@ object ColoursCommand: Command(
     guildOnly = false,
     botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 ) {
+    private const val MAX_COLOURS_PER_PAGE = 12
+
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         var index = 0
-        val colours: Map<String, Colour> = if(args.isNotEmpty())
+
+        // Gets the list of colours that should be displayed in the message
+        val colours: Map<String, Colour> = if(args.isNotEmpty()) when
         {
-            when
+            // Specifies that only guild custom colours should be shown on the menu
+            args[0].toLowerCase() == "guild" ->
             {
-                args[0].toLowerCase() == "guild" ->
-                {
-                    index++;
-                    GuildColoursData.get(event.guild).clone()
-                }
-                args[0].toLowerCase() == "system" ->
-                {
-                    index++;
-                    systemColours
-                }
-                args[0].toIntOrNull() != null -> GuildColoursData.get(event.guild).clone().plus(systemColours)
-                else ->
-                {
-                    event.channel.sendMessage("${args[0].makeSafe()} is not a valid page number").queue()
-                    return
-                }
+                index++;
+                GuildColoursData.get(event.guild).clone()
+            }
+            // Specifies that only system colours should be shown
+            args[0].toLowerCase() == "system" ->
+            {
+                index++;
+                systemColours
+            }
+            args[0].toIntOrNull() != null -> GuildColoursData.get(event.guild).clone().plus(systemColours)
+            else ->
+            {
+                event.channel.sendMessage("${args[0].makeSafe()} is not a valid page number").queue()
+                return
             }
         }
-        else GuildColoursData.get(event.guild).clone().plus(systemColours)
-
-        val page = if(args.size > index) if(args[index].toIntOrNull() != null) args[index].toInt()
+        // If no arguments were given, both system colours and guild colours will be shown
         else
-        {
-            event.channel.sendMessage("${args[index].makeSafe()} is not a valid page number").queue()
-            return
-        } else 0
+            GuildColoursData.get(event.guild).clone().plus(systemColours)
 
-        val menu = FieldMenuEmbed(12, colours.keys.map { toField(it, colours.getValue(it)) })
+        // Gets the page number of the menu
+        val page =
+                if(args.size > index)
+                    if(args[index].toIntOrNull() != null)
+                        args[index].toInt()
+                    else
+                    {
+                        event.channel.sendMessage("${args[index].makeSafe()} is not a valid page number").queue()
+                        return
+                    }
+                else
+                    0
+
+        // Creates and sends the menu
+        val menu = FieldMenuEmbed(MAX_COLOURS_PER_PAGE, colours.map { it.toField() })
         event.channel.sendMessage(menu.createPage(EmbedBuilder(), page).build()).queue()
-
     }
 
-    private fun toField(name: String, colour: Colour): MessageEmbed.Field
+    /**
+     *  Converts an entry of <string, colour> to a message embed field.
+     */
+    private fun Map.Entry<String, Colour>.toField(): MessageEmbed.Field
     {
-        return MessageEmbed.Field(name, colour.red.toHex() + colour.green.toHex() + colour.blue.toHex(), true)
+        return MessageEmbed.Field(key, value.red.toHex() + value.green.toHex() + value.blue.toHex(), true)
     }
 }

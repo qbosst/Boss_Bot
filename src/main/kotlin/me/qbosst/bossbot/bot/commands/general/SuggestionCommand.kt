@@ -27,31 +27,31 @@ object SuggestionCommand: Command(
 ), EventListener
 {
 
-    private const val seconds_until_next_edit = 20L
-    private const val max_suggestion_length = 512
+    private const val SECONDS_UNTIL_NEXT_EDIT = 20L
+    private const val MAX_SUGGESTION_LENGTH = 512
 
     private val rateLimiter = FixedCache<Long, SuggestionPair>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
+        // Gets the guild's suggestion channel
         val tc = GuildSettingsData.get(event.guild).getSuggestionChannel(event.guild)
+
+        // Checks to see if there is a suggestion channel
         if(tc == null)
-        {
             event.channel.sendMessage("This guild does not have a suggestion channel setup!").queue()
-        }
+
+        // Checks to see if bot has permissions for the suggestion channel
         else if(!event.guild.selfMember.hasPermission(tc, fullBotPermissions))
-        {
             event.channel.sendMessage("I need the following permissions on ${tc.asMention}; `${fullBotPermissions.joinToString("`, `")}`")
-        }
+
+        // Gets suggestion and posts it to suggestion channel
         else if(args.isNotEmpty())
         {
             val suggestion = args.joinToString(" ")
-            if(suggestion.length > max_suggestion_length)
-            {
-                event.channel.sendMessage("Your suggestion is too long, please shorten it down to a maximum of $max_suggestion_length characters.").queue()
-            }
+            if(suggestion.length > MAX_SUGGESTION_LENGTH)
+                event.channel.sendMessage("Your suggestion is too long, please shorten it down to a maximum of $MAX_SUGGESTION_LENGTH characters.").queue()
             else
-            {
                 tc.sendMessage(suggestEmbed(event.member!!, args.joinToString(" ")).build()).queue {
                     it.addReaction(THUMBS_UP).queue()
                     it.addReaction(THUMBS_DOWN).queue()
@@ -59,12 +59,9 @@ object SuggestionCommand: Command(
                     event.message.delete().queue()
                     event.channel.sendMessage("Your suggestion has been posted!").queue()
                 }
-            }
         }
         else
-        {
             event.channel.sendMessage("Please provide your suggestion.").queue()
-        }
     }
 
     override fun onEvent(event: GenericEvent)
@@ -75,9 +72,7 @@ object SuggestionCommand: Command(
             {
                 // This will make sure that the bot doesn't respond to it's own reactions
                 if(event.user == null || event.user!!.isBot)
-                {
                     return
-                }
 
                 // This checks if the reaction was made in the guild's suggestion channel and the reaction is a thumbs up or down
                 else if(listOf(THUMBS_UP, THUMBS_DOWN).contains(event.reactionEmote.name))
@@ -89,10 +84,8 @@ object SuggestionCommand: Command(
                      */
 
                     // This checks when this suggestion was last edited, if it's after the minimum wait time it will change instantly
-                    if(!rateLimiter.contains(event.messageIdLong) || rateLimiter.get(event.messageIdLong)!!.lastEdit.plusSeconds(seconds_until_next_edit).isBefore(OffsetDateTime.now()))
-                    {
+                    if(!rateLimiter.contains(event.messageIdLong) || rateLimiter.get(event.messageIdLong)!!.lastEdit.plusSeconds(SECONDS_UNTIL_NEXT_EDIT).isBefore(OffsetDateTime.now()))
                         editEmbed(event)
-                    }
 
                     // This checks if the change is already scheduled, if not it will schedule a change after the wait time is finished
                     else if(!rateLimiter.get(event.messageIdLong)!!.isScheduled)
@@ -101,40 +94,32 @@ object SuggestionCommand: Command(
                                 {
                                     editEmbed(event)
                                 },
-                                Duration.between(OffsetDateTime.now(), rateLimiter.get(event.messageIdLong)!!.lastEdit.plusSeconds(seconds_until_next_edit)).seconds, TimeUnit.SECONDS)
+                                Duration.between(OffsetDateTime.now(), rateLimiter.get(event.messageIdLong)!!.lastEdit.plusSeconds(SECONDS_UNTIL_NEXT_EDIT)).seconds, TimeUnit.SECONDS)
                         rateLimiter.get(event.messageIdLong)!!.isScheduled = true
                     }
+                    // This is invoked when the cool-down is active
                     else
                     {
                         //println("gotta wait another ${Duration.between(OffsetDateTime.now(), lastEdit[event.messageIdLong]!!.lastEdit.plusSeconds(seconds_until_next_edit)).seconds}")
                     }
                 }
-                else if(event.member?.isOwner == true)
+                else if(event.member?.isOwner == true && listOf(TICK, CROSS).contains(event.reactionEmote.name))
                 {
-                    if(listOf(TICK, CROSS).contains(event.reactionEmote.name))
-                    {
-                        event.channel.retrieveMessageById(event.messageIdLong).queue()
-                        { message ->
-                            if(isSuggestionEmbed(message))
-                            {
-                                val user = BossBot.shards.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
-                                if(user != null)
+                    event.channel.retrieveMessageById(event.messageIdLong).queue()
+                    { message ->
+                        if(isSuggestionEmbed(message))
+                        {
+                            val user = BossBot.shards.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
+                            if(user != null)
+                                message.delete().queue()
                                 {
-                                    message.delete().queue()
-                                    {
-                                        val sb = StringBuilder("You suggestion of `${message.embeds[0].description!!}` has been ")
-                                        if(event.reactionEmote.name == TICK)
-                                        {
-                                            sb.append("accepted.")
-                                        }
-                                        else
-                                        {
-                                            sb.append("declined.")
-                                        }
-                                        user.openPrivateChannel().flatMap { it.sendMessage(sb) }.queue()
-                                    }
+                                    val sb = StringBuilder("You suggestion of `${message.embeds[0].description!!}` has been ")
+                                    if(event.reactionEmote.name == TICK)
+                                        sb.append("accepted.")
+                                    else
+                                        sb.append("declined.")
+                                    user.openPrivateChannel().flatMap { it.sendMessage(sb) }.queue()
                                 }
-                            }
                         }
                     }
                 }

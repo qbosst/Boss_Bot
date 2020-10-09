@@ -2,7 +2,6 @@ package me.qbosst.bossbot.entities.database
 
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.GuildColoursDataTable
-import me.qbosst.bossbot.exception.ReachedMaxAmountException
 import me.qbosst.bossbot.util.FixedCache
 import net.dv8tion.jda.api.entities.Guild
 import org.jetbrains.exposed.sql.*
@@ -184,8 +183,6 @@ data class GuildColoursData private constructor(
          *  @param name the name of the custom colour
          *  @param colour the colour
          *
-         *  @throws ReachedMaxAmountException Throws this exception if the guild has reached the maximum amount of colours it can have
-         *
          *  @return returns whether the colour was added or not.
          */
         fun add(guild: Guild, name: String, colour: Colour): Boolean
@@ -197,12 +194,8 @@ data class GuildColoursData private constructor(
                         .select { GuildColoursDataTable.guild_id.eq(guild.idLong) }
                         .map { it[GuildColoursDataTable.name].toLowerCase() }
 
-                // Checks if guild has reached the maximum amount of colours it can have
-                if(names.size > 100)
-                    throw ReachedMaxAmountException("This guild has reached the max amount of colours it can have!")
-
                 // If a custom colour does not already exist with this colour, insert it into the database and invalidate cache
-                else if(!names.contains(name.toLowerCase()))
+                if(!names.contains(name.toLowerCase()))
                 {
                     GuildColoursDataTable
                             .insert {
