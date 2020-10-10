@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.GenericEvent
@@ -132,7 +133,7 @@ object Listener : EventListener, ICommandManager
         else
         {
             val content = event.message.contentRaw
-            val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+            val prefix = settings.prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
 
             // Checks if the message starts with the bots prefix (checks if message is command)
             if(content.startsWith(prefix) && content.length > prefix.length)
@@ -185,7 +186,7 @@ object Listener : EventListener, ICommandManager
                         {
                             BossBot.LOG.error("An unhandled exception has occurred while trying to execute a command", e)
                             if(event.isFromGuild && event.guild.selfMember.hasPermission(event.textChannel, listOf(Permission.MESSAGE_WRITE)))
-                                event.channel.sendMessage("An error has occurred... The developer has been informed").queue()
+                                event.channel.sendMessage("An error has occurred...").queue()
                         }
                 }
                 else
@@ -210,8 +211,8 @@ object Listener : EventListener, ICommandManager
                             .setAuthor("Message Edited", event.message.jumpUrl, event.author.effectiveAvatarUrl)
                             .setThumbnail(event.author.avatarUrl)
                             .setDescription("**Author**: ${event.author.asMention}\n**Channel**:${event.textChannel.asMention}\n[Jump to Message](${event.message.jumpUrl})")
-                            .addField("Message Content Before", old?.content?.makeSafe(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
-                            .addField("Message Content After", event.message.contentRaw.makeSafe(MessageEmbed.VALUE_MAX_LENGTH), false)
+                            .addField("Message Content Before", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
+                            .addField("Message Content After", event.message.contentRaw.maxLength(MessageEmbed.VALUE_MAX_LENGTH), false)
                             .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.message.idLong}")
                             .setThumbnail(event.author.effectiveAvatarUrl)
                             .setTimestamp(event.message.timeEdited)
@@ -247,7 +248,7 @@ object Listener : EventListener, ICommandManager
                 val attachments = old.getAttachmentFiles()
                 if(attachments.isNotEmpty())
                     embed.addField("Attachments", attachments.size.toString(), true)
-                embed.addField("Message Content", old.content.makeSafe(MessageEmbed.VALUE_MAX_LENGTH), false)
+                embed.addField("Message Content", old.content.maxLength(MessageEmbed.VALUE_MAX_LENGTH), false)
 
                 val message = textChannel.sendMessage(embed.build())
 
@@ -360,10 +361,20 @@ object Listener : EventListener, ICommandManager
         when(event.newStatus)
         {
             // Sets the status for the jda when the it is finished loading
-            JDA.Status.CONNECTED -> event.jda.presence.setPresence(
-                    OnlineStatus.ONLINE,
-                    Activity.of(Activity.ActivityType.DEFAULT, "${Config.Values.DEFAULT_PREFIX.getStringOrDefault()}help")
-            )
+            JDA.Status.CONNECTED ->
+            {
+                event.jda.presence.setPresence(
+                        OnlineStatus.ONLINE,
+                        Activity.of(Activity.ActivityType.DEFAULT, "${Config.Values.DEFAULT_PREFIX.getStringOrDefault()}help")
+                )
+
+                // Adds all the members in vc in a guild to the voice cache to log stats
+                for(guild in event.jda.guilds)
+                    for(vc in guild.voiceChannels)
+                        for(member in vc.members)
+                            if(member.voiceState != null)
+                                voiceCache[Key.Type.USER_GUILD.genKey("", member.idLong, guild.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), member.voiceState!!.isMuted)
+            }
         }
     }
 
@@ -412,7 +423,7 @@ object Listener : EventListener, ICommandManager
             event.channel.sendMessage("My prefix is `${prefix}`!").queue()
         }
 
-        if(event.isFromGuild && !event.isWebhookMessage)
+        if(event.isFromGuild && event.member != null)
         {
             val key = Key.Type.USER_GUILD.genKey("", event.author.idLong, event.guild.idLong)
             if(textTimerCache.get(key)?.plusSeconds(seconds_until_eligible)?.isBefore(event.message.timeCreated) != false)
@@ -429,7 +440,7 @@ object Listener : EventListener, ICommandManager
                     }
                 }
 
-                // Update stats
+                // Update user stats
                 GuildUserData.update(event.member!!,
                         { insert ->
                             insert[GuildUserDataTable.experience] = xp_to_give
@@ -445,15 +456,25 @@ object Listener : EventListener, ICommandManager
         }
     }
 
+    fun getCachedMessageCount(guild: Guild, userId: Long): Int
+    {
+        return textCounterCache.get(Key.Type.USER_GUILD.genKey("", userId, guild.idLong)) ?: 0
+    }
+
     fun getCachedMessageCount(member: Member): Int
     {
-        return textCounterCache.get(Key.Type.USER_GUILD.genKey("", member.idLong, member.guild.idLong)) ?: 0
+        return getCachedMessageCount(member.guild, member.idLong)
+    }
+
+    fun getCachedVoiceChatTime(guild: Guild, userId: Long): Long
+    {
+        val time = voiceCache[Key.Type.USER_GUILD.genKey("", userId, guild.idLong)]?.join
+        return if(time != null) Duration.between(time, OffsetDateTime.now()).seconds else 0
     }
 
     fun getCachedVoiceChatTime(member: Member): Long
     {
-        val time = voiceCache[Key.Type.USER_GUILD.genKey("", member.idLong, member.guild.idLong)]?.join
-        return if(time != null) Duration.between(time, OffsetDateTime.now()).seconds else 0
+        return getCachedVoiceChatTime(member.guild, member.idLong)
     }
 
     override fun getCommand(name: String): Command?

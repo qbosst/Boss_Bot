@@ -13,7 +13,8 @@ import net.dv8tion.jda.internal.entities.EntityBuilder
 object EmbedCommand: Command(
         "embed",
         "Creates an embed based on json",
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        guildOnly = false
 )
 {
     init

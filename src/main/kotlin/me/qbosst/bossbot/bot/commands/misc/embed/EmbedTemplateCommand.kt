@@ -12,10 +12,12 @@ import kotlin.random.Random
 
 object EmbedTemplateCommand : Command(
         "template",
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS)
+        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS),
+        guildOnly = false
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>) {
+    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    {
         event.channel.sendFile(JSONObject(createTemplate(event.author).decodeToString()).toString(4).toByteArray(), "template.json").queue()
     }
 
@@ -36,16 +38,10 @@ object EmbedTemplateCommand : Command(
                         "This is the value of the first field!",
                         true
                 )
-                .addBlankField(true)
                 .addField(
-                        "Third",
-                        "This is the value of the third field! The one before is an empty field!",
+                        "Second",
+                        "This is the value of the second field!",
                         true
-                )
-                .addField(
-                        "Fourth",
-                        "This is the value of the fourth field!",
-                        false
                 )
                 .build().toData().toJson()
     }

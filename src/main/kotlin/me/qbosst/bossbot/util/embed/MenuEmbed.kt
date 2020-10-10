@@ -14,24 +14,20 @@ abstract class MenuEmbed<T>(private val maxObjectsPerPage: Int, protected val ob
 
         for (i in maxObjectsPerPage * pg until
                 if (maxObjectsPerPage * pg + maxObjectsPerPage > objects.size)
-                {
                     objects.size
-                }
-                else {
+                else
                     maxObjectsPerPage * pg + maxObjectsPerPage
-                })
-        {
+        ) {
             addObjectToPage(embed, i)
         }
 
         if(isEmpty(embed))
-        {
             embed.appendDescription("None!")
-        }
         else
         {
             val sb = StringBuilder(embed.build().footer?.text ?: "")
-            if(sb.isNotEmpty()) sb.append(" | ")
+            if(sb.isNotEmpty())
+                sb.append(" | ")
             sb.append("Page ${pg+1} / ${maxPages+1}")
             embed.setFooter(sb.toString())
         }
@@ -48,9 +44,8 @@ abstract class MenuEmbed<T>(private val maxObjectsPerPage: Int, protected val ob
     {
         var maxPages: Int = objects.size / maxObjectsPerPage
         if(objects.size % maxObjectsPerPage == 0 && maxPages > 0)
-        {
             maxPages -= 1
-        }
+
         return maxPages
     }
 }

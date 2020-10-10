@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.commands.music.CurrentTrackCommand
 import me.qbosst.bossbot.bot.commands.music.MusicCommand
 import me.qbosst.bossbot.entities.music.GuildMusicManager
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -60,7 +60,7 @@ object QueueCommand : MusicCommand(
             val page = if(args.isNotEmpty())
             {
                 args[0].toIntOrNull() ?: run {
-                    event.channel.sendMessage("`${args[0].makeSafe()}` is not a valid page number!").queue()
+                    event.channel.sendMessage("`${args[0].maxLength()}` is not a valid page number!").queue()
                     return
                 }
             } else 0

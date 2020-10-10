@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.tables.GuildColoursDataTable
 import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -25,7 +25,7 @@ object ColourCreateCommand: Command(
         {
             // Gets colour by hex value
             var colour = getColourByHex(args[0]) ?: kotlin.run {
-                event.channel.sendMessage("`${args[0].makeSafe()}` is not a valid hex!")
+                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid hex!")
                 return
             }
 
@@ -46,14 +46,14 @@ object ColourCreateCommand: Command(
 
                     // Makes sure that the name doesn't have the same name as a system colour
                     systemColours[name] != null ->
-                        event.channel.sendMessage("${name.makeSafe()} is a system default colour and cannot be modified.").queue()
+                        event.channel.sendMessage("${name.maxLength()} is a system default colour and cannot be modified.").queue()
                     else ->
                     {
                         // Tries to add colour to guild.
                         if(GuildColoursData.add(event.guild, name, colour))
-                            event.channel.sendMessage("${name.makeSafe()} has been successfully created!").queue()
+                            event.channel.sendMessage("${name.maxLength()} has been successfully created!").queue()
                         else
-                            event.channel.sendMessage("${name.makeSafe()} already exists!").queue()
+                            event.channel.sendMessage("${name.maxLength()} already exists!").queue()
                     }
                 }
             }

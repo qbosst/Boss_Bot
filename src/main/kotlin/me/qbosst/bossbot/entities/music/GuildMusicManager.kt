@@ -15,7 +15,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.util.loadObjects
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Message
@@ -106,7 +106,7 @@ class GuildMusicManager private constructor(
 
                 override fun noMatches()
                 {
-                    message.editMessage("I could not find anything from `${trackUrl.makeSafe()}`").queue()
+                    message.editMessage("I could not find anything from `${trackUrl.maxLength()}`").queue()
                 }
 
                 override fun loadFailed(exception: FriendlyException)

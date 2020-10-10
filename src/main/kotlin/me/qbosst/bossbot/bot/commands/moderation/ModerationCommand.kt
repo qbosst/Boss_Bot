@@ -5,7 +5,7 @@ import me.qbosst.bossbot.bot.exception.MissingArgumentException
 import me.qbosst.bossbot.entities.database.GuildPunishment
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.getMemberByString
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -37,7 +37,7 @@ abstract class ModerationCommand(
         {
             val target = event.guild.getMemberByString(args[0]) ?: kotlin.run()
             {
-                event.channel.sendMessage("I could not find anyone by the id, tag or name of `${args[0].makeSafe()}`").queue()
+                event.channel.sendMessage("I could not find anyone by the id, tag or name of `${args[0].maxLength()}`").queue()
                 return
             }
 

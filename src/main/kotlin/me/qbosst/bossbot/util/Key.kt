@@ -42,7 +42,7 @@ data class Key private constructor(private val key: String){
          *  @param key The string of the possible key
          *  @return A new key object. If the key matches a key format, it will create a new key object otherwise it will return null
          */
-        fun getKey(key: String): Key?
+        fun fromString(key: String): Key?
         {
             // the max length in characters that a long value can be
             val maxIdLength = Long.MAX_VALUE.toString().length

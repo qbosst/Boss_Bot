@@ -3,7 +3,7 @@ package me.qbosst.bossbot.bot.commands.misc.colour
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import me.qbosst.bossbot.util.toHex
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -43,7 +43,7 @@ object ColoursCommand: Command(
             args[0].toIntOrNull() != null -> GuildColoursData.get(event.guild).clone().plus(systemColours)
             else ->
             {
-                event.channel.sendMessage("${args[0].makeSafe()} is not a valid page number").queue()
+                event.channel.sendMessage("${args[0].maxLength()} is not a valid page number").queue()
                 return
             }
         }
@@ -58,7 +58,7 @@ object ColoursCommand: Command(
                         args[index].toInt()
                     else
                     {
-                        event.channel.sendMessage("${args[index].makeSafe()} is not a valid page number").queue()
+                        event.channel.sendMessage("${args[index].maxLength()} is not a valid page number").queue()
                         return
                     }
                 else

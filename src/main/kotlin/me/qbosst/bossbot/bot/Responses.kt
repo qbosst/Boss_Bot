@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot
 
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 
 fun noMentionedUser(): String
 {
@@ -9,5 +9,5 @@ fun noMentionedUser(): String
 
 fun userNotFound(arg: String): String
 {
-    return "I could not find anyone with the tag or id of `${arg.makeSafe()}`"
+    return "I could not find anyone with the tag or id of `${arg.maxLength()}`"
 }

@@ -1,24 +1,36 @@
 package me.qbosst.bossbot.util
 
 import me.qbosst.bossbot.bot.ZERO_WIDTH
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.requests.restaction.AuditableRestAction
 import net.dv8tion.jda.api.sharding.ShardManager
 
-fun getId(string: String): Long {
-    return if(string.matches(Regex("(<@&?!?)?(<#!?)?\\d{17,19}(>)?$"))) {
+val USER_MENTION_REGEX = Regex("<@!?[0-9]{17,19}>$")
+val CHANNEL_MENTION_REGEX = Regex("<#[0-9]{17,19}$")
+val ROLE_MENTION_REGEX = Regex("<@&[0-9]{17,19}$")
+val DISCORD_ID_REGEX = Regex("[0-9]{17,19}$")
+
+val GENERAL_REGEX = Regex("")
+
+fun getId(string: String): Long
+{
+    val regexes = listOf(USER_MENTION_REGEX, CHANNEL_MENTION_REGEX, ROLE_MENTION_REGEX, DISCORD_ID_REGEX)
+    return if(regexes.any { regex -> string.matches(regex) })
         string.replace(Regex("\\D+"), "").toLong()
-    } else 0L
+    else
+        0
 }
 
 fun Guild.getMemberByString(string: String): Member?
 {
-    return getMemberById(getId(string)) ?: if(string.matches(Regex(".{2,32}#\\d{4}$"))) {
-        val parts: List<String> = string.split(Regex("#"))
+    return getMemberById(getId(string)) ?: if(string.matches(Regex(".{2,32}#\\d{4}$")))
+    {
+        val parts = string.split(Regex("#"))
         getMemberByTag(parts[0], parts[1])
-    } else getMembersByName(string, false).firstOrNull()
+    }
+    else
+        getMembersByName(string, false).firstOrNull()
 }
 
 fun ShardManager.getUserByString(string: String): User?
@@ -54,21 +66,8 @@ fun Member.move(vc: VoiceChannel): RestAction<Void>
     return guild.moveVoiceMember(this, vc)
 }
 
-fun String.makeSafe(maxLength: Int = 32): String
+fun String.maxLength(maxLength: Int = 32): String
 {
     val new = replace("@", "@$ZERO_WIDTH")
     return if(new.length > maxLength) "${new.substring(0, maxLength-3)}..." else new
-}
-
-fun Member.randomMove(permissions: Collection<Permission> = emptyList(), negate: Boolean = true): RestAction<Void>?
-{
-    val current = voiceState?.channel ?: return null
-    val move = guild.afkChannel ?: guild.voiceChannels
-            .firstOrNull()
-            {
-                !it.members.contains(this)
-                        && guild.selfMember.hasPermission(it, Permission.VOICE_MOVE_OTHERS)
-                        && if(negate) !this.hasPermission(it, permissions) else this.hasPermission(it, permissions)
-            } ?: return null
-    return guild.moveVoiceMember(this, move).flatMap { guild.moveVoiceMember(this, current) }
 }

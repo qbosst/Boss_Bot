@@ -6,7 +6,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.isHex
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import me.qbosst.bossbot.util.toHex
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -48,7 +48,7 @@ object ColourCommand: Command(
             if(colour != null)
                 sendColourEmbed(event.channel, colour).queue()
             else
-                event.channel.sendMessage("`${args[0].makeSafe()}` is not a valid colour!").queue()
+                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid colour!").queue()
         }
         else
             event.channel.sendMessage("Please enter the hex code or name of a colour!").queue()

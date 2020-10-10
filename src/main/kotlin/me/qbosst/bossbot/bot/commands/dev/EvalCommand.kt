@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.dev
 
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.io.PrintWriter
@@ -49,7 +49,7 @@ object EvalCommand : DeveloperCommand(
             {
                 val sw = StringWriter()
                 e.printStackTrace(PrintWriter(sw))
-                event.channel.sendMessage("Caught Exception: ```$sw```".makeSafe(Message.MAX_CONTENT_LENGTH)).queue()
+                event.channel.sendMessage("Caught Exception: ```$sw```".maxLength(Message.MAX_CONTENT_LENGTH)).queue()
             }
         }
         else

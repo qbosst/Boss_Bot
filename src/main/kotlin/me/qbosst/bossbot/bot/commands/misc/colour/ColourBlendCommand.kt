@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.entities.database.GuildColoursData
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
@@ -38,7 +38,7 @@ object ColourBlendCommand : Command(
                     colours.add(colour)
                 else
                 {
-                    event.channel.sendMessage("`${arg.makeSafe()}` is not a valid colour!").queue()
+                    event.channel.sendMessage("`${arg.maxLength()}` is not a valid colour!").queue()
                     return
                 }
             }

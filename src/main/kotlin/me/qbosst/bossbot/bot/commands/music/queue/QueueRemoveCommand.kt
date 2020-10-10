@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.music.queue
 
 import me.qbosst.bossbot.bot.commands.music.MusicCommand
 import me.qbosst.bossbot.entities.music.GuildMusicManager
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object QueueRemoveCommand: MusicCommand(
@@ -18,7 +18,7 @@ object QueueRemoveCommand: MusicCommand(
             }
             else
             {
-                event.channel.sendMessage("`${args[0].makeSafe()}` is not a valid page number").queue()
+                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid page number").queue()
                 return
             }
         }

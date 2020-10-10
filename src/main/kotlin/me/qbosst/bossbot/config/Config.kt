@@ -104,11 +104,10 @@ object Config
         DATABASE_USER(""),
         DATABASE_PASSWORD(""),
         DATABASE_URL(""),
-        DEFAULT_PREFIX("!", { run()
-        {
+        DEFAULT_PREFIX("!", {
             val length = it?.toString()?.length ?: 0
             length > 0 && length < me.qbosst.bossbot.database.tables.GuildSettingsDataTable.max_prefix_length
-        }}),
+        }),
         DEFAULT_CACHE_SIZE(500,
                 {
                     (it?.toString()?.toIntOrNull() ?: 0) > 0

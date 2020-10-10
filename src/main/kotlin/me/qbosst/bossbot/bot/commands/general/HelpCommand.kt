@@ -8,7 +8,7 @@ import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.loadObjects
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -54,7 +54,7 @@ object HelpCommand: Command(
             }
             else
             {
-                event.channel.sendMessage("Could not find command `${args[0].makeSafe()}`").queue()
+                event.channel.sendMessage("Could not find command `${args[0].maxLength()}`").queue()
             }
         }
         else

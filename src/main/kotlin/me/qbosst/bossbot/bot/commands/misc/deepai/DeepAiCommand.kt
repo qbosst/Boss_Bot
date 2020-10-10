@@ -39,7 +39,7 @@ abstract class DeepAiCommand(
 
                 // Checks if the response is valid
                 if(json.has("status") && json.getString("status").startsWith("Out of free credits"))
-                    event.channel.sendMessage("I have ran out of credits for deepai services :(\nTry again later!").queue()
+                    event.channel.sendMessage("I have ran out of credits for deepai services :( Try again later!").queue()
                 else if(response.code() == 401)
                     event.channel.sendMessage("I do not have access to deepai services, please fix it boss :(").queue()
                 else

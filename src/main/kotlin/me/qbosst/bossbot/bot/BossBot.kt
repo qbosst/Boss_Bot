@@ -38,7 +38,7 @@ object BossBot {
                 password = Config.Values.DATABASE_PASSWORD.getStringOrDefault()
         )
         // Connects to discord
-        shards = connectDiscord(Config.Values.DISCORD_TOKEN.getString())
+        shards = connectDiscord(Config.Values.DISCORD_TOKEN.getStringOrDefault())
 
         Runtime.getRuntime().addShutdownHook(object : Thread("Boss Bot Shutdown Hook")
         {
@@ -52,43 +52,33 @@ object BossBot {
 
     /**
      *  Used to connect the bot to discord
+     *
+     *  @param token The token to connect to discord with
+     *  @param intents The intents for the discord bot
+     *
+     *  @return shard manager
      */
-    private fun connectDiscord(token: String?, intents: Collection<GatewayIntent> = enumValues<GatewayIntent>().toMutableSet()): ShardManager
+    private fun connectDiscord(token: String, intents: Collection<GatewayIntent> = enumValues<GatewayIntent>().toMutableSet()): ShardManager
     {
-        if(token.isNullOrEmpty())
-            throw LoginException("The token may not be null or empty!")
-        else
-        {
-            var exception = Throwable("Could not login to discord.")
-            val range = 0..5
-
-            // Attempts to return ShardManager a few times before throwing exception if unsuccessful.
-            for(x in range)
+        for(x in 0..5)
+            try
             {
-                try
+                return DefaultShardManagerBuilder.create(intents)
+                        .setToken(token)
+                        .setStatus(OnlineStatus.DO_NOT_DISTURB)
+                        .setActivity(Activity.of(Activity.ActivityType.DEFAULT, "Loading..."))
+                        .addEventListeners(EventWaiter, Listener)
+                        .setAudioSendFactory(NativeAudioSendFactory())
+                        .build()
+            }
+            catch (e: Exception)
+            {
+                LOG.error("Caught Exception: ", e)
+                runBlocking()
                 {
-                    return DefaultShardManagerBuilder.create(intents)
-                            .setToken(token)
-                            .setStatus(OnlineStatus.DO_NOT_DISTURB)
-                            .setActivity(Activity.of(Activity.ActivityType.DEFAULT, "Loading..."))
-                            .addEventListeners(EventWaiter, Listener)
-                            .setAudioSendFactory(NativeAudioSendFactory())
-                            .build()
-                }
-                catch (e: Exception)
-                {
-                    exception = e
-                    if(range.last == x)
-                        break
-
-                    LOG.error("Caught Exception: $e")
-                    runBlocking()
-                    {
-                        delay(5000)
-                    }
+                    delay(5000)
                 }
             }
-            throw exception
-        }
+        throw LoginException("Could not login to discord.")
     }
 }

@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import me.qbosst.bossbot.util.getUserByString
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -25,7 +25,7 @@ object AvatarCommand: Command(
         {
             val arguments = args.joinToString(" ")
             BossBot.shards.getUserByString(arguments) ?: kotlin.run {
-                event.channel.sendMessage("I could not find anyone by the id or tag of `${arguments.makeSafe()}`").queue()
+                event.channel.sendMessage("I could not find anyone by the id or tag of `${arguments.maxLength()}`").queue()
                 return
             }
         } else

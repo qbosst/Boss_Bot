@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.music
 
 import me.qbosst.bossbot.entities.music.GuildMusicManager
-import me.qbosst.bossbot.util.makeSafe
+import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.apache.commons.io.IOUtils
@@ -37,7 +37,7 @@ object PlayCommand : MusicCommand(
         if(args.isNotEmpty())
         {
             val search = args.joinToString(" ")
-            event.channel.sendMessage("Searching for `${search.makeSafe()}`...").queue()
+            event.channel.sendMessage("Searching for `${search.maxLength()}`...").queue()
             { message ->
                 val searchArgument = if(!isUrl(search))
                 {
@@ -56,7 +56,7 @@ object PlayCommand : MusicCommand(
                     }
                     else
                     {
-                        message.editMessage("I could not find anything relating to`${search.makeSafe()}`. Please try different keywords.").queue()
+                        message.editMessage("I could not find anything relating to`${search.maxLength()}`. Please try different keywords.").queue()
                         return@queue
                     }
 
