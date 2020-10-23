@@ -9,9 +9,11 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import java.time.ZoneId
 
 data class UserData private constructor(
-        val greeting: String? = null
+        val greeting: String? = null,
+        val zone_id: ZoneId? = null
 )
 {
     companion object
@@ -33,7 +35,8 @@ data class UserData private constructor(
                             .fetchSize(1)
                             .map {
                                 UserData(
-                                        greeting = it[UserDataTable.greeting]
+                                        greeting = it[UserDataTable.greeting],
+                                        zone_id = try { ZoneId.of(it[UserDataTable.zone_id]) } catch (t: Throwable) { null }
                                 )
                             }
                             .singleOrNull()

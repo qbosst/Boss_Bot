@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.general
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.Listener
+import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
@@ -16,8 +16,6 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object HelpCommand: Command(
         "help",
-        usage = listOf("[command]", "[page number]"),
-        guildOnly = false,
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
@@ -28,13 +26,11 @@ object HelpCommand: Command(
         if(args.isNotEmpty())
         {
             if(args[0].toIntOrNull() != null)
-            {
                 event.channel.sendMessage(getHelpEmbed(event, args[0].toInt()).build()).queue()
-            }
 
-            else if(Listener.getCommand(args[0]) != null)
+            else if(MessageListener.getCommand(args[0]) != null)
             {
-                var command: Command = Listener.getCommand(args[0])!!
+                var command: Command = MessageListener.getCommand(args[0])!!
                 var index = 1
                 while (index < args.size)
                 {
@@ -47,10 +43,10 @@ object HelpCommand: Command(
                     } else break
                 }
 
-                if(command.hasPermission(if(event.isFromGuild) event.guild else null, event.author) && if(event.isFromGuild) event.member!!.hasPermission(command.fullUserPermissions) else true)
-                {
+                if(command.hasPermission(event.getGuildOrNull(), event.author) && if(event.isFromGuild) event.member!!.hasPermission(command.fullUserPermissions) else true)
                     event.channel.sendMessage(command.getHelp(event)).queue()
-                }
+                else
+                    event.channel.sendMessage("You do not have access to this command").queue()
             }
             else
             {
@@ -65,10 +61,17 @@ object HelpCommand: Command(
 
     private fun getHelpEmbed(event: MessageReceivedEvent, page: Int): EmbedBuilder
     {
-        var commands = allCommands.filter { it.hasPermission(if(event.isFromGuild) event.guild else null, event.author) }
-        if(event.isFromGuild) commands = commands.filter { event.member!!.hasPermission(it.fullUserPermissions) }
+        var commands = allCommands
+                .filter { it.hasPermission(event.getGuildOrNull(), event.author) }
+        if(event.isFromGuild)
+            commands = commands.filter { event.member!!.hasPermission(it.fullUserPermissions) }
 
-        return FieldMenuEmbed(5, commands.map { it.getHelpField(GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault(), event.isFromGuild) }).createPage(EmbedBuilder(), page)
+        val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+
+        return FieldMenuEmbed(5, commands.map { it.getHelpField(prefix, event.isFromGuild) })
+                .createPage(EmbedBuilder()
+                        .setColor(event.getGuildOrNull()?.selfMember?.color)
+                        , page)
     }
 
     private fun Command.getHelpField(prefix: String, isFromGuild: Boolean): MessageEmbed.Field

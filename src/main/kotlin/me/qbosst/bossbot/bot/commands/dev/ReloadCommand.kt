@@ -7,7 +7,7 @@ import kotlin.system.exitProcess
 
 object ReloadCommand : DeveloperCommand(
         "reload",
-        "Reloads the config file. Providing incorrect values will turn off the bot. Some changes require a restart of the bot instance (like discord token, database parameters)"
+        "Reloads the config file"
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)

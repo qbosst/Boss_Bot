@@ -1,7 +1,8 @@
 package me.qbosst.bossbot.bot.commands.economy.leaderboard
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.Listener
+import me.qbosst.bossbot.bot.listeners.MessageListener
+import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
@@ -148,7 +149,7 @@ object LeaderboardCommand : Command(
                 // Filter it by if the value is not null than cast it
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Int>>)
                         // Adds the cached value
-                        .map { it.setRightAndReturn(it.right + Listener.getCachedMessageCount(guild, it.left)) }
+                        .map { it.setRightAndReturn(it.right + MessageListener.getCachedMessageCount(guild, it.left)) }
                         // Sorts the list
                         .sortedByDescending { it.right }
                         // Formats it
@@ -169,7 +170,7 @@ object LeaderboardCommand : Command(
             override fun format(guild: Guild, data: List<MutablePair<Long, Any?>>): List<String>
             {
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Long>>)
-                        .map { it.setRightAndReturn(it.right + Listener.getCachedVoiceChatTime(guild, it.left)) }
+                        .map { it.setRightAndReturn(it.right + VoiceListener.getCachedVoiceChatTime(guild, it.left)) }
                         .sortedByDescending { it.right }
                         .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${secondsToString(record.right)}"}
             }

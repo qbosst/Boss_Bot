@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.Listener
+import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.dateTimeFormatter
 import me.qbosst.bossbot.util.maxLength
@@ -23,9 +23,9 @@ object DebugCommand : DeveloperCommand(
     {
         if(args.isNotEmpty())
         {
-            if(Listener.getCommand(args[0]) != null)
+            if(MessageListener.getCommand(args[0]) != null)
             {
-                var command: Command = Listener.getCommand(args[0])!!
+                var command: Command = MessageListener.getCommand(args[0])!!
                 var index = 1
                 while (index < args.size)
                 {

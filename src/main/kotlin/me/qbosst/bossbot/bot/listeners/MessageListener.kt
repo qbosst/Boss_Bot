@@ -2,103 +2,57 @@ package me.qbosst.bossbot.bot.listeners
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.meta.ICommandManager
+import me.qbosst.bossbot.bot.commands.meta.CommandManagerImpl
 import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.database.tables.GuildRoleDataTable
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
 import me.qbosst.bossbot.entities.MessageCache
-import me.qbosst.bossbot.entities.database.GuildRolesData
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.JDA
-import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.GenericEvent
-import net.dv8tion.jda.api.events.StatusChangeEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberJoinEvent
-import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMuteEvent
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import java.awt.Color
-import java.time.Duration
 import java.time.OffsetDateTime
 import kotlin.math.roundToInt
 
-object Listener : EventListener, ICommandManager
+object MessageListener: EventListener, CommandManagerImpl()
 {
-    // List of all 'main' commands
-    private val commands = mutableMapOf<String, Command>()
 
-    // Economy parameters
-    private const val seconds_until_eligible = 60L
-    private const val xp_to_give = 10 //TODO make adjustable
+    val allCommands: Collection<Command>
+    init
+    {
+        allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
+        val commands = allCommands.filter { it.parent == null }
+        BossBot.LOG.info("Registered ${commands.size} command(s): ${commands.joinToString(", ") { it.fullName }}")
+        addCommands(commands)
+    }
 
     // Caches
     private var textTimerCache = FixedCache<Key, OffsetDateTime>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
     private var textCounterCache = FixedCache<Key, Int>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
     private val messageCache = MessageCache(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
-    private val voiceCache = mutableMapOf<Key, VoiceMemberStatus>()
 
-    // Commands that have also implement Event Listeners
-    private val listeners: List<EventListener>
-
-    init
-    {
-        // Get all commands using reflection
-        val commands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
-        BossBot.LOG.debug("Found ${commands.size} commands: ${commands.joinToString(", ") { it.fullName }}")
-
-        // Add all the 'main' commands to the map
-        addCommands(commands.filter { it.parent == null })
-
-        // Add all commands that implement Event Listener to listeners
-        listeners = commands.filter { it is EventListener }.map { it as EventListener }
-    }
+    private const val seconds_until_eligible = 60L
+    private const val xp_to_give = 10 //TODO make adjustable
 
     override fun onEvent(event: GenericEvent)
     {
-        // Executes the event
-        listener(event)
-
-        // Passes this event onto the other command listeners
-        for(listener in listeners)
-            try
-            {
-                listener.onEvent(event)
-            }
-            catch (e: Exception)
-            {
-                BossBot.LOG.error("Caught unhandled exception in one of the command listeners", e)
-            }
-    }
-    
-    private fun listener(event: GenericEvent)
-    {
-        // Checks if event is instance of something and if so runs the correlating method
         when(event)
         {
-            is MessageReceivedEvent -> onMessageReceivedEvent(event)
-            is MessageUpdateEvent -> onMessageUpdateEvent(event)
-            is MessageDeleteEvent -> onMessageDeleteEvent(event)
-            is GuildVoiceJoinEvent -> onGuildVoiceJoinEvent(event)
-            is GuildVoiceLeaveEvent -> onGuildVoiceLeaveEvent(event)
-            is GuildVoiceMoveEvent -> onGuildVoiceMoveEvent(event)
-            is GuildVoiceMuteEvent -> onGuildVoiceMuteEvent(event)
-            is StatusChangeEvent -> onStatusChangeEvent(event)
-            is GuildMemberRemoveEvent -> onGuildMemberLeaveEvent(event)
-            is GuildMemberJoinEvent -> onGuildMemberJoinEvent(event)
+            is MessageReceivedEvent ->
+                onMessageReceivedEvent(event)
+            is MessageUpdateEvent ->
+                onMessageUpdateEvent(event)
+            is MessageDeleteEvent ->
+                onMessageDeleteEvent(event)
         }
     }
 
@@ -115,10 +69,10 @@ object Listener : EventListener, ICommandManager
             // Increase the author's message count by 1 in the cache
             val key = Key.Type.USER_GUILD.genKey("", event.author.idLong, event.guild.idLong)
             textCounterCache.put(key, (textCounterCache.get(key) ?: 0) + 1)
-            { key, value ->
+            { removedKey, value ->
                 // If someone else's cached message count was removed to make space for this one, it will save the removed one to the database
                 if(value > 0)
-                    GuildUserData.update(key.idTwo, key.idOne,
+                    GuildUserData.update(removedKey.idTwo, removedKey.idOne,
                             { insert ->
                                 insert[GuildUserDataTable.message_count] = value
                             },
@@ -139,8 +93,8 @@ object Listener : EventListener, ICommandManager
             if(content.startsWith(prefix) && content.length > prefix.length)
             {
                 // Checks if the author entered a bot command
-                var args = content.substring(prefix.length).split(Regex("\\s+"))
-                var command = getCommand(args[0])
+                val args = content.substring(prefix.length).split(Regex("\\s+"))
+                var command = MessageListener.getCommand(args[0])
                 if(command != null)
                 {
                     // Checks if the author entered sub-commands
@@ -273,143 +227,6 @@ object Listener : EventListener, ICommandManager
         }
     }
 
-    private fun onGuildVoiceJoinEvent(event: GuildVoiceJoinEvent)
-    {
-        // Logs the guild voice join event for stats
-        if(!event.member.user.isBot)
-            voiceCache[Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), event.voiceState.isMuted)
-
-        // Logs the guild voice join event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
-                ?.sendMessage(EmbedBuilder()
-                    .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                    .setDescription("**${event.member.asMention}** has joined `${event.channelJoined.name}`")
-                    .setFooter("User ID : ${event.member.idLong}")
-                    .setTimestamp(OffsetDateTime.now())
-                    .setThumbnail(event.member.user.effectiveAvatarUrl)
-                    .setColor(Color.GREEN)
-                    .build())
-                ?.queue()
-    }
-
-    private fun onGuildVoiceLeaveEvent(event: GuildVoiceLeaveEvent)
-    {
-        // Logs the guild voice leave event for stats
-        if(!event.member.user.isBot)
-        {
-            val key = Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)
-
-            val stats = voiceCache.remove(key) ?: return
-            val now = OffsetDateTime.now()
-            if(event.voiceState.isMuted)
-                stats.update(now)
-
-            val total = Duration.between(stats.join, now).seconds
-            val loop: Long = (total - stats.secondsMuted) / seconds_until_eligible
-
-            // Updates stats
-            GuildUserData.update(event.member,
-                    { insert ->
-                        insert[GuildUserDataTable.experience] = xp_to_give
-                        insert[GuildUserDataTable.voice_chat_time] = total
-                    },
-                    { rs, update ->
-                        update[GuildUserDataTable.experience] = rs[GuildUserDataTable.experience] + (xp_to_give * loop).toInt()
-                        update[GuildUserDataTable.voice_chat_time] = rs[GuildUserDataTable.voice_chat_time] + total
-                    })
-
-            BossBot.LOG.debug("[${event.guild.name}] ${event.member.user.asTag} has spent a total of ${secondsToString(total)} in vc, ${secondsToString(stats.secondsMuted)} muted")
-        }
-
-        // Logs the guild voice leave event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
-                ?.sendMessage(EmbedBuilder()
-                    .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                    .setDescription("**${event.member.user.asMention}** has left `${event.channelLeft.name}`")
-                    .setFooter("User ID : ${event.member.idLong}")
-                    .setTimestamp(OffsetDateTime.now())
-                    .setColor(Color.RED)
-                    .setThumbnail(event.member.user.effectiveAvatarUrl)
-                    .build())
-                ?.queue()
-    }
-
-    private fun onGuildVoiceMoveEvent(event: GuildVoiceMoveEvent)
-    {
-        // Logs the guild voice move event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
-                ?.sendMessage(EmbedBuilder()
-                    .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
-                    .setDescription("**${event.member.user.asMention}** has switched channels: `${event.channelLeft.name}` -> `${event.channelJoined.name}`")
-                    .setFooter("User ID : ${event.member.idLong}")
-                    .setTimestamp(OffsetDateTime.now())
-                    .setColor(Color.YELLOW)
-                    .setThumbnail(event.member.user.effectiveAvatarUrl)
-                    .build())
-                ?.queue()
-    }
-
-    private fun onGuildVoiceMuteEvent(event: GuildVoiceMuteEvent)
-    {
-        // Logs the guild voice mute event for stats
-        if(!event.member.user.isBot)
-            voiceCache[Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)]?.update(if(event.isMuted) OffsetDateTime.now() else null)
-    }
-
-    private fun onStatusChangeEvent(event: StatusChangeEvent)
-    {
-        when(event.newStatus)
-        {
-            // Sets the status for the jda when the it is finished loading
-            JDA.Status.CONNECTED ->
-            {
-                event.jda.presence.setPresence(
-                        OnlineStatus.ONLINE,
-                        Activity.of(Activity.ActivityType.DEFAULT, "${Config.Values.DEFAULT_PREFIX.getStringOrDefault()}help")
-                )
-
-                // Adds all the members in vc in a guild to the voice cache to log stats
-                for(guild in event.jda.guilds)
-                    for(vc in guild.voiceChannels)
-                        for(member in vc.members)
-                            if(member.voiceState != null)
-                                voiceCache[Key.Type.USER_GUILD.genKey("", member.idLong, guild.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), member.voiceState!!.isMuted)
-            }
-        }
-    }
-
-    private fun onGuildMemberLeaveEvent(event: GuildMemberRemoveEvent)
-    {
-        //TODO
-    }
-
-    private fun onGuildMemberJoinEvent(event: GuildMemberJoinEvent)
-    {
-        val settings = GuildSettingsData.get(event.guild)
-        val tc = settings.getWelcomeChannel(event.guild)
-        val message = settings.getWelcomeMessage(event.member)
-
-        // Sends welcome message
-        if(tc != null && message != null)
-        {
-            val permissions = mutableSetOf(Permission.MESSAGE_WRITE)
-            if(message.embeds.isNotEmpty())
-                permissions.add(Permission.MESSAGE_EMBED_LINKS)
-
-            if(event.guild.selfMember.hasPermission(permissions) && event.guild.selfMember.hasPermission(tc, permissions))
-                tc.sendMessage(message).queue()
-        }
-
-        // Gives auto roles to new member
-        if(event.guild.selfMember.hasPermission(Permission.MANAGE_ROLES))
-        {
-            val roles = GuildRolesData.get(event.guild).getRoles(event.guild, GuildRoleDataTable.Type.AUTO_ROLE)
-                    .filter { event.guild.selfMember.canInteract(it) }
-
-            event.guild.modifyMemberRoles(event.member, roles, null).reason("Auto Role(s)").queue()
-        }
-    }
-
     private fun onNonCommandEvent(event: MessageReceivedEvent, settings: GuildSettingsData = GuildSettingsData.get(event.getGuildOrNull()))
     {
         // Ignore bot input
@@ -456,75 +273,7 @@ object Listener : EventListener, ICommandManager
         }
     }
 
-    fun getCachedMessageCount(guild: Guild, userId: Long): Int
-    {
-        return textCounterCache.get(Key.Type.USER_GUILD.genKey("", userId, guild.idLong)) ?: 0
-    }
+    fun getCachedMessageCount(guild: Guild, userId: Long): Int = textCounterCache.get(Key.Type.USER_GUILD.genKey("", userId, guild.idLong)) ?: 0
 
-    fun getCachedMessageCount(member: Member): Int
-    {
-        return getCachedMessageCount(member.guild, member.idLong)
-    }
-
-    fun getCachedVoiceChatTime(guild: Guild, userId: Long): Long
-    {
-        val time = voiceCache[Key.Type.USER_GUILD.genKey("", userId, guild.idLong)]?.join
-        return if(time != null) Duration.between(time, OffsetDateTime.now()).seconds else 0
-    }
-
-    fun getCachedVoiceChatTime(member: Member): Long
-    {
-        return getCachedVoiceChatTime(member.guild, member.idLong)
-    }
-
-    override fun getCommand(name: String): Command?
-    {
-        return commands[name.toLowerCase()]
-    }
-
-    override fun getCommands(): Collection<Command>
-    {
-        return commands.values
-    }
-
-    override fun addCommand(command: Command)
-    {
-        commands[command.name.toLowerCase()] = command
-        for(alias in command.aliases)
-            commands[alias.toLowerCase()] = command
-    }
-
-    override fun addCommands(commands: Collection<Command>)
-    {
-        for(command in commands)
-            addCommand(command)
-    }
-
-    /**
-     *  Class used to track voice member stats like time spent in vc, time spent muted in vc
-     */
-    private class VoiceMemberStatus(
-            val join: OffsetDateTime,
-            isMuted: Boolean
-    )
-    {
-        // Time of the mute
-        var mute: OffsetDateTime? = if(isMuted) join else null
-            private set
-
-        // Seconds that the member has already been muted for
-        var secondsMuted: Long = 0
-            private set
-
-        /**
-         *  Used when member mutes or un-mutes their mic so that it can be logged.
-         */
-        fun update(mute: OffsetDateTime?)
-        {
-            if(this.mute != null)
-                secondsMuted += Duration.between(this.mute, OffsetDateTime.now()).seconds
-
-            this.mute = mute
-        }
-    }
+    fun getCachedMessageCount(member: Member): Int = getCachedMessageCount(member.guild, member.idLong)
 }

@@ -26,7 +26,7 @@ abstract class Command (
         val guildOnly: Boolean = true,
         private val userPermissions: List<Permission> = listOf(),
         botPermissions: List<Permission> = listOf()
-): ICommandManager
+): CommandManagerImpl()
 {
     val name = name.replace(Regex("\\s+"), "")
 
@@ -36,7 +36,6 @@ abstract class Command (
 
     val botPermissions: List<Permission> = botPermissions.plus(Permission.MESSAGE_WRITE)
 
-    private val commands = mutableMapOf<String, Command>()
     var parent: Command? = null
         private set
 
@@ -60,14 +59,7 @@ abstract class Command (
     val fullName: String
         get() {
             val set = mutableSetOf<String>()
-            var command: Command? = this
-
-            while(command != null)
-            {
-                // Adds the current command's name to the list and sets the new command to the current command's parent
-                set.add(command.name)
-                command = command.parent
-            }
+            forEachParent(this) { set.add(it.name) }
             return set.reversed().joinToString(" ")
         }
 
@@ -77,13 +69,7 @@ abstract class Command (
     val fullUserPermissions: List<Permission>
         get() {
             val permissions = mutableListOf<Permission>()
-            var command: Command? = this
-            while(command != null)
-            {
-                // Adds the current command's permissions to the list and sets the new command to the current command's parent
-                permissions.addAll(command.userPermissions)
-                command = command.parent
-            }
+            forEachParent(this) { permissions.addAll(it.userPermissions) }
             return permissions
         }
 
@@ -93,15 +79,19 @@ abstract class Command (
     val fullBotPermissions: List<Permission>
         get() {
             val permissions = mutableListOf<Permission>()
-            var command: Command? = this
-            while(command != null)
-            {
-                // Adds the current command's permissions to the list and sets the new command to the current command's parent
-                permissions.addAll(command.botPermissions)
-                command = command.parent
-            }
+            forEachParent(this) { permissions.addAll(it.botPermissions) }
             return permissions
         }
+
+    private fun forEachParent(command: Command, consumer: (Command) -> Unit)
+    {
+        var parent: Command? = command
+        while (parent != null)
+        {
+            consumer.invoke(parent)
+            parent = parent.parent
+        }
+    }
 
     /**
      *  Method used to execute a command
@@ -111,43 +101,24 @@ abstract class Command (
      */
     abstract fun execute(event: MessageReceivedEvent, args: List<String>)
 
-    final override fun addCommand(command: Command)
+    final override fun addCommand(command: Command): CommandManagerImpl
     {
         command.parent = this
-        commands[command.name.toLowerCase()] = command
-
-        for(alias in command.aliases)
-            commands[alias.toLowerCase()] = command
+        return super.addCommand(command)
     }
 
-    final override fun getCommand(name: String): Command?
-    {
-        val label = name.toLowerCase()
-        return commands[label] ?: commands[label]
-    }
+    final override fun addCommands(commands: Collection<Command>): CommandManagerImpl = super.addCommands(commands)
 
-    final override fun getCommands(): Collection<Command>
-    {
-        return commands.values.distinct()
-    }
+    final override fun getCommand(name: String): Command? = super.getCommand(name)
 
-    final override fun addCommands(commands: Collection<Command>)
-    {
-        for(command in commands) addCommand(command)
-    }
+    final override fun getCommands(): Collection<Command> = super.getCommands()
 
     final override fun equals(other: Any?): Boolean
     {
         return (other is Command) && (fullName == other.fullName)
     }
 
-    final override fun hashCode(): Int
-    {
-        return fullName.hashCode() * 7
-    }
+    final override fun hashCode(): Int = fullName.hashCode() * 7
 
-    final override fun toString(): String
-    {
-        return "Command(${fullName})"
-    }
+    final override fun toString(): String = "Command($fullName|$description)"
 }

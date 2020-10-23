@@ -4,15 +4,15 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.Config
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.entities.database.UserData
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object GreetingCommand : Command(
         "greeting",
-        guildOnly = false,
-        botPermissions = listOf(Permission.MESSAGE_WRITE)
-) {
-    init {
+        guildOnly = false
+)
+{
+    init
+    {
         addCommand(GreetingUpdateCommand)
     }
 

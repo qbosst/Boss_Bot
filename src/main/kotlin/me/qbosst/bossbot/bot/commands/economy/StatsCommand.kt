@@ -1,7 +1,8 @@
 package me.qbosst.bossbot.bot.commands.economy
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.Listener
+import me.qbosst.bossbot.bot.listeners.MessageListener
+import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.getMemberByString
@@ -33,9 +34,9 @@ object StatsCommand : Command(
         val stats = GuildUserData.get(member)
 
         return EmbedBuilder()
-                .addField("Messages Sent", (stats.message_count + Listener.getCachedMessageCount(member)).toString(), true)
+                .addField("Messages Sent", (stats.message_count + MessageListener.getCachedMessageCount(member)).toString(), true)
                 .addField("Text Chat Time", secondsToString(stats.text_chat_time), true)
-                .addField("Voice Chat Time", secondsToString(stats.voice_chat_time + Listener.getCachedVoiceChatTime(member)), true)
+                .addField("Voice Chat Time", secondsToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
                 .setColor(member.colorRaw)
     }
 }
