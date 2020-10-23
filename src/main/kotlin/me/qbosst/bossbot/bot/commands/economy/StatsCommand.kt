@@ -5,8 +5,8 @@ import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.entities.database.GuildUserData
+import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.getMemberByString
-import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Member
@@ -35,8 +35,8 @@ object StatsCommand : Command(
 
         return EmbedBuilder()
                 .addField("Messages Sent", (stats.message_count + MessageListener.getCachedMessageCount(member)).toString(), true)
-                .addField("Text Chat Time", secondsToString(stats.text_chat_time), true)
-                .addField("Voice Chat Time", secondsToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
+                .addField("Text Chat Time", TimeUtil.secondsToString(stats.text_chat_time), true)
+                .addField("Voice Chat Time", TimeUtil.secondsToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
                 .setColor(member.colorRaw)
     }
 }

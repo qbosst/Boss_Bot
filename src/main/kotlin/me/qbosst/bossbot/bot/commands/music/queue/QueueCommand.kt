@@ -3,9 +3,9 @@ package me.qbosst.bossbot.bot.commands.music.queue
 import me.qbosst.bossbot.bot.commands.music.CurrentTrackCommand
 import me.qbosst.bossbot.bot.commands.music.MusicCommand
 import me.qbosst.bossbot.entities.music.GuildMusicManager
+import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
 import me.qbosst.bossbot.util.maxLength
-import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -80,7 +80,7 @@ object QueueCommand : MusicCommand(
 
             event.channel.sendMessage(menu.createPage(EmbedBuilder()
                     .setTitle("Queue for ${event.guild.name}")
-                    .setFooter("Queue Length : ${secondsToString(queueLength / 1000)}"),
+                    .setFooter("Queue Length : ${TimeUtil.secondsToString(queueLength / 1000)}"),
                     page).build()).queue()
         }
     }

@@ -5,7 +5,7 @@ import me.qbosst.bossbot.database.tables.GuildUserDataTable
 import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.entities.database.GuildUserData
 import me.qbosst.bossbot.util.Key
-import me.qbosst.bossbot.util.secondsToString
+import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
@@ -92,7 +92,7 @@ object VoiceListener: EventListener
                         update[GuildUserDataTable.voice_chat_time] = rs[GuildUserDataTable.voice_chat_time] + total
                     })
 
-            BossBot.LOG.debug("[${event.guild.name}] ${event.member.user.asTag} has spent a total of ${secondsToString(total)} in vc, ${secondsToString(stats.secondsMuted)} muted")
+            BossBot.LOG.debug("[${event.guild.name}] ${event.member.user.asTag} has spent a total of ${TimeUtil.secondsToString(total)} in vc, ${TimeUtil.secondsToString(stats.secondsMuted)} muted")
         }
 
         // Logs the guild voice leave event for logging
@@ -149,8 +149,7 @@ object VoiceListener: EventListener
 
     fun getCachedVoiceChatTime(guild: Guild, userId: Long): Long
     {
-        val time = voiceCache[Key.Type.USER_GUILD.genKey("", userId, guild.idLong)]?.join
-        return if(time != null) Duration.between(time, OffsetDateTime.now()).seconds else 0
+        return Duration.between((voiceCache[Key.Type.USER_GUILD.genKey("", userId, guild.idLong)]?.join ?: return 0), OffsetDateTime.now()).seconds
     }
 
     fun getCachedVoiceChatTime(member: Member): Long = getCachedVoiceChatTime(member.guild, member.idLong)

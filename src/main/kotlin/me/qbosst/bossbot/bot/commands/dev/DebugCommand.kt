@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.entities.database.GuildSettingsData
-import me.qbosst.bossbot.util.dateTimeFormatter
+import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -59,7 +59,7 @@ object DebugCommand : DeveloperCommand(
             val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
 
             val zoneId = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).zone_id
-            val date = dateTimeFormatter.format(BossBot.startUp.atZoneSameInstant(zoneId))
+            val date = TimeUtil.DATE_TIME_FORMATTER.format(BossBot.startUp.atZoneSameInstant(zoneId))
 
             val embed = EmbedBuilder()
                     .setTitle("${event.jda.selfUser.asTag} statistics")

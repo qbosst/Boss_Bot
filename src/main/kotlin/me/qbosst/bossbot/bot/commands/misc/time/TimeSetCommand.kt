@@ -20,13 +20,10 @@ object TimeSetCommand: Command(
         if(args.isNotEmpty())
         {
             val name = args.joinToString(" ")
-            val zoneId = try
+            val zoneId = getZoneId(name)
+            if(zoneId == null)
             {
-                ZoneId.of(name)
-            }
-            catch (t: Throwable)
-            {
-                event.channel.sendMessage("`${name.maxLength()}` is not a valid Time Zone!").queue()
+                event.channel.sendMessage("`${name.maxLength()}` is not a valid time zone!").queue()
                 return
             }
             val old = UserData.update(event.author, UserDataTable.zone_id, zoneId.id)
@@ -36,7 +33,15 @@ object TimeSetCommand: Command(
         else
             event.channel
                     .sendMessage("Here is a list of zones that you can use.")
-                    .addFile(ZoneId.getAvailableZoneIds().joinToString("\n").toByteArray(), "zone_ids.txt")
+                    .addFile(ZoneId.getAvailableZoneIds()
+                            .sortedBy { it }
+                            .joinToString("\n")
+                            .toByteArray(), "zone_ids.txt")
                     .queue()
+    }
+
+    private fun getZoneId(string: String): ZoneId?
+    {
+        return ZoneId.of(ZoneId.getAvailableZoneIds().firstOrNull { it.equals(string, true) } ?: return null)
     }
 }

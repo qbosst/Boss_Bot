@@ -4,9 +4,9 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.database.tables.GuildUserDataTable
+import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
-import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -162,7 +162,7 @@ object LeaderboardCommand : Command(
             {
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Long>>)
                         .sortedByDescending { it.right }
-                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${secondsToString(record.right)}"}
+                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.secondsToString(record.right)}"}
             }
         },
         VOICE_CHAT(Regex("v(oice)?c(hat)?"), GuildUserDataTable.voice_chat_time, "voicechat")
@@ -172,7 +172,7 @@ object LeaderboardCommand : Command(
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Long>>)
                         .map { it.setRightAndReturn(it.right + VoiceListener.getCachedVoiceChatTime(guild, it.left)) }
                         .sortedByDescending { it.right }
-                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${secondsToString(record.right)}"}
+                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.secondsToString(record.right)}"}
             }
         },
         EXPERIENCE(Regex("e?xp(erience)?"), GuildUserDataTable.experience, "experience")

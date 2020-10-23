@@ -6,7 +6,7 @@ import com.sedmelluq.discord.lavaplayer.player.event.PlayerResumeEvent
 import com.sedmelluq.discord.lavaplayer.player.event.TrackStartEvent
 import me.qbosst.bossbot.entities.music.GuildAudioEventListener
 import me.qbosst.bossbot.entities.music.GuildMusicManager
-import me.qbosst.bossbot.util.secondsToString
+import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
@@ -50,7 +50,7 @@ object CurrentTrackCommand : MusicCommand(
                     .setTitle("Currently Playing")
                     .setDescription("[${track.info.title}](${track.info.uri})")
                     .appendDescription("\n$sb")
-                    .appendDescription("\n${secondsToString(current / 1000)} / ${secondsToString(total / 1000)}")
+                    .appendDescription("\n${TimeUtil.secondsToString(current / 1000)} / ${TimeUtil.secondsToString(total / 1000)}")
                     .build()).queue()
         }
     }

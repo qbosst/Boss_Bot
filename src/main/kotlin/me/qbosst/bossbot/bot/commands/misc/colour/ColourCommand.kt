@@ -4,10 +4,7 @@ import com.google.common.base.Splitter
 import javafx.scene.paint.Color
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.entities.database.GuildColoursData
-import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.isHex
-import me.qbosst.bossbot.util.maxLength
-import me.qbosst.bossbot.util.toHex
+import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageChannel
@@ -33,8 +30,10 @@ object ColourCommand: Command(
 
     init
     {
-        // Loads sub commands
-        addCommands(setOf(ColourBlendCommand, ColourCreateCommand, ColourRandomCommand, ColourRemoveCommand))
+        val commands = loadObjects(this::class.java.`package`.name, Command::class.java)
+                .minus(this)
+                .minus(ColoursCommand)
+        addCommands(commands)
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
@@ -119,7 +118,7 @@ object ColourCommand: Command(
 /**
  *  Converts a javafx.scene.paint.Color object to java.awt.Color
  */
-fun javafx.scene.paint.Color.toJavaAwtColor(): java.awt.Color
+fun Color.toJavaAwtColor(): java.awt.Color
 {
     // Get the hex value of the colour and return it into the java.awt.Color object.
     val hex = Splitter.fixedLength(2).split(this.toString().substring(2, 10)).map { it.toInt(16) }
