@@ -11,8 +11,6 @@ val CHANNEL_MENTION_REGEX = Regex("<#[0-9]{17,19}$")
 val ROLE_MENTION_REGEX = Regex("<@&[0-9]{17,19}$")
 val DISCORD_ID_REGEX = Regex("[0-9]{17,19}$")
 
-val GENERAL_REGEX = Regex("")
-
 fun getId(string: String): Long
 {
     val regexes = listOf(USER_MENTION_REGEX, CHANNEL_MENTION_REGEX, ROLE_MENTION_REGEX, DISCORD_ID_REGEX)

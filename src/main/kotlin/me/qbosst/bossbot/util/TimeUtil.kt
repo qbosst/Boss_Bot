@@ -7,22 +7,27 @@ val dateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yy
 
 fun secondsToString(seconds: Long): String
 {
-    var secs = seconds
+    if(seconds == 0L)
+        return "0s"
+
+    val negative = seconds < 0
+    var secs = if(negative) -seconds else seconds
     val sb = StringBuilder()
 
-    return if(secs > 0) {
-        for(unit in TimeUnit.values().sortedBy { it.value }.reversed())
+    for(unit in TimeUnit.values().sortedBy { it.value }.reversed())
+    {
+        val calc = secs / unit.value
+        if(calc > 0)
         {
-            val calc = secs / unit.value
-            if(calc > 0)
-            {
-                sb.append(calc).append("${unit.shortName} ")
-                secs -= (calc) * unit.value
-            }
+            sb.append(calc).append("${unit.shortName} ")
+            secs -= (calc) * unit.value
         }
+    }
 
-        sb.deleteCharAt(sb.lastIndex).toString()
-    } else "0s"
+    sb.deleteCharAt(sb.lastIndex).toString()
+    if(negative)
+        sb.insert(0, "-")
+    return sb.toString()
 }
 
 fun getSeconds(time: String): Long

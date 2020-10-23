@@ -2,6 +2,8 @@ package me.qbosst.bossbot.bot.commands.misc.time
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.entities.database.UserData
+import me.qbosst.bossbot.util.getMemberByString
+import me.qbosst.bossbot.util.getSeconds
 import me.qbosst.bossbot.util.loadObjects
 import me.qbosst.bossbot.util.secondsToString
 import net.dv8tion.jda.api.entities.User
@@ -28,16 +30,28 @@ object TimeCommand: Command(
         val authorZoneId = getZoneId(event.author)
         if(args.isNotEmpty())
         {
-            if(args.isNotEmpty())
+            val target = event.guild.getMemberByString(args[0])?.user
+            if(target == null)
+                event.channel.sendMessage("Could not find member").queue()
+            else if(args.size > 1)
             {
-                val target = event.message.mentionedUsers.firstOrNull()
-                if(target == null)
-                    event.channel.sendMessage("Could not find member").queue()
+                val targetZoneId = getZoneId(target)
+                if(targetZoneId == null)
+                    event.channel.sendMessage("${target.asTag} does not have a timezone setup").queue()
                 else
-                    event.channel.sendMessage(getZoneInfo(Pair(event.author, authorZoneId), Pair(target, getZoneId(target)))).queue()
+                {
+                    val seconds = getSeconds(args.drop(1).joinToString(" "))
+                    var date = ZonedDateTime.now(targetZoneId)
+                    if(seconds > 0)
+                        date = date.plusSeconds(seconds)
+                    else if(seconds < 0)
+                        date = date.minusSeconds(-seconds)
+
+                    event.channel.sendMessage("The time for ${target.asTag} in `${secondsToString(seconds)}` will be `${formatZonedDateTime(date)}`").queue()
+                }
             }
             else
-                event.channel.sendMessage("Please mention a member.").queue()
+                event.channel.sendMessage(getZoneInfo(Pair(event.author, authorZoneId), Pair(target, getZoneId(target)))).queue()
         }
         else
         {
@@ -46,31 +60,31 @@ object TimeCommand: Command(
         }
     }
 
-    fun getZoneId(user: User): ZoneId? = UserData.get(user).zone_id
+    private fun getZoneId(user: User): ZoneId? = UserData.get(user).zone_id
 
-    fun getZoneInfo(author: Pair<User, ZoneId?>, target: Pair<User, ZoneId?> = author): String
+    private fun getZoneInfo(author: Pair<User, ZoneId?>, target: Pair<User, ZoneId?> = author): String
     {
         val isSelf = author.first == target.first
-        if(author.second == null)
+        if(target.second == null)
             return "${if(isSelf) "You" else target.first.asTag} does not have a timezone setup"
+
         val sb = StringBuilder()
                 .append("The time for ${if(isSelf) "you" else target.first.asTag} is `${getCurrentTime(target.second!!)}`. ")
                 .append("${if(isSelf) "Your" else target.first.asTag.plus("'s")} time zone is `${target.second!!.id}`. ")
-        if(author.second != target.second)
-        {
-            val differenceInSeconds = getZoneDifference(author.second!!, target.second!!)
-            val differenceFormatted = secondsToString(if(differenceInSeconds < 0) -differenceInSeconds else differenceInSeconds)
 
-            sb.append("${target.first.asTag} is `${differenceFormatted}` ${if(differenceInSeconds > 0) "ahead of" else "behind"} you")
-        }
-        else if(!isSelf)
-            sb.append("They are in the same timezone as you!")
-
+        if(author.second != null)
+            if(author.second != target.second)
+            {
+                val differenceInSeconds = getZoneDifference(author.second!!, target.second!!)
+                sb.append("${target.first.asTag} is `${secondsToString(if(differenceInSeconds > 0) differenceInSeconds else -differenceInSeconds )}` ${if(differenceInSeconds > 0) "ahead of" else "behind"} you")
+            }
+            else if(!isSelf)
+                sb.append("They are in the same timezone as you!")
 
         return sb.toString()
     }
 
-    fun getZoneDifference(zone1: ZoneId, zone2: ZoneId): Long
+    private fun getZoneDifference(zone1: ZoneId, zone2: ZoneId): Long
     {
         val now = LocalDateTime.now()
         val zone1Time = now.atZone(zone1)
@@ -81,5 +95,7 @@ object TimeCommand: Command(
             return Duration.between(zone2Time, zone1Time).seconds
     }
 
-     fun getCurrentTime(zoneId: ZoneId): String = ZonedDateTime.now(zoneId).format(DateTimeFormatter.ofPattern("HH:mm:ss | dd/MM/yyyy"))
+    private fun getCurrentTime(zoneId: ZoneId): String = formatZonedDateTime(ZonedDateTime.now(zoneId))
+
+    private fun formatZonedDateTime(time: ZonedDateTime): String = time.format(DateTimeFormatter.ofPattern("HH:mm:ss | dd/MM/yyyy"))
 }

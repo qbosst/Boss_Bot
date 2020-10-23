@@ -13,6 +13,7 @@ import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
+import net.dv8tion.jda.api.utils.ChunkingFilter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
@@ -78,7 +79,7 @@ object BossBot {
                         if(!events.contains(parameter.type))
                             @Suppress("UNCHECKED_CAST") events.add(parameter.type as Class<out GenericEvent>)
 
-        LOG.debug("Registered ${events.size} events(s): ${events.joinToString(",") { it.simpleName }}")
+        LOG.debug("Registered ${events.size} events(s): ${events.joinToString(", ") { it.simpleName }}")
 
         return DefaultShardManagerBuilder.create(GatewayIntent.fromEvents(events))
                 .setToken(token)
@@ -86,6 +87,8 @@ object BossBot {
                 .setActivity(Activity.of(Activity.ActivityType.DEFAULT, "Loading..."))
                 .addEventListeners(listeners)
                 .setAudioSendFactory(NativeAudioSendFactory())
+                .setChunkingFilter(ChunkingFilter.ALL)
+                .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .build()
     }
 }
