@@ -11,84 +11,47 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.util.regex.Pattern
 
-object PlayCommand : MusicCommand(
+object PlayCommand: MusicCommand(
         "play",
-        connect = true,
-        botPermissions = listOf(Permission.MESSAGE_ADD_REACTION)
+        description = "Plays music through the bot",
+        usage = listOf("<track url|track name|playlist>"),
+        botPermissions = listOf(Permission.VOICE_SPEAK),
+        connect = true
 )
 {
-    //private val youtube = YouTube.Builder(NetHttpTransport(), JacksonFactory()) {}.setApplicationName("youtube-cmdline-search-sample").build()
-
-    override fun onSelfNotConnected(event: MessageReceivedEvent, args: List<String>)
-    {
-        val channel = event.member!!.voiceState!!.channel!!
-        if(connect(channel))
-        {
-            run(event, args)
-        }
-        else
-        {
-            event.channel.sendMessage("I do not have the following permissions for voice channel `${channel.name}`; `${fullBotPermissions.joinToString("`, `")}`").queue()
-        }
-    }
-
     override fun run(event: MessageReceivedEvent, args: List<String>)
     {
         if(args.isNotEmpty())
         {
-            val search = args.joinToString(" ")
-            event.channel.sendMessage("Searching for `${search.maxLength()}`...").queue()
-            { message ->
-                val searchArgument = if(!isUrl(search))
+            val query = args.joinToString(" ")
+            event.channel.sendMessage("Searching for... `${query.maxLength(64)}`").queue()
+            {
+                val searchArgument = if(!isUrl(query))
                 {
                     // Creates the query for youtube
-                    val queryUrl = "https://www.youtube.com/results?search_query=${search.replace("\\s+".toRegex(), "+")}"
+                    val queryUrl = "https://www.youtube.com/results?search_query=${query.replace(Regex("\\s+"), "+")}"
 
-                    // Gets the full html response from youtube
+                    // Gets the full HTML response from youtube
                     val response = IOUtils.toString(URL(queryUrl), Charset.forName("UTF-8"))
                     val matcher = Pattern.compile("\"videoId(s)?\":\"\\w+\"").matcher(response)
 
-                    // Filters the full html response for the first video id it finds, if there is none there were no results with that query
+                    // Filters the full HTML response for the first video id it finds, if there is none there were no results with that query
                     val videoId = if(matcher.find()) matcher.group() else null
                     if(videoId != null)
-                    {
                         "youtube.com/watch?v=${JSONObject("{$videoId}")["videoId"]}"
-                    }
                     else
                     {
-                        message.editMessage("I could not find anything relating to`${search.maxLength()}`. Please try different keywords.").queue()
+                        it.editMessage("I could not find anything relating to `${query.maxLength()}`. Please try different keywords.").queue()
                         return@queue
                     }
+                } else query
 
-                    /*
-                    I am searching for videos this way instead of using the official youtube data api
-                    as i could only use 10,000 quotas per day and searching a video would cost 100 quotas.
-                    The bot at the moment is too small for me to apply to a bigger allowance so i came up with this
-                    solution, as it will let me query more videos.
-                     */
-                }
-                else
-                {
-                    search
-                }
-                GuildMusicManager.get(event.guild).loadAndPlay(message, searchArgument)
+                GuildMusicManager.get(event.guild).scheduler.loadAndPlay(it, searchArgument)
             }
         }
         else
-        {
-            event.channel.sendMessage("Please provide the song url or keywords of the song that you would like to play").queue()
-        }
+            event.channel.sendMessage("Please provide the song you would like to play").queue()
     }
 
-    private fun isUrl(input: String): Boolean
-    {
-        return try
-        {
-            URL(input)
-            true
-        } catch (e: MalformedURLException)
-        {
-            false
-        }
-    }
+    private fun isUrl(input: String): Boolean = try { URL(input); true } catch (e: MalformedURLException) { false }
 }

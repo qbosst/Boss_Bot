@@ -22,3 +22,9 @@ fun String.isBoolTrue(): Boolean = toLowerCase().matches(Regex("t(rue)?")) || th
  *  @return Whether the string represents a boolean that is false
  */
 fun String.isBoolFalse(): Boolean = toLowerCase().matches(Regex("f(alse)?")) || this == "0"
+
+fun String.toBooleanOrNull(): Boolean? = when {
+    this.isBoolFalse() -> false
+    this.isBoolTrue() -> true
+    else -> null
+}

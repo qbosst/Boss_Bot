@@ -1,13 +1,18 @@
 package me.qbosst.bossbot.bot.commands.music
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.database.managers.getSettings
+import me.qbosst.bossbot.entities.music.GuildAudioEventListener
+import me.qbosst.bossbot.entities.music.GuildMusicManager
+import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
+/**
+ *  @param connect Whether or not to automatically connect if the bot is not already connected. Default is false
+ */
 abstract class MusicCommand(
         name: String,
         description: String = "none",
@@ -16,74 +21,41 @@ abstract class MusicCommand(
         aliases: List<String> = listOf(),
         userPermissions: List<Permission> = listOf(),
         botPermissions: List<Permission> = listOf(),
-        private val connect: Boolean = false
+        private val connect: Boolean = false,
+        private val requiresMemberConnected: Boolean = true,
+        private val requiresSelfConnected: Boolean = true
 
-) : Command(name, description, usage, examples, aliases, true, userPermissions,
-        if(connect) botPermissions.plus(arrayOf(Permission.VOICE_CONNECT, Permission.VOICE_SPEAK)) else botPermissions)
+): Command(name, description, usage, examples, aliases, true, userPermissions, botPermissions)
 {
+    private val listeners = loadObjects(this::class.java.`package`.name, GuildAudioEventListener::class.java)
 
-    final override fun execute(event: MessageReceivedEvent, args: List<String>) {
-
-        if(event.member!!.voiceState?.inVoiceChannel() == true)
+    final override fun execute(event: MessageReceivedEvent, args: List<String>)
+    {
+        val member = event.member!!
+        if(event.guild.audioManager.isConnected)
         {
-            if(event.guild.audioManager.isConnected)
+            if(member.voiceState!!.inVoiceChannel())
             {
-                if(event.member!!.voiceState!!.channel == event.guild.audioManager.connectedChannel)
-                {
+                if(event.guild.audioManager.connectedChannel == member.voiceState!!.channel)
                     run(event, args)
-                }
+                else if(!requiresMemberConnected)
+                    run(event, args)
                 else if(connect)
-                {
-                    if(getMembersConnected(event.guild, false).isEmpty() || event.member!!.isDj())
-                    {
-                        val channel = event.member!!.voiceState!!.channel!!
-                        if(connect(channel))
-                        {
-                            run(event, args)
-                        }
-                        else
-                        {
-                            event.channel.sendMessage("I do not have the following permissions for voice channel `${channel.name}`; `${fullBotPermissions.joinToString("`, `")}`").queue()
-                        }
-                    }
-                    else
-                    {
-                        onMemberInWrongChannel(event, args)
-                    }
-                }
+                    attemptConnection(event, args)
                 else
-                {
                     onMemberInWrongChannel(event, args)
-                }
             }
-            else if(connect)
-            {
-                if(getMembersConnected(event.guild, false).isEmpty() || event.member!!.isDj())
-                {
-                    val channel = event.member!!.voiceState!!.channel!!
-                    if(connect(channel))
-                    {
-                        run(event, args)
-                    }
-                    else
-                    {
-                        event.channel.sendMessage("I do not have the following permissions for voice channel `${channel.name}`; `${fullBotPermissions.joinToString("`, `")}`").queue()
-                    }
-                }
-                else
-                {
-                    onMemberInWrongChannel(event, args)
-                }
-            }
+            else if(!requiresMemberConnected)
+                run(event, args)
             else
-            {
-                onSelfNotConnected(event, args)
-            }
+                onMemberNotConnected(event, args)
         }
+        else if(!requiresSelfConnected)
+            run(event, args)
+        else if(connect)
+            attemptConnection(event, args)
         else
-        {
-            onMemberNotConnected(event, args)
-        }
+            onSelfNotConnected(event, args)
     }
 
     open fun onSelfNotConnected(event: MessageReceivedEvent, args: List<String>)
@@ -93,14 +65,10 @@ abstract class MusicCommand(
 
     open fun onMemberNotConnected(event: MessageReceivedEvent, args: List<String>)
     {
-        if(event.guild.audioManager.isConnected)
-        {
+        if(!event.guild.audioManager.isConnected)
             onSelfNotConnected(event, args)
-        }
         else
-        {
             event.channel.sendMessage("You must be connected to a voice channel for me to join!").queue()
-        }
     }
 
     open fun onMemberInWrongChannel(event: MessageReceivedEvent, args: List<String>)
@@ -110,30 +78,10 @@ abstract class MusicCommand(
 
     abstract fun run(event: MessageReceivedEvent, args: List<String>)
 
-    protected fun Member.isDj(): Boolean
-    {
-        val dj = this.guild.getSettings().getDjRole(this.guild)
-        return if(dj != null)
-        {
-            roles.contains(dj)
-        }
-        else
-        {
-            hasPermission(Permission.ADMINISTRATOR)
-        }
-    }
-
     protected fun getMembersConnected(guild: Guild, includeBots: Boolean = false): List<Member>
     {
-        val members: List<Member> = guild.audioManager.connectedChannel?.members ?: return emptyList()
-        return if(includeBots)
-        {
-            members
-        }
-        else
-        {
-            members.filter { !it.user.isBot }
-        }
+        val members = guild.audioManager.connectedChannel?.members ?: return listOf()
+        return if(includeBots) members else members.filter { !it.user.isBot }
     }
 
     protected fun connect(channel: VoiceChannel): Boolean
@@ -143,11 +91,25 @@ abstract class MusicCommand(
         {
             guild.audioManager.openAudioConnection(channel)
             true
-        }
-        else
-        {
-            false
-        }
+        } else false
     }
 
+    private fun attemptConnection(event: MessageReceivedEvent, args: List<String>)
+    {
+        val channel = event.member!!.voiceState!!.channel!!
+        if(getMembersConnected(channel.guild, false).isEmpty())
+            if(connect(channel))
+            {
+                val manager = GuildMusicManager.get(event.guild)
+                manager.scheduler.channelId = event.channel.idLong
+                for(listener in listeners)
+                    manager.addListener(listener)
+
+                run(event, args)
+            }
+            else
+                event.channel.sendMessage("I cannot connect to this channel").queue()
+        else
+            onMemberInWrongChannel(event, args)
+    }
 }

@@ -29,6 +29,7 @@ object ShutdownCommand: DeveloperCommand(
                     reactionEvent.messageIdLong == message.idLong && reactionEvent.userIdLong == event.author.idLong
                 },
                 { reactionEvent ->
+                    message.clearReactions().queue()
                     when(reactionEvent.reactionEmote.name)
                     {
                         TICK ->
@@ -41,7 +42,6 @@ object ShutdownCommand: DeveloperCommand(
                         else ->
                             message.editMessage("I Was expecting a response of $TICK or ${CROSS}...").queue()
                     }
-                    message.clearReactions().queue()
                 }, 120, TimeUnit.SECONDS,
                 {
                     message.editMessage("Timed out...").queue()

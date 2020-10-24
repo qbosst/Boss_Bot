@@ -4,9 +4,9 @@ import me.qbosst.bossbot.bot.TICK
 import me.qbosst.bossbot.entities.music.GuildMusicManager
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object PauseCommand: MusicCommand(
-        "pause",
-        description = "Pauses the current song"
+object SkipCommand: MusicCommand(
+        "skip",
+        description = "Skips the current track"
 )
 {
     override fun run(event: MessageReceivedEvent, args: List<String>)
@@ -16,7 +16,7 @@ object PauseCommand: MusicCommand(
             event.channel.sendMessage("There is nothing in the queue!").queue()
         else
         {
-            manager.paused = !manager.paused
+            manager.nextTrack()
             event.message.addReaction(TICK).queue()
         }
     }

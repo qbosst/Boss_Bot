@@ -156,7 +156,7 @@ object MessageListener: EventListener, CommandManagerImpl()
         {
             val old = messageCache.putMessage(event.message)
 
-            if(event.author.isBot)
+            if(old?.getAuthor(event.jda.shardManager!!)?.isBot == true)
                 return
 
             // Logs the message update event
@@ -183,6 +183,9 @@ object MessageListener: EventListener, CommandManagerImpl()
             // Logs the message delete event
             val old = messageCache.pullMessage(event.guild, event.messageIdLong)
             val textChannel = event.guild.getSettings().getMessageLogsChannel(event.guild) ?: return
+
+            if(old?.getAuthor(event.jda.shardManager!!)?.isBot == true)
+                return
 
             val embed = EmbedBuilder()
                     .setAuthor("Message Deleted", null, old?.getAuthor(event.jda.shardManager!!)?.effectiveAvatarUrl)
