@@ -4,6 +4,7 @@ import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import me.qbosst.bossbot.bot.userNotFound
+import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.getUserByString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.User
@@ -13,7 +14,8 @@ import kotlin.random.Random
 object AvatarCommand: Command(
         "avatar",
         "Displays a user's avatar",
-        aliases = listOf("av"),
+        usage_raw = listOf("[@user]"),
+        aliases_raw = listOf("av"),
         guildOnly = false
 )
 {
@@ -34,7 +36,7 @@ object AvatarCommand: Command(
         event.channel.sendMessage(EmbedBuilder()
                 .setDescription("[${target.asTag}](${target.effectiveAvatarUrl})")
                 .setImage(target.effectiveAvatarUrl + "?size=256")
-                .setColor(if(event.isFromGuild) event.guild.selfMember.color else Random.nextColour())
+                .setColor(event.getGuildOrNull()?.selfMember?.color ?: Random.nextColour())
                 .build()).queue()
     }
 

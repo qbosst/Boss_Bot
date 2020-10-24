@@ -1,11 +1,15 @@
 package me.qbosst.bossbot.database.managers
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.database.tables.MemberDataTable
 import net.dv8tion.jda.api.entities.Member
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.jetbrains.exposed.sql.statements.UpdateStatement
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData>()
 {
@@ -34,13 +38,20 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
 
     fun get(guildId: Long, userId: Long) = get(genKey(guildId, userId))
 
-    fun update(guildId: Long, userId: Long, insert: (InsertStatement<Number>) -> Unit, update: (ResultRow, UpdateStatement) -> Unit)
+    fun update(guildId: Long, userId: Long, insert: (InsertStatement<Number>) -> Unit, update: (MemberData, UpdateStatement) -> Unit)
     {
-        pull(genKey(guildId, userId))
         transaction {
-            val old: ResultRow? = MemberDataTable
+            val old: MemberData? = pull(genKey(guildId, userId)) ?: MemberDataTable
                     .select { MemberDataTable.guild_id.eq(guildId) and MemberDataTable.user_id.eq(userId)}
                     .fetchSize(1)
+                    .map { row ->
+                        MemberData(
+                                experience = row[MemberDataTable.experience],
+                                message_count = row[MemberDataTable.message_count],
+                                text_chat_time = row[MemberDataTable.text_chat_time],
+                                voice_chat_time = row[MemberDataTable.voice_chat_time]
+                        )
+                    }
                     .singleOrNull()
 
             if(old == null)
@@ -56,10 +67,35 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
                         {
                             update.invoke(old, it)
                         }
+
+            val new = MemberDataTable
+                    .select { MemberDataTable.guild_id.eq(guildId) and MemberDataTable.user_id.eq(userId) }
+                    .fetchSize(1)
+                    .map { row ->
+                        MemberData(
+                                experience = row[MemberDataTable.experience],
+                                message_count = row[MemberDataTable.message_count],
+                                text_chat_time = row[MemberDataTable.text_chat_time],
+                                voice_chat_time = row[MemberDataTable.voice_chat_time]
+                        )
+                    }
+                    .singleOrNull() ?: EMPTY
+
+            onUpdate(guildId, userId, old ?: EMPTY, new)
         }
     }
 
-    fun update(member: Member, insert: (InsertStatement<Number>) -> Unit, update: (ResultRow, UpdateStatement) -> Unit) = update(member.guild.idLong, member.idLong, insert, update)
+    fun update(member: Member, insert: (InsertStatement<Number>) -> Unit, update: (MemberData, UpdateStatement) -> Unit) = update(member.guild.idLong, member.idLong, insert, update)
+
+    fun onUpdate(guildId: Long, userId: Long, old: MemberData, new: MemberData)
+    {
+        val guild = BossBot.SHARDS_MANAGER.getGuildById(guildId)
+        val user = BossBot.SHARDS_MANAGER.getUserById(userId)
+        BossBot.LOG.debug(
+                "Updated stats for " + if (user == null) "User $userId" else "U:${user.asTag} ($userId)" +
+                        " in " + if(guild == null) "Guild $guildId " else "G:${guild.name} ($guildId)"
+        )
+    }
 
     private fun genKey(guildId: Long, userId: Long): Pair<Long, Long> = Pair(guildId, userId)
 

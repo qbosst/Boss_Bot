@@ -12,13 +12,12 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 object TimeCommand: Command(
         "time",
         "Shows the time that users are in",
-        usage = listOf("[@user] [duration]"),
-        examples = listOf("@boss", "@boss 3h")
+        usage_raw = listOf("[@user] [duration]"),
+        examples_raw = listOf("@boss", "@boss 3h")
 )
 {
     init
@@ -98,5 +97,5 @@ object TimeCommand: Command(
 
     private fun getCurrentTime(zoneId: ZoneId): String = formatZonedDateTime(ZonedDateTime.now(zoneId))
 
-    private fun formatZonedDateTime(time: ZonedDateTime): String = time.format(DateTimeFormatter.ofPattern("HH:mm:ss | dd/MM/yyyy"))
+    private fun formatZonedDateTime(time: ZonedDateTime): String = TimeUtil.DATE_TIME_FORMATTER.format(time)
 }

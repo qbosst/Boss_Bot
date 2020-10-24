@@ -15,8 +15,8 @@ import java.awt.Color as Colour
 object ColoursCommand: Command(
     "colours",
     "Provides a list of colours that are available",
-    aliases = listOf("colors"),
-    usage = listOf("[page number]", "guild [page number]", "system [page number]"),
+    aliases_raw = listOf("colors"),
+    usage_raw = listOf("[page number]", "guild [page number]", "system [page number]"),
     guildOnly = false,
     botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 ) {

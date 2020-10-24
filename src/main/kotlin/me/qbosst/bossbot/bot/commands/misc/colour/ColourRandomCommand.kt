@@ -14,9 +14,9 @@ import kotlin.random.Random
 object ColourRandomCommand: Command(
         "random",
         "Generates a random colour",
-        usage = listOf("[hasAlpha]"),
-        examples = listOf("[true / false]"),
-        aliases = listOf("rand"),
+        usage_raw = listOf("[hasAlpha]"),
+        examples_raw = listOf("[true / false]"),
+        aliases_raw = listOf("rand"),
         guildOnly = false,
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
 )

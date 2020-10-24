@@ -8,10 +8,14 @@ import java.io.StringWriter
 import javax.script.ScriptEngineManager
 
 /**
- *  Command used to convert execute java code in real time from a string
+ *  Command used to convert execute code in real time from a string
  */
 object EvalCommand : DeveloperCommand(
-        "eval"
+        "eval",
+        description = "Converts your input into code and executes it",
+        usage = listOf("<code>"),
+        examples = listOf("channel.sendMessage(\"Hello!\").queue()"),
+        guildOnly = false
 )
 {
     // The engine that is used to translate the string into code
@@ -35,10 +39,12 @@ object EvalCommand : DeveloperCommand(
         else if(args.isNotEmpty())
         {
             val code = args.joinToString(" ")
-            // variables that can be accessed in the code
+            // Variables that can be accessed in the code
             engine.put("event", event)
             engine.put("jda", event.jda)
             engine.put("channel", event.channel)
+            engine.put("author", event.author)
+            engine.put("member", event.member)
 
             // Try to execute code, if exception occurs log it back to the channel.
             try

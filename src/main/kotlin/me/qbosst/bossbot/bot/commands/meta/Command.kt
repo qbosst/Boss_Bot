@@ -10,9 +10,9 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
  *
  *  @param name The name of the command
  *  @param description Brief description of what the command does (default = "none")
- *  @param usage Usages of the command (optional)
- *  @param examples Examples of the usage of the command (optional)
- *  @param aliases Different names that can be used to invoke the command (optional)
+ *  @param usage_raw Usages of the command (optional)
+ *  @param examples_raw Examples of the usage of the command (optional)
+ *  @param aliases_raw Different names that can be used to invoke the command (optional)
  *  @param guildOnly Whether the command can only be used in guilds or not (default = true)
  *  @param userPermissions The permissions that the user invoking the command requires (optional)
  *  @param botPermissions The permissions that the self user (bot) will need to execute the command
@@ -20,9 +20,9 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 abstract class Command (
         name: String,
         val description: String = "none",
-        usage: List<String> = listOf(),
-        examples: List<String> = listOf(),
-        aliases: List<String> = listOf(),
+        val usage_raw: List<String> = listOf(),
+        val examples_raw: List<String> = listOf(),
+        val aliases_raw: List<String> = listOf(),
         val guildOnly: Boolean = true,
         private val userPermissions: List<Permission> = listOf(),
         botPermissions: List<Permission> = listOf()
@@ -30,9 +30,14 @@ abstract class Command (
 {
     val name = name.replace(Regex("\\s+"), "")
 
-    val usage: List<String> = usage.map { str -> "$fullName $str" }
-    val examples: List<String> = examples.map { str -> "$fullName $str" }
-    val aliases: List<String> = aliases.map { it.replace(Regex("\\s+"), "") }
+    val usage: List<String>
+        get() = usage_raw.map { str -> "$fullName $str" }
+
+    val examples: List<String>
+        get() = examples_raw.map { str -> "$fullName $str" }
+
+    val aliases: List<String>
+        get() = aliases_raw.map { it.replace(Regex("\\s+"), "") }
 
     val botPermissions: List<Permission> = botPermissions.plus(Permission.MESSAGE_WRITE)
 
@@ -48,10 +53,7 @@ abstract class Command (
      *
      *  @return Whether the user has permission or not
      */
-    open fun hasPermission(guild: Guild?, user: User): Boolean
-    {
-        return true
-    }
+    open fun hasPermission(guild: Guild?, user: User): Boolean = true
 
     /**
      *  Gets the full name of a command.
@@ -115,10 +117,30 @@ abstract class Command (
 
     final override fun equals(other: Any?): Boolean
     {
-        return (other is Command) && (fullName == other.fullName)
+        if(other !is Command)
+            return false
+        return other.name == name &&
+                other.description == description &&
+                other.usage_raw == usage_raw &&
+                other.examples_raw == examples_raw &&
+                other.aliases_raw == aliases_raw &&
+                other.guildOnly == guildOnly &&
+                other.userPermissions == userPermissions &&
+                other.botPermissions == botPermissions &&
+                other.parent == parent
     }
 
-    final override fun hashCode(): Int = fullName.hashCode() * 7
-
-    final override fun toString(): String = "Command($fullName|$description)"
+    final override fun hashCode(): Int
+    {
+        var result = name.hashCode()
+        result = 31 * result + usage_raw.hashCode()
+        result = 31 * result + examples_raw.hashCode()
+        result = 31 * result + aliases_raw.hashCode()
+        result = 31 * result + guildOnly.hashCode()
+        result = 31 * result + userPermissions.hashCode()
+        result = 31 * result + description.hashCode()
+        result = 31 * result + botPermissions.hashCode()
+        result = 31 * result + (parent?.hashCode() ?: 0)
+        return result
+    }
 }

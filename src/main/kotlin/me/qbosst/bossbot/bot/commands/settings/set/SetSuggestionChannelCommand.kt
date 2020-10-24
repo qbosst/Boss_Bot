@@ -9,7 +9,8 @@ import net.dv8tion.jda.api.entities.TextChannel
 
 object SetSuggestionChannelCommand: SetTextChannelCommand(
         "suggestion",
-        displayName = "Suggestion Channel"
+        displayName = "Suggestion Channel",
+        aliases = listOf("suggestions")
 )
 {
     override fun get(guild: Guild): TextChannel? = guild.getSettings().getSuggestionChannel(guild)

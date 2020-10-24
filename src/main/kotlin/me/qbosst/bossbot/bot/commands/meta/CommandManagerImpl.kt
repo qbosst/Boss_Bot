@@ -24,5 +24,5 @@ open class CommandManagerImpl: ICommandManager
 
     override fun getCommand(name: String): Command? = commands[name.toLowerCase()]
 
-    override fun getCommands(): Collection<Command> = commands.values
+    override fun getCommands(): Collection<Command> = commands.values.distinct()
 }

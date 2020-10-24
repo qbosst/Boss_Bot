@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit
 
 object SuggestionCommand: Command(
         "suggestion",
-        aliases = listOf("suggest"),
-        usage = listOf("<suggestion>"),
+        aliases_raw = listOf("suggest"),
+        usage_raw = listOf("<suggestion>"),
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ADD_REACTION)
 ), EventListener
 {

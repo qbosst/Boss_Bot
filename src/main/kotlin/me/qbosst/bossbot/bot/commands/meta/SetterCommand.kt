@@ -16,7 +16,8 @@ abstract class SetterCommand<T>(
         botPermissions: List<Permission> = listOf(),
         val displayName: String
 
-): Command(name, description, usage, examples, aliases, true, userPermissions, botPermissions)
+): Command(name, description,
+        usage.plus("<none|null|default>"), examples.plus("default"), aliases, true, userPermissions, botPermissions)
 {
     final override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
@@ -56,7 +57,7 @@ abstract class SetterCommand<T>(
     private fun onSuccessfulSet(channel: TextChannel, old: T?, new: T?)
     {
         channel.sendMessage(EmbedBuilder()
-                .setTitle(displayName)
+                .setTitle("Successfully set: $displayName")
                 .addField("Old", getString(old), true)
                 .addField("New", getString(new), true)
                 .setColor(channel.guild.selfMember.colorRaw)

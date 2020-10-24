@@ -74,6 +74,7 @@ object GuildSettingsManager: Manager<Long, GuildSettingsManager.GuildSettings>()
         transaction {
             GuildSettingsTable.deleteWhere { GuildSettingsTable.guild_id.eq(guild.idLong) }
         }
+        pull(guild.idLong)
     }
 
     data class GuildSettings(

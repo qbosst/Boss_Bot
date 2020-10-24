@@ -19,9 +19,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object LeaderboardCommand : Command(
         "leaderboard",
         "Displays stats",
-        usage = listOf("<stat>"),
-        examples = enumValues<Stats>().map { it.example },
-        aliases = listOf("lb"),
+        usage_raw = listOf("<stat>"),
+        examples_raw = enumValues<Stats>().map { it.example },
+        aliases_raw = listOf("lb"),
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {

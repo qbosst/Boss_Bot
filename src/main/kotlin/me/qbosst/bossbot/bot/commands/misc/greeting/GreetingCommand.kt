@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object GreetingCommand : Command(
         "greeting",
+        description = "Shows or sets your custom greeting message",
+        usage_raw = listOf("", "<new message>"),
         guildOnly = false
 )
 {

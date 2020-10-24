@@ -149,6 +149,7 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
         transaction {
             GuildColoursTable.deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) }
         }
+        pull(guild.idLong)
     }
 
     data class GuildColours(private val colours: Map<String, Color>)

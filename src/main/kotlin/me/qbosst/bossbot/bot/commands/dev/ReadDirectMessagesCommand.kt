@@ -10,8 +10,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ReadDirectMessagesCommand : DeveloperCommand(
         "readdms",
-        "Shows message history between the bot and a user in direct messages",
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES)
+        description = "Shows message history between the bot and a user in direct messages",
+        usage = listOf("@user"),
+        examples = listOf("@boss"),
+        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES),
+        guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
@@ -26,7 +29,7 @@ object ReadDirectMessagesCommand : DeveloperCommand(
             if(user != event.jda.selfUser)
                 user.openPrivateChannel().flatMap { it.iterableHistory }.flatMap { event.channel.sendFile(it.toByteArray(), "${user.asTag} message history.txt") }.queue({},
                         {
-                            event.channel.sendMessage("Something has went wrong while trying to obtain dms...").queue()
+                            event.channel.sendMessage("Something has went wrong while trying to obtain direct messages with ${user.asTag}...").queue()
                         })
             else
                 event.channel.sendMessage("I cannot check message history with myself!").queue()

@@ -9,7 +9,8 @@ import net.dv8tion.jda.api.entities.TextChannel
 
 object SetVoiceLogsChannelCommand: SetTextChannelCommand(
         "voicelogs",
-        displayName = "Voice Logs"
+        displayName = "Voice Logs",
+        aliases = listOf("voicelog", "vclogs", "vclog")
 )
 {
     override fun get(guild: Guild): TextChannel? = guild.getSettings().getVoiceLogsChannel(guild)

@@ -11,8 +11,8 @@ import java.time.ZoneId
 
 object TimeSetCommand: Command(
         "set",
-        "Sets the timezone that you are in",
-        usage = listOf("<zoneId>"),
+        description = "Sets the timezone that you are in",
+        usage_raw = listOf("<zoneId>"),
         botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES)
 )
 {

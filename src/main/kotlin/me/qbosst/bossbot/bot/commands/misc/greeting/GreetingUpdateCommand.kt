@@ -6,12 +6,13 @@ import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.getUserByString
-import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object GreetingUpdateCommand : DeveloperCommand(
         "update",
-        botPermissions = listOf(Permission.MESSAGE_WRITE)
+        description = "Updates a user's greeting message",
+        usage = listOf("@user <message>"),
+        guildOnly = false
 ) {
     override fun execute(event: MessageReceivedEvent, args: List<String>) {
         if (args.isNotEmpty())

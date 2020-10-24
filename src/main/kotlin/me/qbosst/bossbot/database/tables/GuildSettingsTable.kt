@@ -16,8 +16,8 @@ object GuildSettingsTable : Table()
 
     val dj_role_id = long("DJ_ROLE_ID").default(0L)
 
-    val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable().default(null)
-    val prefix = varchar("PREFIX", max_prefix_length).nullable().default(null)
+    val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable()
+    val prefix = varchar("PREFIX", max_prefix_length).nullable()
 
     override val primaryKey
         get() = PrimaryKey(guild_id)

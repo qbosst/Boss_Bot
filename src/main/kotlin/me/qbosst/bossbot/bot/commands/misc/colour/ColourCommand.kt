@@ -20,9 +20,9 @@ import javax.imageio.ImageIO
 object ColourCommand: Command(
         "colour",
         "Shows information about a specific colour",
-        usage = listOf("<colour name | hex>"),
-        examples = listOf("purple", "0feeed"),
-        aliases = listOf("color"),
+        usage_raw = listOf("<colour name | hex>"),
+        examples_raw = listOf("purple", "0feeed"),
+        aliases_raw = listOf("color"),
         guildOnly = false,
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
 ) {

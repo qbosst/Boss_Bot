@@ -16,6 +16,7 @@ object SetCommand: Command(
     init
     {
         val commands = loadObjectOrClass(BossBot::class.java.`package`.name, SetterCommand::class.java)
+                .sortedBy { it.displayName }
         addCommands(commands)
     }
 
@@ -26,10 +27,13 @@ object SetCommand: Command(
                 .setTitle(event.guild.name + (if(event.guild.name.endsWith('s')) "'" else "'s") + " Settings")
 
         @Suppress("UNCHECKED_CAST")
-        for(command in getCommands() as Collection<SetterCommand<Any>>)
-            embed.addField(command.displayName, command.getString(command.get(event.guild)), true)
+        (getCommands() as Collection<SetterCommand<Any>>)
+                .forEach {
+                    embed.addField(it.displayName, it.getString(it.get(event.guild)), true)
+                }
         if(embed.fields.size % 3 == 2)
             embed.addBlankField(true)
+
         event.channel.sendMessage(embed.build()).queue()
     }
 }

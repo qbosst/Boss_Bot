@@ -15,11 +15,14 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object HelpCommand: Command(
         "help",
+        description = "Provides a help menu or additional information about a command",
+        usage_raw = listOf("<page number>", "<command>"),
+        examples_raw = listOf("1", loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java).random().name),
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
-    private val allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
-            .sortedBy { it.fullName }
+    private val allCommands: Collection<Command>
+        get() = MessageListener.allCommands
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
@@ -52,9 +55,7 @@ object HelpCommand: Command(
                 event.channel.sendMessage("Could not find command `${args[0].maxLength()}`").queue()
         }
         else
-        {
             event.channel.sendMessage(getHelpEmbed(event, 0).build()).queue()
-        }
     }
 
     private fun getHelpEmbed(event: MessageReceivedEvent, page: Int): EmbedBuilder

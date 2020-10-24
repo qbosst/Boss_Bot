@@ -1,29 +1,43 @@
 package me.qbosst.bossbot.bot.commands.dev
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ActivityCommand : DeveloperCommand(
         "activity",
-        "Sets the bot's activity"
+        description = "Sets the self-user's activity",
+        usage = listOf("<activity> <description> | [url]"),
+        examples = listOf(
+                "${Activity.ActivityType.WATCHING.name.toLowerCase()} a sports event",
+                "${Activity.ActivityType.LISTENING.name.toLowerCase()} to music",
+                "${Activity.ActivityType.DEFAULT.name.toLowerCase()} fortnite",
+                "${Activity.ActivityType.STREAMING.name.toLowerCase()} minecraft | https://www.twitch.tv/ninja"
+        ),
+        guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         if(args.isNotEmpty())
         {
-            val type: Activity.ActivityType? = enumValues<Activity.ActivityType>().firstOrNull { it.name.equals(args[0], true) }
+            val type = enumValues<Activity.ActivityType>().firstOrNull { it.name.equals(args[0], true) }
             if(type == null)
                 event.channel.sendMessage("`${args[0].maxLength()}` is not a valid activity type!").queue()
             else
             {
-                event.jda.presence.activity = Activity.of(type, if(args.size > 1) args.drop(1).joinToString(" ") else kotlin.run
+                val arguments = args.drop(1).joinToString(" ").split(Regex("[|]"), 2).map { it.trim() }
+                val description = arguments.getOrNull(0)
+                val url = arguments.getOrNull(1)
+                if(description == null)
+                    event.channel.sendMessage("You must provide a description").queue()
+                else
                 {
-                    event.channel.sendMessage("Activity messages cannot be blank!").queue()
-                    return
-                })
-                event.channel.sendMessage("Setting the new activity. This may take a minute to show up").queue()
+                    val activity = Activity.of(type, description, url)
+                    BossBot.SHARDS_MANAGER.setPresence(event.jda.presence.status, activity)
+                    event.channel.sendMessage("Setting the new activity to `${type.name.toLowerCase()}`... This may take a few minutes").queue()
+                }
             }
         }
         else

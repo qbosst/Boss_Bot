@@ -10,9 +10,11 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
 object ShutdownCommand: DeveloperCommand(
-    "shutdown",
-    "Shuts down the bot",
-    botPermissions = listOf(Permission.MESSAGE_ADD_REACTION)
+        "shutdown",
+        description = "Shuts down the bot",
+        usage = listOf(""),
+        botPermissions = listOf(Permission.MESSAGE_ADD_REACTION),
+        guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
@@ -27,23 +29,25 @@ object ShutdownCommand: DeveloperCommand(
                     reactionEvent.messageIdLong == message.idLong && reactionEvent.userIdLong == event.author.idLong
                 },
                 { reactionEvent ->
-                    message.clearReactions().queue()
                     when(reactionEvent.reactionEmote.name)
                     {
                         TICK ->
                         {
-                            message.editMessage("ok bye").queue()
+                            message.editMessage("Ok bye... :(").queue()
                             exitProcess(0)
                         }
                         CROSS ->
-                            message.editMessage("ok").queue()
+                            message.editMessage("Thank you for not shutting me down :)").queue()
                         else ->
-                            message.editMessage("Was expecting a response of $TICK or ${CROSS}...").queue()
+                            message.editMessage("I Was expecting a response of $TICK or ${CROSS}...").queue()
                     }
+                    message.clearReactions().queue()
                 }, 120, TimeUnit.SECONDS,
                 {
                     message.editMessage("Timed out...").queue()
-                })
+                    message.clearReactions().queue()
+                }
+            )
         }
     }
 

@@ -1,6 +1,8 @@
 package me.qbosst.bossbot.bot.listeners
 
 import me.qbosst.bossbot.bot.BossBot
+import me.qbosst.bossbot.bot.PASTEL_RED
+import me.qbosst.bossbot.bot.PASTEL_YELLOW
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.meta.CommandManagerImpl
 import me.qbosst.bossbot.config.BotConfig
@@ -21,7 +23,6 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.internal.utils.tuple.MutablePair
-import java.awt.Color
 import java.time.OffsetDateTime
 
 object MessageListener: EventListener, CommandManagerImpl()
@@ -31,6 +32,7 @@ object MessageListener: EventListener, CommandManagerImpl()
     init
     {
         allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
+                .sortedBy { it.fullName }
         val commands = allCommands.filter { it.parent == null }
         BossBot.LOG.info("Registered ${commands.size} command(s): ${commands.joinToString(", ") { it.fullName }}")
         addCommands(commands)
@@ -58,9 +60,6 @@ object MessageListener: EventListener, CommandManagerImpl()
 
     private fun onMessageReceivedEvent(event: MessageReceivedEvent)
     {
-        if(event.author.isBot)
-            return
-
         if(event.isFromGuild)
         {
             // Checks if guild has a message logs channel, if so it will store the message
@@ -94,50 +93,55 @@ object MessageListener: EventListener, CommandManagerImpl()
             }
         }
 
-        val content = event.message.contentRaw
-        val prefix = event.getPrefix()
-
-        if(content.startsWith(prefix) && content.length > prefix.length)
+        if(!event.author.isBot)
         {
-            val args = content.substring(prefix.length).split(Regex("\\s+"))
-            var command = getCommand(args[0])
-            if(command != null)
+            val content = event.message.contentRaw
+            val prefix = event.getPrefix()
+
+            if(content.startsWith(prefix) && content.length > prefix.length)
             {
-                var index = 1
-                while (args.size > index)
+                val args = content.substring(prefix.length).split(Regex("\\s+"))
+                var command = getCommand(args[0])
+                if(command != null)
                 {
-                    val new = command?.getCommand(args[index]) ?: break
-                    command = new
-                    index++
-                }
-                command = command!!
+                    var index = 1
+                    while (args.size > index)
+                    {
+                        val new = command?.getCommand(args[index]) ?: break
+                        command = new
+                        index++
+                    }
+                    command = command!!
 
-                // Check permissions
-                if(!command.hasPermission(event.getGuildOrNull(), event.author))
-                    event.channel.sendMessage("You do not have permission for this command!").queue()
+                    // Check permissions
+                    if(!command.hasPermission(event.getGuildOrNull(), event.author))
+                        event.channel.sendMessage("You do not have permission for this command!").queue()
 
-                else if(event.isFromGuild && !(event.guild.selfMember.hasPermission(command.fullBotPermissions) || event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions)))
-                    if(event.guild.selfMember.hasPermission(event.textChannel, Permission.MESSAGE_WRITE))
-                        event.channel.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").queue()
+                    else if(event.isFromGuild && !(event.guild.selfMember.hasPermission(command.fullBotPermissions) || event.guild.selfMember.hasPermission(event.textChannel, command.fullBotPermissions)))
+                        if(event.guild.selfMember.hasPermission(event.textChannel, Permission.MESSAGE_WRITE))
+                            event.channel.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").queue()
+                        else
+                            event.author.openPrivateChannel().submit()
+                                    .thenCompose { it.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").submit() }
+
+                    else if(event.isFromGuild && !(event.member!!.hasPermission(command.fullUserPermissions) || event.member!!.hasPermission(event.textChannel, command.fullUserPermissions)))
+                        event.channel.sendMessage("You do not have permission for this command!").queue()
+
+                    else if(command.guildOnly && !event.isFromGuild)
+                        event.channel.sendMessage("This command is a guild-only command!").queue()
+
                     else
-                        event.author.openPrivateChannel().submit()
-                                .thenCompose { it.sendMessage("I need the following permissions to use this command; `${command.fullBotPermissions.joinToString("`, `")}`").submit() }
-
-                else if(event.isFromGuild && !(event.member!!.hasPermission(command.fullUserPermissions) || event.member!!.hasPermission(event.textChannel, command.fullUserPermissions)))
-                    event.channel.sendMessage("You do not have permission for this command!").queue()
-
-                else if(command.guildOnly && !event.isFromGuild)
-                    event.channel.sendMessage("This command is a guild-only command!").queue()
-
+                        try
+                        {
+                            command.execute(event, args.drop(index))
+                        }
+                        catch (t: Throwable)
+                        {
+                            BossBot.LOG.error("An error has occurred while trying to execute command '${content}' by User ${event.author.id}" + if(event.isFromGuild) "on Guild ${event.guild.id}" else "", t)
+                        }
+                }
                 else
-                    try
-                    {
-                        command.execute(event, args.drop(index))
-                    }
-                    catch (t: Throwable)
-                    {
-                        BossBot.LOG.error("An error has occurred while trying to execute command '${content}' by User ${event.author.id}" + if(event.isFromGuild) "on Guild ${event.guild.id}" else "", t)
-                    }
+                    onNonCommandEvent(event)
             }
             else
                 onNonCommandEvent(event)
@@ -151,6 +155,7 @@ object MessageListener: EventListener, CommandManagerImpl()
         if(event.isFromGuild)
         {
             val old = messageCache.putMessage(event.message)
+
             if(event.author.isBot)
                 return
 
@@ -165,7 +170,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                             .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.message.idLong}")
                             .setThumbnail(event.author.effectiveAvatarUrl)
                             .setTimestamp(event.message.timeEdited)
-                            .setColor(Color.YELLOW)
+                            .setColor(PASTEL_YELLOW)
                             .build())
                     ?.queue()
         }
@@ -179,46 +184,25 @@ object MessageListener: EventListener, CommandManagerImpl()
             val old = messageCache.pullMessage(event.guild, event.messageIdLong)
             val textChannel = event.guild.getSettings().getMessageLogsChannel(event.guild) ?: return
 
-            if(old != null)
-            {
-                val author = old.getAuthor(BossBot.SHARDS_MANAGER)
-                if(author?.isBot == true)
-                    return
+            val embed = EmbedBuilder()
+                    .setAuthor("Message Deleted", null, old?.getAuthor(event.jda.shardManager!!)?.effectiveAvatarUrl)
+                    .setTimestamp(OffsetDateTime.now())
+                    .setColor(PASTEL_RED)
+                    .addField("Channel", event.textChannel.asMention, true)
+                    .addField("Author", if(old != null) "<@${old.authorIdLong}>" else "N/A", true)
+                    .setFooter((if(old != null) "User ID: ${old.authorIdLong} | " else "") + "Message ID: ${event.messageIdLong}")
 
-                val embed = EmbedBuilder()
-                        .setAuthor("Message Deleted", null, author?.effectiveAvatarUrl)
-                        .addField("Author", author?.asMention ?: "${old.username}#${old.discriminator}", true)
-                        .addField("Channel", event.textChannel.asMention, true)
-                        .setFooter("User ID: ${old.authorIdLong} | Message ID: ${event.messageId}")
-                        .setThumbnail(author?.effectiveAvatarUrl)
-                        .setTimestamp(OffsetDateTime.now())
-                        .setColor(Color.RED)
+            val attachments = old?.getAttachmentFiles() ?: listOf()
+            if(attachments.isNotEmpty())
+                embed.addField("Attachments", attachments.size.toString(), true)
 
-                val attachments = old.getAttachmentFiles()
-                if(attachments.isNotEmpty())
-                    embed.addField("Attachments", attachments.size.toString(), true)
-                embed.addField("Message Content", old.content.maxLength(MessageEmbed.VALUE_MAX_LENGTH), false)
+            embed.addField("Content", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
 
-                val message = textChannel.sendMessage(embed.build())
+            val action = textChannel.sendMessage(embed.build())
+            for(file in attachments)
+                action.addFile(file)
 
-                // Attaches files to message
-                for(file in attachments)
-                    message.addFile(file)
-
-                // Sends message and deletes files from secondary storage
-                message.queue()
-                {
-                    old.deleteFiles()
-                }
-            }
-            else
-                textChannel.sendMessage(EmbedBuilder()
-                        .setColor(Color.RED)
-                        .setDescription("A message has been deleted.")
-                        .addField("Channel", event.textChannel.asMention, true)
-                        .setTimestamp(OffsetDateTime.now())
-                        .build()
-                ).queue()
+            action.queue() { old?.deleteFiles() }
         }
     }
 
@@ -243,10 +227,10 @@ object MessageListener: EventListener, CommandManagerImpl()
                             insert[MemberDataTable.text_chat_time] = seconds_until_eligible
                             insert[MemberDataTable.experience] = xp_to_give
                         },
-                        { row, update ->
-                            update[MemberDataTable.message_count] = row[MemberDataTable.message_count] + counter
-                            update[MemberDataTable.text_chat_time] = row[MemberDataTable.text_chat_time] + seconds_until_eligible
-                            update[MemberDataTable.experience] = row[MemberDataTable.experience] + xp_to_give
+                        { old, update ->
+                            update[MemberDataTable.message_count] = old.message_count + counter
+                            update[MemberDataTable.text_chat_time] = old.text_chat_time + seconds_until_eligible
+                            update[MemberDataTable.experience] = old.experience + xp_to_give
                         })
             }
         }

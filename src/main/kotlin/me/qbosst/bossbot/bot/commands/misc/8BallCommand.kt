@@ -8,8 +8,8 @@ object `8BallCommand` : Command(
         "8ball",
         "Asks 8ball something :flushed:",
         guildOnly = false,
-        usage = listOf("<question>"),
-        examples = listOf("Is ${BossBot::class.java.simpleName} cool?")
+        usage_raw = listOf("<question>"),
+        examples_raw = listOf("Is ${BossBot::class.java.simpleName} cool?")
 )
 {
     private val responses = listOf(
