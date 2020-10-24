@@ -1,8 +1,9 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.database.GuildColoursData
+import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
+import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.maxLength
 import me.qbosst.bossbot.util.toHex
 import net.dv8tion.jda.api.EmbedBuilder
@@ -32,7 +33,7 @@ object ColoursCommand: Command(
             args[0].toLowerCase() == "guild" ->
             {
                 index++;
-                GuildColoursData.get(event.guild).clone()
+                GuildColoursManager.get(event.getGuildOrNull()).clone()
             }
             // Specifies that only system colours should be shown
             args[0].toLowerCase() == "system" ->
@@ -40,7 +41,7 @@ object ColoursCommand: Command(
                 index++;
                 systemColours
             }
-            args[0].toIntOrNull() != null -> GuildColoursData.get(event.guild).clone().plus(systemColours)
+            args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).clone().plus(systemColours)
             else ->
             {
                 event.channel.sendMessage("${args[0].maxLength()} is not a valid page number").queue()
@@ -49,7 +50,7 @@ object ColoursCommand: Command(
         }
         // If no arguments were given, both system colours and guild colours will be shown
         else
-            GuildColoursData.get(event.guild).clone().plus(systemColours)
+            GuildColoursManager.get(event.getGuildOrNull()).clone().plus(systemColours)
 
         // Gets the page number of the menu
         val page =
@@ -66,7 +67,9 @@ object ColoursCommand: Command(
 
         // Creates and sends the menu
         val menu = FieldMenuEmbed(MAX_COLOURS_PER_PAGE, colours.map { it.toField() })
-        event.channel.sendMessage(menu.createPage(EmbedBuilder(), page).build()).queue()
+        event.channel.sendMessage(menu.createPage(EmbedBuilder()
+            .setColor(event.getGuildOrNull()?.selfMember?.color)
+            , page).build()).queue()
     }
 
     /**

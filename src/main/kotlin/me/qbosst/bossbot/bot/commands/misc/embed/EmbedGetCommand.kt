@@ -45,7 +45,7 @@ object EmbedGetCommand : Command(
                             event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
                         }
                     else
-                        event.channel.sendMessage("There are not embeds in this message.")
+                        event.channel.sendMessage("There are not embeds in this message.").queue()
                 },
                 {
                     event.channel.sendMessage("Exception caught: $it").queue()

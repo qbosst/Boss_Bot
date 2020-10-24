@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot
 
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory
 import me.qbosst.bossbot.Launcher
-import me.qbosst.bossbot.config.Config
+import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.Database
 import me.qbosst.bossbot.util.loadObjectOrClass
 import net.dv8tion.jda.api.OnlineStatus
@@ -26,9 +26,9 @@ import java.util.concurrent.ScheduledExecutorService
 object BossBot {
 
     val LOG: Logger = LoggerFactory.getLogger(BossBot::class.java)
-    val shards: ShardManager
-    val startUp: OffsetDateTime = OffsetDateTime.now()
-    val threadpool: ScheduledExecutorService = Executors.newScheduledThreadPool(Config.Values.THREADPOOL_SIZE.getIntOrDefault())
+    val SHARDS_MANAGER: ShardManager
+    val START_UP: OffsetDateTime = OffsetDateTime.now()
+    val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(3)
 
     private val name = this::class.java.simpleName
 
@@ -36,19 +36,20 @@ object BossBot {
     {
         // Connects to the database
         Database.connect(
-                host = Config.Values.DATABASE_URL.getStringOrDefault(),
-                user = Config.Values.DATABASE_USER.getStringOrDefault(),
-                password = Config.Values.DATABASE_PASSWORD.getStringOrDefault()
+                host = BotConfig.database_url,
+                user = BotConfig.database_user,
+                password = BotConfig.database_password
         )
+
         // Connects to discord
-        shards = connectDiscord(Config.Values.DISCORD_TOKEN.getStringOrDefault())
+        SHARDS_MANAGER = getShardsManager(BotConfig.discord_token)
 
         Runtime.getRuntime().addShutdownHook(object : Thread("$name Shutdown Hook")
         {
             override fun run()
             {
                 LOG.info("$name is shutting down!")
-                shards.shutdown()
+                SHARDS_MANAGER.shutdown()
             }
         })
     }
@@ -60,7 +61,7 @@ object BossBot {
      *
      *  @return shard manager
      */
-    private fun connectDiscord(token: String): ShardManager
+    private fun getShardsManager(token: String): ShardManager
     {
         // Get event listeners
         val listeners = loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java)

@@ -5,11 +5,11 @@ import java.time.ZoneId
 
 object UserDataTable : Table() {
     const val max_greeting_length = 512
-    val max_zone_id_length = ZoneId.getAvailableZoneIds().maxOf { it.length }
+    private val max_zone_id_length = ZoneId.getAvailableZoneIds().maxOf { it.length }
 
-    val user_id = long("USER_ID").default(0L)
-    val greeting = varchar("GREETING", max_greeting_length).nullable()
-    val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable()
+    val user_id = long("USER_ID")
+    val greeting = varchar("GREETING", max_greeting_length).nullable().default(null)
+    val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable().default(null)
 
     override val primaryKey: PrimaryKey?
         get() = PrimaryKey(user_id)

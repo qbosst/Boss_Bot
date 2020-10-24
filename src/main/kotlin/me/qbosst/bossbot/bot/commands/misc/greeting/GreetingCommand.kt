@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.bot.commands.misc.greeting
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.config.Config
+import me.qbosst.bossbot.database.managers.UserDataManager
+import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.bossbot.entities.database.UserData
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object GreetingCommand : Command(
@@ -30,15 +30,12 @@ object GreetingCommand : Command(
                 message
             }
 
-            UserData.update(event.author, UserDataTable.greeting, greeting)
+            UserDataManager.update(event.author, UserDataTable.greeting, greeting)
             event.channel.sendMessage("Your greeting has successfully been updated.").queue()
         }
         else
         {
-            val greeting = UserData.get(event.author).greeting ?: kotlin.run {
-                val default = Config.Values.DEFAULT_GREETING.getString()
-                if(default.isNullOrEmpty()) "You do not have a greeting setup!" else default
-            }
+            val greeting = event.author.getUserData().greeting ?: "You do not have a greeting setup!"
 
             event.channel.sendMessage(greeting).queue()
         }

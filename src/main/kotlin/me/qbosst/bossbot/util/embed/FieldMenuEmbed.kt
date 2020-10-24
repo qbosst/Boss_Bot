@@ -11,10 +11,7 @@ class FieldMenuEmbed(maxObjectsPerPage: Int, objects: List<MessageEmbed.Field>) 
         embed.addField(objects[index])
     }
 
-    override fun isEmpty(embed: EmbedBuilder): Boolean
-    {
-        return embed.fields.isEmpty()
-    }
+    override fun isEmpty(embed: EmbedBuilder): Boolean = embed.fields.isEmpty()
 
     override fun clearMenu(embed: EmbedBuilder)
     {

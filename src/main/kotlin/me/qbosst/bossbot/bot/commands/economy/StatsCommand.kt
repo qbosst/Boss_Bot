@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.entities.database.GuildUserData
+import me.qbosst.bossbot.database.managers.getMemberData
 import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.getMemberByString
 import net.dv8tion.jda.api.EmbedBuilder
@@ -31,7 +31,7 @@ object StatsCommand : Command(
 
     private fun statsEmbed(member: Member): EmbedBuilder
     {
-        val stats = GuildUserData.get(member)
+        val stats = member.getMemberData()
 
         return EmbedBuilder()
                 .addField("Messages Sent", (stats.message_count + MessageListener.getCachedMessageCount(member)).toString(), true)

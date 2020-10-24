@@ -3,8 +3,8 @@ package me.qbosst.bossbot.bot.commands.general
 import me.qbosst.bossbot.bot.*
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.mixColours
-import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.entities.database.GuildSettingsData
+import me.qbosst.bossbot.config.BotConfig
+import me.qbosst.bossbot.database.managers.getSettings
 import me.qbosst.bossbot.util.FixedCache
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -30,12 +30,12 @@ object SuggestionCommand: Command(
     private const val SECONDS_UNTIL_NEXT_EDIT = 20L
     private const val MAX_SUGGESTION_LENGTH = 512
 
-    private val rateLimiter = FixedCache<Long, SuggestionPair>(Config.Values.DEFAULT_CACHE_SIZE.getIntOrDefault())
+    private val rateLimiter = FixedCache<Long, SuggestionPair>(BotConfig.default_cache_size)
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         // Gets the guild's suggestion channel
-        val tc = GuildSettingsData.get(event.guild).getSuggestionChannel(event.guild)
+        val tc =  event.guild.getSettings().getSuggestionChannel(event.guild)
 
         // Checks to see if there is a suggestion channel
         if(tc == null)
@@ -90,7 +90,7 @@ object SuggestionCommand: Command(
                     // This checks if the change is already scheduled, if not it will schedule a change after the wait time is finished
                     else if(!rateLimiter.get(event.messageIdLong)!!.isScheduled)
                     {
-                        BossBot.threadpool.schedule(
+                        BossBot.scheduler.schedule(
                                 {
                                     editEmbed(event)
                                 },
@@ -109,7 +109,7 @@ object SuggestionCommand: Command(
                     { message ->
                         if(isSuggestionEmbed(message))
                         {
-                            val user = BossBot.shards.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
+                            val user = BossBot.SHARDS_MANAGER.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
                             if(user != null)
                                 message.delete().queue()
                                 {

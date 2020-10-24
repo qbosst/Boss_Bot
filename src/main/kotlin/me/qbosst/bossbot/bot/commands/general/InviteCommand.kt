@@ -6,8 +6,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object InviteCommand : Command(
         "invite",
-        "Returns the invite link used to invite boss bot",
-        usage = listOf("")
+        "Returns the invite link used to invite boss bot"
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)

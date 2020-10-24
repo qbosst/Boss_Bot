@@ -54,7 +54,7 @@ object DisconnectCommand: MusicCommand(
                 {
                     if(getMembersConnected(event.guild, false).isEmpty())
                     {
-                        val task = BossBot.threadpool.schedule(
+                        val task = BossBot.scheduler.schedule(
                                 {
                                     event.guild.audioManager.closeAudioConnection()
                                 }, 30, TimeUnit.SECONDS)

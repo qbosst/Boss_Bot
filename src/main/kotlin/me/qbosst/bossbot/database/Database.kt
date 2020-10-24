@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.database
 
+import me.qbosst.bossbot.database.managers.Manager
 import me.qbosst.bossbot.util.loadObjects
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -10,6 +11,9 @@ object Database
 {
     private val tables: Collection<Table>
         get() = loadObjects("${this::class.java.`package`.name}.tables", Table::class.java)
+
+    private val managers: Collection<Manager<*, *>>
+        get() = loadObjects("${this::class.java.`package`.name}.managers", Manager::class.java)
 
     /**
      *  Connects to the database that the bot will be using to store data
@@ -27,11 +31,14 @@ object Database
             password = password
         )
 
-        // Creates missing tables and columns
         transaction()
         {
+            // Creates missing tables and columns
             for(table in tables)
                 SchemaUtils.createMissingTablesAndColumns(table)
         }
+        // Signal that the database is ready
+        for(manager in managers)
+            manager.onReady()
     }
 }

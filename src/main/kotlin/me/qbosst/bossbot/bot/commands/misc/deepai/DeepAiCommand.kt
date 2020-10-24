@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.deepai
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.config.Config
+import me.qbosst.bossbot.config.BotConfig
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import okhttp3.FormBody
@@ -79,7 +79,7 @@ abstract class DeepAiCommand(
         // Creates the request
         val request = Request.Builder()
                 .url(this.url)
-                .addHeader("api-key", Config.Values.DEEPAI_TOKEN.getStringOrDefault())
+                .addHeader("api-key", BotConfig.deepai_token)
 
         if(parameters.isNotEmpty())
         {

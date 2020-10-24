@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.database.GuildColoursData
+import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.maxLength
@@ -28,7 +28,7 @@ object ColourBlendCommand : Command(
         if(args.isNotEmpty())
         {
             val colours = mutableSetOf<Color>()
-            val guildColours = GuildColoursData.get(event.getGuildOrNull())
+            val guildColours = GuildColoursManager.get(event.getGuildOrNull())
 
             // Gets all the colours the user wants to mix
             for(arg in args)
@@ -70,7 +70,7 @@ fun mixColours(vararg pair: Pair<Color, Float>): Color
     var percentage: Float = 0.0F
     var index = 0
 
-    var r = 0; var g = 0; var b = 0; var a = 0;
+    var r = 0; var g = 0; var b = 0; var a = 0
     while (percentage <= 1 && pair.size > index)
     {
         r += (pair[index].first.red * pair[index].second).roundToInt()

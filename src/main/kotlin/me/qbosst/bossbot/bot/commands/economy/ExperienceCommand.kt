@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.economy
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.entities.database.GuildUserData
+import me.qbosst.bossbot.database.managers.getMemberData
 import me.qbosst.bossbot.util.getMemberByString
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -25,6 +25,6 @@ object ExperienceCommand: Command(
             }
         } else event.member!!
 
-        event.channel.sendMessage("${target.user.asTag} has ${GuildUserData.get(target).experience} experience!").queue()
+        event.channel.sendMessage("${target.user.asTag} has ${target.getMemberData().experience} experience!").queue()
     }
 }

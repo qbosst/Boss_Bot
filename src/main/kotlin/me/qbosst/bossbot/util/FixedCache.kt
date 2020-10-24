@@ -8,7 +8,7 @@ package me.qbosst.bossbot.util
  */
 class FixedCache<K, V> {
     private val map: MutableMap<K, V>
-    private val keys: Array<K?>
+    private val keys: Array<K>
     private var currentIndex: Int = 0
 
     /**
@@ -20,11 +20,11 @@ class FixedCache<K, V> {
     {
         // Checks if the cache size is less than 1, if so throw an error
         if(size < 1)
-        {
             throw IllegalArgumentException("Cache size must at least be 1!")
-        }
+
         map = mutableMapOf()
-        keys = arrayOfNulls<Any>(size) as Array<K?>
+        @Suppress("UNCHECKED_CAST")
+        keys = arrayOfNulls<Any>(size) as Array<K>
     }
 
     /**
@@ -37,24 +37,20 @@ class FixedCache<K, V> {
     {
         // Checks if the cache size is less than 1, if so throw an error
         if(size < 1)
-        {
             throw IllegalArgumentException("Cache size must at least be 1!")
-        }
 
         // Checks if the old cache object size is bigger than the new one (this one), if so throw an error
         if(cache.keys.size >= size)
-        {
             throw IllegalArgumentException("New cache size should be bigger than the last one!")
-        }
 
         map = cache.map
-        keys = arrayOfNulls<Any>(size) as Array<K?>
+        @Suppress("UNCHECKED_CAST")
+        keys = arrayOfNulls<Any>(size) as Array<K>
 
         // Puts all the old values from the old cache object into the new one
         for(key in cache.keys.withIndex())
-        {
             keys[key.index] = key.value
-        }
+
         currentIndex = (currentIndex + 1) % keys.size
     }
 
@@ -69,17 +65,17 @@ class FixedCache<K, V> {
     fun put(key: K, value: V, consumer: (K, V) -> Unit): V?
     {
         if(map.containsKey(key))
-        {
             return map.put(key, value)
-        }
+
         val current = keys[currentIndex]
-        val pair = if(current != null)
-        {
-            val old = map.remove(current)
-            if(old != null)
+        val pair = kotlin.run {
+            if(current != null) {
+                val old = map.remove(current) ?: return@run null
                 Pair(current, old)
+            }
             else null
-        } else null
+        }
+
         keys[currentIndex] = key
         currentIndex = (currentIndex + 1) % keys.size
 
@@ -99,13 +95,11 @@ class FixedCache<K, V> {
     fun put(key: K, value: V): V?
     {
         if(map.containsKey(key))
-        {
             return map.put(key, value)
-        }
+
         if(keys[currentIndex] != null)
-        {
             map.remove(keys[currentIndex])
-        }
+
         keys[currentIndex] = key
         currentIndex = (currentIndex + 1) % keys.size
         return map.put(key, value)
@@ -117,10 +111,7 @@ class FixedCache<K, V> {
      *  @param key The key of the pair to remove
      *  @return The value of the key removed (if any otherwise will return null)
      */
-    fun pull(key: K): V?
-    {
-        return map.remove(key)
-    }
+    fun pull(key: K): V? = map.remove(key)
 
     /**
      *  Gets a value from the key
@@ -128,10 +119,7 @@ class FixedCache<K, V> {
      *  @param key The key of the pair to get
      *  @return The value of the key (if any otherwise will return null)
      */
-    fun get(key: K): V?
-    {
-        return map[key]
-    }
+    fun get(key: K): V? = map[key]
 
     /**
      *  Checks if a key is in the cache
@@ -140,38 +128,26 @@ class FixedCache<K, V> {
      *  @return A true or false boolean based on whether this key is in the cache or not
      *
      */
-    fun contains(key: K): Boolean
-    {
-        return map.containsKey(key)
-    }
+    fun contains(key: K): Boolean = map.containsKey(key)
 
     /**
      *  Returns a collection of all the values in the cache
      *
      *  @return All the values in the cache
      */
-    fun values(): Collection<V>
-    {
-        return map.values
-    }
+    fun values(): Collection<V> = map.values
 
     /**
      *  Returns a set of all the keys in the cache
      *
      *  @return A set of all the keys in the cache
      */
-    fun ketSet(): Set<K?>
-    {
-        return keys.toMutableSet()
-    }
+    fun ketSet(): Set<K?> = keys.toSet()
 
     /**
      *  Returns the amount of maximum allowed key&value in the cache
      *
      *  @return The amount of maximum allowed key&value in the cache
      */
-    fun size(): Int
-    {
-        return keys.size
-    }
+    fun size(): Int = keys.size
 }

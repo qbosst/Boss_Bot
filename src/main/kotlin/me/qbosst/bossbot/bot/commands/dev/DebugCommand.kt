@@ -1,17 +1,13 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.MessageListener
-import me.qbosst.bossbot.entities.database.GuildSettingsData
+import me.qbosst.bossbot.database.managers.getSettings
 import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.maxLength
+import me.qbosst.bossbot.util.getGuildOrNull
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.io.PrintWriter
-import java.io.StringWriter
+import java.time.ZoneId
 import java.util.*
 
 object DebugCommand : DeveloperCommand(
@@ -21,54 +17,19 @@ object DebugCommand : DeveloperCommand(
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        if(args.isNotEmpty())
-        {
-            if(MessageListener.getCommand(args[0]) != null)
-            {
-                var command: Command = MessageListener.getCommand(args[0])!!
-                var index = 1
-                while (index < args.size)
-                {
-                    val newCommand = command.getCommand(args[index])
+        val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
+        val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
 
-                    if(newCommand != null)
-                    {
-                        command = newCommand
-                        index++
-                    }
-                    else break
-                }
+        val zoneId = event.getGuildOrNull()?.getSettings()?.zone_id ?: ZoneId.systemDefault()
+        val date = TimeUtil.DATE_TIME_FORMATTER.format(BossBot.START_UP.atZoneSameInstant(zoneId))
 
-                try
-                {
-                    //command.run(event, args.drop(index))
-                }
-                catch (e: Exception)
-                {
-                    val sw = StringWriter()
-                    e.printStackTrace(PrintWriter(sw))
-                    event.channel.sendMessage("Caught Exception: ```$sw```".maxLength(Message.MAX_CONTENT_LENGTH)).queue()
-                }
-            }
-            else
-                event.channel.sendMessage("Could not find command `${args[0]}`").queue()
-        }
-        else
-        {
-            val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
-            val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
+        val embed = EmbedBuilder()
+                .setTitle("${event.jda.selfUser.asTag} statistics")
+                .addField("Startup Time", "$date ${TimeZone.getTimeZone(zoneId).getDisplayName(true, TimeZone.SHORT)}", true)
+                .addField("Memory Usage", "${usedMb}MB / ${totalMb}MB", true)
+                .addField("Guilds", BossBot.SHARDS_MANAGER.guilds.size.toString(), true)
 
-            val zoneId = GuildSettingsData.get(if(event.isFromGuild) event.guild else null).zone_id
-            val date = TimeUtil.DATE_TIME_FORMATTER.format(BossBot.startUp.atZoneSameInstant(zoneId))
-
-            val embed = EmbedBuilder()
-                    .setTitle("${event.jda.selfUser.asTag} statistics")
-                    .addField("Startup Time", "$date ${TimeZone.getTimeZone(zoneId).getDisplayName(true, TimeZone.SHORT)}", true)
-                    .addField("Memory Usage", "${usedMb}MB / ${totalMb}MB", true)
-                    .addField("Guilds", BossBot.shards.guilds.size.toString(), true)
-
-            event.channel.sendMessage(embed.build()).queue()
-        }
+        event.channel.sendMessage(embed.build()).queue()
     }
 
 }

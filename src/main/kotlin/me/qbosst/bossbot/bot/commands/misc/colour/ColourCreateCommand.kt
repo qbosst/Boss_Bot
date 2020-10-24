@@ -1,8 +1,8 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.database.tables.GuildColoursDataTable
-import me.qbosst.bossbot.entities.database.GuildColoursData
+import me.qbosst.bossbot.database.managers.GuildColoursManager
+import me.qbosst.bossbot.database.tables.GuildColoursTable
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
@@ -25,7 +25,7 @@ object ColourCreateCommand: Command(
         {
             // Gets colour by hex value
             var colour = getColourByHex(args[0]) ?: kotlin.run {
-                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid hex!")
+                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid hex!").queue()
                 return
             }
 
@@ -33,16 +33,16 @@ object ColourCreateCommand: Command(
             {
                 // Gets the name of the colour
                 val name = args[1]
-                val data = GuildColoursData.get(event.getGuildOrNull())
+                val data = GuildColoursManager.get(event.getGuildOrNull())
                 when
                 {
                     // Makes sure that the guild hasn't passed its limit
-                    data.values().size >= GuildColoursDataTable.MAX_COLOURS_PER_GUILD ->
-                        event.channel.sendMessage("This guild has reached the maximum amount of colours per guild (${GuildColoursDataTable.MAX_COLOURS_PER_GUILD}!)").queue()
+                    data.values().size >= GuildColoursTable.MAX_COLOURS_PER_GUILD ->
+                        event.channel.sendMessage("This guild has reached the maximum amount of colours per guild (${GuildColoursTable.MAX_COLOURS_PER_GUILD}!)").queue()
 
                     // Makes sure that name is valid length
-                    name.length > GuildColoursDataTable.MAX_COLOUR_NAME_LENGTH ->
-                        event.channel.sendMessage("Colour names cannot be longer than ${GuildColoursDataTable.MAX_COLOUR_NAME_LENGTH} characters long!").queue()
+                    name.length > GuildColoursTable.MAX_COLOUR_NAME_LENGTH ->
+                        event.channel.sendMessage("Colour names cannot be longer than ${GuildColoursTable.MAX_COLOUR_NAME_LENGTH} characters long!").queue()
 
                     // Makes sure that the name doesn't have the same name as a system colour
                     systemColours[name] != null ->
@@ -50,7 +50,7 @@ object ColourCreateCommand: Command(
                     else ->
                     {
                         // Tries to add colour to guild.
-                        if(GuildColoursData.add(event.guild, name, colour))
+                        if(GuildColoursManager.add(event.guild, name, colour))
                             event.channel.sendMessage("${name.maxLength()} has been successfully created!").queue()
                         else
                             event.channel.sendMessage("${name.maxLength()} already exists!").queue()

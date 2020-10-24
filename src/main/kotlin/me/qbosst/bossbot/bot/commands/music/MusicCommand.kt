@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.music
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.database.GuildSettingsData
+import me.qbosst.bossbot.database.managers.getSettings
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
@@ -112,7 +112,7 @@ abstract class MusicCommand(
 
     protected fun Member.isDj(): Boolean
     {
-        val dj = GuildSettingsData.get(guild).getDjRole(guild)
+        val dj = this.guild.getSettings().getDjRole(this.guild)
         return if(dj != null)
         {
             roles.contains(dj)

@@ -1,9 +1,8 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
-import com.google.common.base.Splitter
 import javafx.scene.paint.Color
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.database.GuildColoursData
+import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -41,7 +40,7 @@ object ColourCommand: Command(
         // Tries to get a valid colour either from name or hex code
         if(args.isNotEmpty())
         {
-            val colour = getColourByHex(args[0]) ?: systemColours[args[0]] ?: GuildColoursData.get(event.getGuildOrNull()).get(args[0])
+            val colour = getColourByHex(args[0]) ?: systemColours[args[0]] ?: GuildColoursManager.get(event.getGuildOrNull()).get(args[0])
 
             // If colour was found, send embed otherwise return error message
             if(colour != null)
@@ -121,7 +120,7 @@ object ColourCommand: Command(
 fun Color.toJavaAwtColor(): java.awt.Color
 {
     // Get the hex value of the colour and return it into the java.awt.Color object.
-    val hex = Splitter.fixedLength(2).split(this.toString().substring(2, 10)).map { it.toInt(16) }
+    val hex = this.toString().split(2).mapNotNull { it.toIntOrNull(16) }
     return java.awt.Color(hex[0], hex[1], hex[2], hex[3])
 }
 
@@ -139,7 +138,7 @@ fun getColourByHex(hex: String): java.awt.Color?
         hex.isHex(6) -> java.awt.Color(hex.toInt(16), false)
         hex.isHex(8) ->
         {
-            val splitHex = Splitter.fixedLength(2).split(hex).map { it.toInt(16) }
+            val splitHex = hex.split(2).map { it.toInt(16) }
             java.awt.Color(splitHex[0], splitHex[1], splitHex[2], splitHex[3])
         }
         else -> null

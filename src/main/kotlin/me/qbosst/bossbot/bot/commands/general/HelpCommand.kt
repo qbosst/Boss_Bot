@@ -3,10 +3,9 @@ package me.qbosst.bossbot.bot.commands.general
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
-import me.qbosst.bossbot.config.Config
-import me.qbosst.bossbot.entities.database.GuildSettingsData
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
 import me.qbosst.bossbot.util.getGuildOrNull
+import me.qbosst.bossbot.util.getPrefix
 import me.qbosst.bossbot.util.loadObjects
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
@@ -20,6 +19,7 @@ object HelpCommand: Command(
 )
 {
     private val allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
+            .sortedBy { it.fullName }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
@@ -49,9 +49,7 @@ object HelpCommand: Command(
                     event.channel.sendMessage("You do not have access to this command").queue()
             }
             else
-            {
                 event.channel.sendMessage("Could not find command `${args[0].maxLength()}`").queue()
-            }
         }
         else
         {
@@ -66,7 +64,7 @@ object HelpCommand: Command(
         if(event.isFromGuild)
             commands = commands.filter { event.member!!.hasPermission(it.fullUserPermissions) }
 
-        val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+        val prefix = event.getPrefix()
 
         return FieldMenuEmbed(5, commands.map { it.getHelpField(prefix, event.isFromGuild) })
                 .createPage(EmbedBuilder()
@@ -85,10 +83,11 @@ object HelpCommand: Command(
     private fun Command.getHelp(event: MessageReceivedEvent): MessageEmbed
     {
         val embed = EmbedBuilder()
-                .setTitle(fullName.split(" ".toRegex()).joinToString(" ") { it.capitalize() })
+                .setTitle(fullName.split(Regex("\\s+")).joinToString(" ") { it.capitalize() })
                 .appendDescription("**$description**")
+                .setColor(event.getGuildOrNull()?.selfMember?.color)
 
-        val prefix = GuildSettingsData.get(event.getGuildOrNull()).prefix ?: Config.Values.DEFAULT_PREFIX.getStringOrDefault()
+        val prefix = event.getPrefix()
 
         if(usage.isNotEmpty())
             embed.addField("Usages", "${prefix}${usage.joinToString("\n$prefix")}", true)
@@ -96,7 +95,7 @@ object HelpCommand: Command(
             embed.addField("Examples", "${prefix}${examples.joinToString("\n$prefix")}", true)
 
         val children = getCommands()
-                .filter { it.hasPermission(if(event.isFromGuild) event.guild else null, event.author) }
+                .filter { it.hasPermission(event.getGuildOrNull(), event.author) }
                 .filter { if(event.isFromGuild) event.member!!.hasPermission(fullUserPermissions) else true }
 
         if(children.isNotEmpty())

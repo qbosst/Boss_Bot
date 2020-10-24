@@ -10,13 +10,10 @@ class DescriptionMenuEmbed(maxObjectsPerPage: Int, objects: List<String>) : Menu
         embed.appendDescription(objects[index])
     }
 
-    override fun isEmpty(embed: EmbedBuilder): Boolean
-    {
-        return embed.descriptionBuilder.isEmpty()
-    }
+    override fun isEmpty(embed: EmbedBuilder): Boolean = embed.descriptionBuilder.isEmpty()
 
     override fun clearMenu(embed: EmbedBuilder)
     {
-        embed.descriptionBuilder.delete(0, embed.descriptionBuilder.length)
+        embed.descriptionBuilder.clear()
     }
 }

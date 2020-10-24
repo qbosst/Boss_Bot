@@ -1,12 +1,15 @@
 package me.qbosst.bossbot.bot.commands.misc
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object `8BallCommand` : Command(
         "8ball",
         "Asks 8ball something :flushed:",
-        guildOnly = false
+        guildOnly = false,
+        usage = listOf("<question>"),
+        examples = listOf("Is ${BossBot::class.java.simpleName} cool?")
 )
 {
     private val responses = listOf(
@@ -34,9 +37,6 @@ object `8BallCommand` : Command(
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        if(args.isNotEmpty())
-            event.channel.sendMessage(responses.random()).queue()
-        else
-            event.channel.sendMessage("Ask your question.").queue()
+        event.channel.sendMessage(if(args.isNotEmpty()) responses.random() else "Ask your question.").queue()
     }
 }

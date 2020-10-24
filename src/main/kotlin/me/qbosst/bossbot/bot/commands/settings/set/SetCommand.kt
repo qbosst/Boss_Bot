@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.bot.commands.settings.set
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.settings.set.abstractsetters.SetterCommand
-import me.qbosst.bossbot.bot.commands.settings.set.setters.*
-import me.qbosst.bossbot.util.maxLength
+import me.qbosst.bossbot.bot.commands.meta.SetterCommand
+import me.qbosst.bossbot.util.loadObjectOrClass
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -11,26 +11,25 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object SetCommand: Command(
         "set",
         userPermissions = listOf(Permission.ADMINISTRATOR)
-) {
-
+)
+{
     init
     {
-        addCommands(setOf(
-                SetMessageLogsChannelCommand, SetMuteRoleCommand, SetPrefixCommand, SetSuggestionChannelCommand,
-                SetTimeZoneCommand, SetVoiceLogsChannelCommand, SetModerationLogsChannelCommand,
-                SetWelcomeChannelCommand, SetWelcomeMessageCommand
-        ))
+        val commands = loadObjectOrClass(BossBot::class.java.`package`.name, SetterCommand::class.java)
+        addCommands(commands)
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         val embed = EmbedBuilder()
-        for(command in getCommands())
-            embed.addField((command as SetterCommand<*>).displayName, command.getAsString(event.guild).maxLength(32), true)
+                .setColor(event.guild.selfMember.colorRaw)
+                .setTitle(event.guild.name + (if(event.guild.name.endsWith('s')) "'" else "'s") + " Settings")
 
+        @Suppress("UNCHECKED_CAST")
+        for(command in getCommands() as Collection<SetterCommand<Any>>)
+            embed.addField(command.displayName, command.getString(command.get(event.guild)), true)
         if(embed.fields.size % 3 == 2)
             embed.addBlankField(true)
-
         event.channel.sendMessage(embed.build()).queue()
     }
 }

@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.misc.time
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.entities.database.UserData
+import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.getMemberByString
 import me.qbosst.bossbot.util.loadObjects
@@ -48,7 +48,7 @@ object TimeCommand: Command(
                     else if(seconds < 0)
                         date = date.minusSeconds(-seconds)
 
-                    event.channel.sendMessage("The time for ${target.asTag} in `${TimeUtil.secondsToString(seconds)}` will be `${formatZonedDateTime(date)}`").queue()
+                    event.channel.sendMessage("The time for ${target.asTag} in `${TimeUtil.secondsToString(seconds) { unit, count -> "$count ${unit.longName}" }}` will be `${formatZonedDateTime(date)}`").queue()
                 }
             }
             else
@@ -61,7 +61,7 @@ object TimeCommand: Command(
         }
     }
 
-    private fun getZoneId(user: User): ZoneId? = UserData.get(user).zone_id
+    private fun getZoneId(user: User): ZoneId? = user.getUserData().zone_id
 
     private fun getZoneInfo(author: Pair<User, ZoneId?>, target: Pair<User, ZoneId?> = author): String
     {
@@ -77,7 +77,7 @@ object TimeCommand: Command(
             if(author.second != target.second)
             {
                 val differenceInSeconds = getZoneDifference(author.second!!, target.second!!)
-                sb.append("${target.first.asTag} is `${TimeUtil.secondsToString(if(differenceInSeconds > 0) differenceInSeconds else -differenceInSeconds ) { it.longName }}` ${if(differenceInSeconds > 0) "ahead of" else "behind"} you")
+                sb.append("${target.first.asTag} is `${TimeUtil.secondsToString(if(differenceInSeconds > 0) differenceInSeconds else -differenceInSeconds) { unit, count -> "$count ${unit.longName}" }}` ${if(differenceInSeconds > 0) "ahead of" else "behind"} you")
             }
             else if(!isSelf)
                 sb.append("They are in the same timezone as you!")

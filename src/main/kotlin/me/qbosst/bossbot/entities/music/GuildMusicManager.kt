@@ -199,7 +199,7 @@ class GuildMusicManager private constructor(
                     nextTrack()
                 else if(event.endReason == AudioTrackEndReason.STOPPED)
                 {
-                    val channel = BossBot.shards.getGuildById(guildId)?.getTextChannelById(lastChannelIdSent)
+                    val channel = BossBot.SHARDS_MANAGER.getGuildById(guildId)?.getTextChannelById(lastChannelIdSent)
                     channel?.deleteMessageById(lastMessageIdSent)?.queue(
                             {
                                 lastMessageIdSent = 0L
@@ -215,7 +215,7 @@ class GuildMusicManager private constructor(
 
             is TrackStartEvent ->
             {
-                val channel = BossBot.shards.getTextChannelById(lastChannelIdSent)
+                val channel = BossBot.SHARDS_MANAGER.getTextChannelById(lastChannelIdSent)
                 if(channel != null)
                 {
                     if(lastMessageIdSent != 0L)

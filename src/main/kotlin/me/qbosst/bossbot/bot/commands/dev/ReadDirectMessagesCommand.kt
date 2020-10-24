@@ -19,37 +19,30 @@ object ReadDirectMessagesCommand : DeveloperCommand(
         if(args.isNotEmpty())
         {
             val string = args.joinToString(" ")
-            val user = BossBot.shards.getUserByString(string) ?: kotlin.run {
+            val user = BossBot.SHARDS_MANAGER.getUserByString(string) ?: kotlin.run {
                 event.channel.sendMessage(userNotFound(string)).queue()
                 return
             }
             if(user != event.jda.selfUser)
-            {
-                user.openPrivateChannel().flatMap { it.iterableHistory }.flatMap { event.channel.sendFile(it.toByte(), "${user.asTag} message history.txt") }.queue({},
+                user.openPrivateChannel().flatMap { it.iterableHistory }.flatMap { event.channel.sendFile(it.toByteArray(), "${user.asTag} message history.txt") }.queue({},
                         {
                             event.channel.sendMessage("Something has went wrong while trying to obtain dms...").queue()
                         })
-            }
             else
-            {
                 event.channel.sendMessage("I cannot check message history with myself!").queue()
-            }
         }
         else
-        {
             event.channel.sendMessage(noMentionedUser()).queue()
-        }
     }
 
-    private fun Collection<Message>.toByte(): ByteArray
+    private fun Collection<Message>.toByteArray(): ByteArray
     {
         val sb = StringBuilder()
-        this.forEach {
-            sb.append("\nMessage sent by ${it.author.asTag} at ${it.timeCreated}" +
-                    " | Message Edited : ${it.isEdited}" +
-                    " | Attachments (${it.attachments.size}) : ${it.attachments.joinToString("\n") { attachment ->  attachment.url }}" +
-                    "\nContent : ${it.contentRaw}\n----------")
-        }
+        for(message in this)
+            sb.append("\nMessage sent by ${message.author.asTag} at ${message.timeCreated}" +
+                    " | Message Edited : ${message.isEdited}" +
+                    " | Attachments (${message.attachments.size}) : ${message.attachments.joinToString("\n") { attachment ->  attachment.url }}" +
+                    "\nContent : ${message.contentRaw}\n----------")
         return sb.toString().toByteArray()
     }
 }

@@ -3,9 +3,14 @@ package me.qbosst.bossbot.util.embed
 import me.qbosst.bossbot.util.assertNumber
 import net.dv8tion.jda.api.EmbedBuilder
 
+/**
+ *  Class to make menu themed embeds.
+ *
+ *  @param maxObjectsPerPage The max amount of objects that can be in the page
+ *  @param objects The objects to create the page from
+ */
 abstract class MenuEmbed<T>(private val maxObjectsPerPage: Int, protected val objects: List<T>)
 {
-
     fun createPage(embed: EmbedBuilder, page: Int): EmbedBuilder
     {
         clearMenu(embed)

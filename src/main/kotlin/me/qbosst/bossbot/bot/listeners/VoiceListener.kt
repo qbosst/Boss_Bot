@@ -1,10 +1,9 @@
 package me.qbosst.bossbot.bot.listeners
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.database.tables.GuildUserDataTable
-import me.qbosst.bossbot.entities.database.GuildSettingsData
-import me.qbosst.bossbot.entities.database.GuildUserData
-import me.qbosst.bossbot.util.Key
+import me.qbosst.bossbot.database.managers.MemberDataManager
+import me.qbosst.bossbot.database.managers.getSettings
+import me.qbosst.bossbot.database.tables.MemberDataTable
 import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -23,7 +22,7 @@ import java.time.OffsetDateTime
 
 object VoiceListener: EventListener
 {
-    private val voiceCache = mutableMapOf<Key, VoiceMemberStatus>()
+    private val voiceCache = mutableMapOf<Pair<Long, Long>, VoiceMemberStatus>()
 
     private const val seconds_until_eligible = 60L
     private const val xp_to_give = 10 //TODO make adjustable
@@ -51,10 +50,10 @@ object VoiceListener: EventListener
     {
         // Logs the guild voice join event for stats
         if(!event.member.user.isBot)
-            voiceCache[Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), event.voiceState.isMuted)
+            voiceCache[Pair(event.guild.idLong, event.member.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), event.voiceState.isMuted)
 
         // Logs the guild voice join event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
+        event.guild.getSettings().getVoiceLogsChannel(event.guild)
                 ?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
                         .setDescription("**${event.member.asMention}** has joined `${event.channelJoined.name}`")
@@ -71,7 +70,7 @@ object VoiceListener: EventListener
         // Logs the guild voice leave event for stats
         if(!event.member.user.isBot)
         {
-            val key = Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)
+            val key = Pair(event.guild.idLong, event.member.idLong)
 
             val stats = voiceCache.remove(key) ?: return
             val now = OffsetDateTime.now()
@@ -82,21 +81,21 @@ object VoiceListener: EventListener
             val loop: Long = (total - stats.secondsMuted) / seconds_until_eligible
 
             // Updates stats
-            GuildUserData.update(event.member,
+            MemberDataManager.update(event.member,
                     { insert ->
-                        insert[GuildUserDataTable.experience] = xp_to_give
-                        insert[GuildUserDataTable.voice_chat_time] = total
+                        insert[MemberDataTable.experience] = xp_to_give
+                        insert[MemberDataTable.voice_chat_time] = total
                     },
                     { rs, update ->
-                        update[GuildUserDataTable.experience] = rs[GuildUserDataTable.experience] + (xp_to_give * loop).toInt()
-                        update[GuildUserDataTable.voice_chat_time] = rs[GuildUserDataTable.voice_chat_time] + total
+                        update[MemberDataTable.experience] = rs[MemberDataTable.experience] + (xp_to_give * loop).toInt()
+                        update[MemberDataTable.voice_chat_time] = rs[MemberDataTable.voice_chat_time] + total
                     })
 
             BossBot.LOG.debug("[${event.guild.name}] ${event.member.user.asTag} has spent a total of ${TimeUtil.secondsToString(total)} in vc, ${TimeUtil.secondsToString(stats.secondsMuted)} muted")
         }
 
         // Logs the guild voice leave event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
+        event.guild.getSettings().getVoiceLogsChannel(event.guild)
                 ?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
                         .setDescription("**${event.member.user.asMention}** has left `${event.channelLeft.name}`")
@@ -111,7 +110,7 @@ object VoiceListener: EventListener
     private fun onGuildVoiceMoveEvent(event: GuildVoiceMoveEvent)
     {
         // Logs the guild voice move event for logging
-        GuildSettingsData.get(event.guild).getVoiceLogsChannel(event.guild)
+        event.guild.getSettings().getVoiceLogsChannel(event.guild)
                 ?.sendMessage(EmbedBuilder()
                         .setAuthor(event.member.effectiveName, null, event.member.user.avatarUrl)
                         .setDescription("**${event.member.user.asMention}** has switched channels: `${event.channelLeft.name}` -> `${event.channelJoined.name}`")
@@ -127,7 +126,7 @@ object VoiceListener: EventListener
     {
         // Logs the guild voice mute event for stats
         if(!event.member.user.isBot)
-            voiceCache[Key.Type.USER_GUILD.genKey("", event.member.idLong, event.guild.idLong)]?.update(if(event.isMuted) OffsetDateTime.now() else null)
+            voiceCache[Pair(event.guild.idLong, event.member.idLong)]?.update(if(event.isMuted) OffsetDateTime.now() else null)
     }
 
     private fun onStatusChangeEvent(event: StatusChangeEvent)
@@ -142,14 +141,14 @@ object VoiceListener: EventListener
                     for(vc in guild.voiceChannels)
                         for(member in vc.members)
                             if(member.voiceState != null)
-                                voiceCache[Key.Type.USER_GUILD.genKey("", member.idLong, guild.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), member.voiceState!!.isMuted)
+                                voiceCache[Pair(guild.idLong, member.idLong)] = VoiceMemberStatus(OffsetDateTime.now(), member.voiceState!!.isMuted)
             }
         }
     }
 
     fun getCachedVoiceChatTime(guild: Guild, userId: Long): Long
     {
-        return Duration.between((voiceCache[Key.Type.USER_GUILD.genKey("", userId, guild.idLong)]?.join ?: return 0), OffsetDateTime.now()).seconds
+        return Duration.between((voiceCache[Pair(guild.idLong, userId)]?.join ?: return 0), OffsetDateTime.now()).seconds
     }
 
     fun getCachedVoiceChatTime(member: Member): Long = getCachedVoiceChatTime(member.guild, member.idLong)

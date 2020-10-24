@@ -1,0 +1,78 @@
+package me.qbosst.bossbot.config
+
+import me.qbosst.bossbot.util.toJson
+import net.dv8tion.jda.api.utils.data.DataObject
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+
+/**
+ *  JSON Config
+ *
+ *  @param directory The directory to perform IO on the file
+ *  @param default The default values of the config
+ */
+open class JSONConfig(directory: String, protected var default: DataObject)
+{
+    private val config = File(directory)
+    protected val data: DataObject
+
+    init
+    {
+        // Create config if it doesn't exist
+        if(!config.exists())
+            if(config.createNewFile())
+            {
+                LOG.info("A config file has been generated at '${config.absolutePath}'")
+                generateDefault()
+                data = read()
+            }
+            else
+                throw IOException("A config file could not be generated at '${config.absolutePath}'")
+
+        else
+            data = read()
+    }
+
+    /**
+     *  Reads from the config file
+     *
+     *  @return data containing all the data read
+     */
+    protected fun read(): DataObject
+    {
+        val content = Files.readAllLines(config.toPath()).joinToString("")
+        return DataObject.fromJson(content)
+    }
+
+    /**
+     *  Writes to the config file
+     *
+     *  @param data The data to write to the config. Default is the config that was originally read
+     */
+    protected fun write(data: DataObject = this.data)
+    {
+        Files.write(config.toPath(), data.toJson(4))
+    }
+
+    protected fun generateDefault()
+    {
+        write(default)
+    }
+
+    /**
+     *  Gets a value from the key in the config
+     *
+     *  @param key The key for the value
+     *
+     *  @return Value from the config. Null if the config does not contain the key.
+     */
+    fun get(key: String): Any? = if(data.hasKey(key)) data.get(key) else null
+
+    companion object
+    {
+        val LOG: Logger = LoggerFactory.getLogger(this::class.java)
+    }
+}

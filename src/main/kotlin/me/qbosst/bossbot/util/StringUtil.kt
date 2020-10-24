@@ -7,27 +7,18 @@ package me.qbosst.bossbot.util
  *
  *  @return If the string is a hex value
  */
-fun String.isHex(amount: Int = 6): Boolean
-{
-    return matches(Regex("^[0-9A-Fa-f]{$amount}$"))
-}
+fun String.isHex(amount: Int = 6): Boolean = matches(Regex("^[0-9A-Fa-f]{$amount}$"))
 
 /**
  *  This will check if a string is a true boolean
  *
  *  @return Whether the string represents a boolean that is true
  */
-fun String.isBoolTrue(): Boolean
-{
-    return toLowerCase().matches(Regex("t(rue)?")) || this == "1"
-}
+fun String.isBoolTrue(): Boolean = toLowerCase().matches(Regex("t(rue)?")) || this == "1"
 
 /**
  *  This will check if a string is a false boolean
  *
  *  @return Whether the string represents a boolean that is false
  */
-fun String.isBoolFalse(): Boolean
-{
-    return toLowerCase().matches(Regex("f(alse)?")) || this == "0"
-}
+fun String.isBoolFalse(): Boolean = toLowerCase().matches(Regex("f(alse)?")) || this == "0"
