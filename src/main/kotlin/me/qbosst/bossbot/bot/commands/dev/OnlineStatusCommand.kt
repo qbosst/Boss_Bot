@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.util.maxLength
+import me.qbosst.bossbot.bot.argumentInvalid
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -19,7 +19,7 @@ object OnlineStatusCommand : DeveloperCommand(
         {
             val status = enumValues<OnlineStatus>().firstOrNull { it.name.equals(args[0], true) }
             if(status == null)
-                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid status!").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "status")).queue()
             else
             {
                 BossBot.SHARDS_MANAGER.setPresence(status, event.jda.presence.activity)

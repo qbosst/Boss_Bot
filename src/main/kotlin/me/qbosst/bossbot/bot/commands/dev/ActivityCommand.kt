@@ -1,7 +1,8 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.util.maxLength
+import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.argumentMissing
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
@@ -24,14 +25,14 @@ object ActivityCommand : DeveloperCommand(
         {
             val type = enumValues<Activity.ActivityType>().firstOrNull { it.name.equals(args[0], true) }
             if(type == null)
-                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid activity type!").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "activity")).queue()
             else
             {
                 val arguments = args.drop(1).joinToString(" ").split(Regex("[|]"), 2).map { it.trim() }
                 val description = arguments.getOrNull(0)
                 val url = arguments.getOrNull(1)
                 if(description == null)
-                    event.channel.sendMessage("You must provide a description").queue()
+                    event.channel.sendMessage(argumentMissing("description")).queue()
                 else
                 {
                     val activity = Activity.of(type, description, url)

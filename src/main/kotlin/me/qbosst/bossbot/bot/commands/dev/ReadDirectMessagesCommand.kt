@@ -1,8 +1,8 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.noMentionedUser
 import me.qbosst.bossbot.bot.userNotFound
+import me.qbosst.bossbot.bot.userNotMentioned
 import me.qbosst.bossbot.util.getUserByString
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
@@ -35,7 +35,7 @@ object ReadDirectMessagesCommand : DeveloperCommand(
                 event.channel.sendMessage("I cannot check message history with myself!").queue()
         }
         else
-            event.channel.sendMessage(noMentionedUser()).queue()
+            event.channel.sendMessage(userNotMentioned()).queue()
     }
 
     private fun Collection<Message>.toByteArray(): ByteArray

@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc.deepai
 
+import me.qbosst.bossbot.bot.argumentMissing
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -32,7 +33,7 @@ object DeepDreamCommand: DeepAiCommand(
         return if(url != null)
             mapOf(Pair("image", url))
         else {
-            event.channel.sendMessage("Please provide a valid url for the picture you want to process").queue()
+            event.channel.sendMessage(argumentMissing("valid url for the picture you want to process", "a")).queue()
             null
         }
     }

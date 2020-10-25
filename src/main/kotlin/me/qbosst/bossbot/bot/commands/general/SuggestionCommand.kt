@@ -61,7 +61,7 @@ object SuggestionCommand: Command(
                 }
         }
         else
-            event.channel.sendMessage("Please provide your suggestion.").queue()
+            event.channel.sendMessage(argumentMissing("suggestion")).queue()
     }
 
     override fun onEvent(event: GenericEvent)

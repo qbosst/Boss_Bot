@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
+import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.maxLength
@@ -29,6 +30,6 @@ object ColourRemoveCommand: Command(
                 event.channel.sendMessage("There is no colour in this guild named `${name.maxLength()}`").queue()
         }
         else
-            event.channel.sendMessage("Please provide the name of the colour you would like to remove.").queue()
+            event.channel.sendMessage(argumentMissing("name of the colour you would like to remove")).queue()
     }
 }

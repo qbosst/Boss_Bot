@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
 import javafx.scene.paint.Color
+import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.*
@@ -46,7 +47,7 @@ object ColourCommand: Command(
             if(colour != null)
                 sendColourEmbed(event.channel, colour).queue()
             else
-                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid colour!").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "colour")).queue()
         }
         else
             event.channel.sendMessage("Please enter the hex code or name of a colour!").queue()

@@ -22,6 +22,7 @@ class TrackScheduler(
     private val reloadCount = mutableMapOf<String, Int>()
     private var messageId: Long = -1
     private lateinit var lastException: FriendlyException
+
     var channelId: Long = -1
 
     val channel: TextChannel?

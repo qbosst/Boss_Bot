@@ -8,8 +8,7 @@ import me.qbosst.bossbot.util.getMemberByString
 import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.time.Duration
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -76,7 +75,9 @@ object TimeCommand: Command(
             if(author.second != target.second)
             {
                 val differenceInSeconds = getZoneDifference(author.second!!, target.second!!)
-                sb.append("${target.first.asTag} is `${TimeUtil.secondsToString(if(differenceInSeconds > 0) differenceInSeconds else -differenceInSeconds) { unit, count -> "$count ${unit.longName}" }}` ${if(differenceInSeconds > 0) "ahead of" else "behind"} you")
+                val timeString = TimeUtil.secondsToString(differenceInSeconds) { unit, count -> "$count ${unit.longName}" }
+                val isBehind = timeString.startsWith("-")
+                sb.append("${target.first.asTag} is `${if(isBehind) timeString.substring(1) else timeString}` ${if(isBehind) "behind" else "ahead of"} you")
             }
             else if(!isSelf)
                 sb.append("They are in the same timezone as you!")
@@ -84,15 +85,13 @@ object TimeCommand: Command(
         return sb.toString()
     }
 
-    private fun getZoneDifference(zone1: ZoneId, zone2: ZoneId): Long
+    private fun getZoneDifference(zone1: ZoneId, zone2: ZoneId): Int
     {
-        val now = LocalDateTime.now()
-        val zone1Time = now.atZone(zone1)
-        val zone2Time = now.atZone(zone2)
-        if(zone1Time.offset.totalSeconds > zone2Time.offset.totalSeconds)
-            return -Duration.between(zone1Time, zone2Time).seconds
-        else
-            return Duration.between(zone2Time, zone1Time).seconds
+        val now = OffsetDateTime.now()
+        val zone1Time = now.atZoneSameInstant(zone1)
+        val zone2Time = now.atZoneSameInstant(zone2)
+
+        return zone2Time.offset.totalSeconds - zone1Time.offset.totalSeconds
     }
 
     private fun getCurrentTime(zoneId: ZoneId): String = formatZonedDateTime(ZonedDateTime.now(zoneId))

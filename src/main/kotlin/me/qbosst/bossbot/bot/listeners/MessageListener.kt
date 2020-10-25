@@ -155,24 +155,22 @@ object MessageListener: EventListener, CommandManagerImpl()
         if(event.isFromGuild)
         {
             val old = messageCache.putMessage(event.message)
+            val textChannel = event.guild.getSettings().getMessageLogsChannel(event.guild) ?: return
 
-            if(old?.getAuthor(event.jda.shardManager!!)?.isBot == true)
-                return
+            val embed = EmbedBuilder()
+                    .setAuthor("Message Edited", null, old?.getAuthor(event.jda.shardManager!!)?.effectiveAvatarUrl)
+                    .setTimestamp(event.message.timeEdited ?: OffsetDateTime.now())
+                    .setColor(PASTEL_YELLOW)
+                    .addField("Channel", event.textChannel.asMention, true)
+                    .addField("Author", "${event.author.asMention} ${event.author.asTag}", true)
+                    .addField("Message", "[Jump to Message](${event.message.jumpUrl})", true)
+                    .addField("Message Content Before", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", true)
+                    .addField("Message Content After", event.message.contentRaw.maxLength(MessageEmbed.VALUE_MAX_LENGTH), true)
+                    .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.messageIdLong}")
+
 
             // Logs the message update event
-            event.guild.getSettings().getMessageLogsChannel(event.guild)
-                    ?.sendMessage(EmbedBuilder()
-                            .setAuthor("Message Edited", event.message.jumpUrl, event.author.effectiveAvatarUrl)
-                            .setThumbnail(event.author.avatarUrl)
-                            .setDescription("**Author**: ${event.author.asMention}\n**Channel**:${event.textChannel.asMention}\n[Jump to Message](${event.message.jumpUrl})")
-                            .addField("Message Content Before", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
-                            .addField("Message Content After", event.message.contentRaw.maxLength(MessageEmbed.VALUE_MAX_LENGTH), false)
-                            .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.message.idLong}")
-                            .setThumbnail(event.author.effectiveAvatarUrl)
-                            .setTimestamp(event.message.timeEdited)
-                            .setColor(PASTEL_YELLOW)
-                            .build())
-                    ?.queue()
+            textChannel.sendMessage(embed.build()).queue()
         }
     }
 
@@ -184,15 +182,14 @@ object MessageListener: EventListener, CommandManagerImpl()
             val old = messageCache.pullMessage(event.guild, event.messageIdLong)
             val textChannel = event.guild.getSettings().getMessageLogsChannel(event.guild) ?: return
 
-            if(old?.getAuthor(event.jda.shardManager!!)?.isBot == true)
-                return
+            val author = old?.getAuthor(event.jda.shardManager!!)
 
             val embed = EmbedBuilder()
                     .setAuthor("Message Deleted", null, old?.getAuthor(event.jda.shardManager!!)?.effectiveAvatarUrl)
                     .setTimestamp(OffsetDateTime.now())
                     .setColor(PASTEL_RED)
                     .addField("Channel", event.textChannel.asMention, true)
-                    .addField("Author", if(old != null) "<@${old.authorIdLong}>" else "N/A", true)
+                    .addField("Author", if(old != null) if(author != null) "${author.asMention} ${author.asTag}" else "<@${old.authorIdLong}> ${old.username}#${old.discriminator}" else "N/A", true)
                     .setFooter((if(old != null) "User ID: ${old.authorIdLong} | " else "") + "Message ID: ${event.messageIdLong}")
 
             val attachments = old?.getAttachmentFiles() ?: listOf()

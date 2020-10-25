@@ -81,11 +81,9 @@ fun Guild.getTextChannelByString(query: String): TextChannel? = getTextChannelBy
 fun Member.move(vc: VoiceChannel): RestAction<Void> = guild.moveVoiceMember(this, vc)
 
 
-fun String.maxLength(maxLength: Int = 32): String
-{
-    val new = replace("@", "@$ZERO_WIDTH")
-    return if(new.length > maxLength) "${new.substring(0, maxLength - 3)}..." else new
-}
+fun String.maxLength(maxLength: Int = 32): String = if(this.length > maxLength) "${this.substring(0, maxLength - 3)}..." else this
+
+fun String.makeSafe(): String = replace("@", "@$ZERO_WIDTH")
 
 fun GenericMessageEvent.getGuildOrNull(): Guild? = if(isFromGuild) guild else null
 

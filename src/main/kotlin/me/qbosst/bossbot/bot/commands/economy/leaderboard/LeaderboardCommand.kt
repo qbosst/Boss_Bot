@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot.commands.economy.leaderboard
 
+import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.bot.listeners.VoiceListener
@@ -70,7 +71,7 @@ object LeaderboardCommand : Command(
                     event.channel.sendMessage(embed.build()).queue()
                 }
             else
-                event.channel.sendMessage("This is not a valid leaderboard type.").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "leaderboard type")).queue()
         }
         else
             event.channel.sendMessage("Please provide the type of leaderboard you would like to see (${enumValues<Stats>().joinToString(", ") {it.name.toLowerCase()}})").queue()

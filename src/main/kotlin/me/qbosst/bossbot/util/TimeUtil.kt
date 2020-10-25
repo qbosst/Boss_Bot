@@ -7,6 +7,8 @@ object TimeUtil
     private val TIME_REGEX = Regex("(?is)^((\\s*-?\\s*\\d+\\s*(${enumValues<TimeUnit>().map { it.regex }.joinToString("|")})\\s*,?\\s*(and)?)*).*")
     val DATE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy")
 
+    fun secondsToString(seconds: Int, locale: (TimeUnit, Long) -> String = { unit, count -> "${count}${unit.shortName}" }): String = secondsToString(seconds.toLong(), locale)
+
     fun secondsToString(seconds: Long, locale: (TimeUnit, Long) -> String = { unit, count -> "${count}${unit.shortName}" }): String
     {
         if(seconds == 0L)

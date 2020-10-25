@@ -1,5 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
+import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.database.tables.GuildColoursTable
@@ -25,7 +27,7 @@ object ColourCreateCommand: Command(
         {
             // Gets colour by hex value
             var colour = getColourByHex(args[0]) ?: kotlin.run {
-                event.channel.sendMessage("`${args[0].maxLength()}` is not a valid hex!").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "hex")).queue()
                 return
             }
 
@@ -58,9 +60,9 @@ object ColourCreateCommand: Command(
                 }
             }
             else
-                event.channel.sendMessage("Please provide the name of this colour").queue()
+                event.channel.sendMessage(argumentMissing("name of this colour")).queue()
         }
         else
-            event.channel.sendMessage("Please provide the hex value of the colour you would like to create.").queue()
+            event.channel.sendMessage(argumentMissing("hex value of the colour you would like to create")).queue()
     }
 }

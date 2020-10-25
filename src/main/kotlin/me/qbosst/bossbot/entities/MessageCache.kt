@@ -99,6 +99,8 @@ class MessageCache(val size: Int)
         }
 
         fun deleteFiles() {
+
+
             getAttachmentFiles().forEach {
                 if(it.delete())
                     LOG.debug("Successfully deleted file ${it.absolutePath}")

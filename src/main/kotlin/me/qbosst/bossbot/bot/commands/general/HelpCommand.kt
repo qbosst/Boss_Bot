@@ -1,13 +1,13 @@
 package me.qbosst.bossbot.bot.commands.general
 
 import me.qbosst.bossbot.bot.BossBot
+import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.getPrefix
 import me.qbosst.bossbot.util.loadObjects
-import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -52,7 +52,7 @@ object HelpCommand: Command(
                     event.channel.sendMessage("You do not have access to this command").queue()
             }
             else
-                event.channel.sendMessage("Could not find command `${args[0].maxLength()}`").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "command or page number")).queue()
         }
         else
             event.channel.sendMessage(getHelpEmbed(event, 0).build()).queue()

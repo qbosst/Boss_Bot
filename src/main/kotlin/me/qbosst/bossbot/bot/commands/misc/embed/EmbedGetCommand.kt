@@ -1,5 +1,7 @@
 package me.qbosst.bossbot.bot.commands.misc.embed
 
+import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -20,12 +22,12 @@ object EmbedGetCommand : Command(
         // Gets message id
         val messageId = if (args.isNotEmpty()) args[0].toLongOrNull() ?: kotlin.run()
         {
-            event.channel.sendMessage("That is not a valid ID!").queue()
+            event.channel.sendMessage(argumentInvalid(args[0], "ID")).queue()
             return
         }
         else
         {
-            event.channel.sendMessage("Please mention a message id!").queue()
+            event.channel.sendMessage(argumentMissing("message ID", "a")).queue()
             return
         }
 

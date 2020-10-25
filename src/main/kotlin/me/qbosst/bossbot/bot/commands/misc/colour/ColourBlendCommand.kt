@@ -1,10 +1,11 @@
 package me.qbosst.bossbot.bot.commands.misc.colour
 
+import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
@@ -38,7 +39,7 @@ object ColourBlendCommand : Command(
                     colours.add(colour)
                 else
                 {
-                    event.channel.sendMessage("`${arg.maxLength()}` is not a valid colour!").queue()
+                    event.channel.sendMessage(argumentInvalid(arg, "colour")).queue()
                     return
                 }
             }
@@ -47,7 +48,7 @@ object ColourBlendCommand : Command(
             ColourCommand.sendColourEmbed(event.channel, colours.blend()).queue()
         }
         else
-            event.channel.sendMessage("You must provide at least 1 colour!").queue()
+            event.channel.sendMessage(argumentMissing("at least one colour")).queue()
     }
 }
 

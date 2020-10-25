@@ -2,6 +2,8 @@ package me.qbosst.bossbot.bot.commands.misc.greeting
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.dev.DeveloperCommand
+import me.qbosst.bossbot.bot.userNotFound
+import me.qbosst.bossbot.bot.userNotMentioned
 import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
@@ -35,10 +37,10 @@ object GreetingUpdateCommand : DeveloperCommand(
                     event.channel.sendMessage(user.getUserData().greeting ?: "${user.asTag} does not have a greeting message").queue()
             }
             else
-                event.channel.sendMessage("could not find user").queue()
+                event.channel.sendMessage(userNotFound(args[0])).queue()
         }
         else
-            event.channel.sendMessage("please mention user.").queue()
+            event.channel.sendMessage(userNotMentioned()).queue()
     }
 
 }
