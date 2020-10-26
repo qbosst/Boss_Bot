@@ -32,13 +32,13 @@ object ColoursCommand: Command(
             // Specifies that only guild custom colours should be shown on the menu
             args[0].toLowerCase() == "guild" ->
             {
-                index++;
+                index++
                 GuildColoursManager.get(event.getGuildOrNull()).clone()
             }
             // Specifies that only system colours should be shown
             args[0].toLowerCase() == "system" ->
             {
-                index++;
+                index++
                 systemColours
             }
             args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).clone().plus(systemColours)

@@ -142,7 +142,7 @@ class FixedCache<K, V> {
      *
      *  @return A set of all the keys in the cache
      */
-    fun ketSet(): Set<K?> = keys.toSet()
+    fun keys(): List<K> = keys.toSet().filterNotNull()
 
     /**
      *  Returns the amount of maximum allowed key&value in the cache

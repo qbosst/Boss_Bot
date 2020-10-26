@@ -1,77 +1,63 @@
 package me.qbosst.bossbot.bot.commands.misc.embed
 
-import com.fasterxml.jackson.core.JsonParseException
 import me.qbosst.bossbot.bot.commands.meta.Command
-import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.entities.MessageEmbed.EMBED_MAX_LENGTH_BOT
+import me.qbosst.bossbot.util.EmbedUtil
+import me.qbosst.bossbot.util.JSONUtil
+import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.exceptions.ParsingException
-import net.dv8tion.jda.api.utils.data.DataObject
-import net.dv8tion.jda.internal.entities.EntityBuilder
 
 object EmbedCommand: Command(
         "embed",
-        "Creates an embed based on json",
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        description = "Creates and sends a Message Embed based on JSON input",
+        usage_raw = listOf("<json>", "(file.json)"),
         guildOnly = false
 )
 {
-    init
-    {
-        addCommands(setOf(EmbedTemplateCommand, EmbedGetCommand))
+    init {
+        addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
     }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         if(args.isNotEmpty())
-        {
-            process(event.channel, args.joinToString(" ").toByteArray())
-        }
+            process(event, args.joinToString(" ").toByteArray())
         else
         {
-            val first = event.message.attachments.firstOrNull { it.fileExtension == "json" }
-            if(first != null)
-            {
-                first.downloadToFile().thenAccept()
+            val json = event.message.attachments.firstOrNull { it.fileExtension == "json" }
+            if(json != null)
+                json.downloadToFile().thenAccept()
                 {
-                    process(event.channel, it.readBytes())
+                    process(event, it.readBytes())
                 }
-            }
             else
-            {
-                event.channel.sendMessage("invalid!").queue()
-            }
+                event.channel.sendMessage("Please provide JSON to parse to create the embed").queue()
         }
     }
 
-    private fun process(channel: MessageChannel, content: ByteArray)
+    private fun process(event: MessageReceivedEvent, content: ByteArray)
     {
-        try
-        {
-            val obj = DataObject.fromJson(content)
-            if(!obj.hasKey("type"))
-                obj.put("type", "rich")
-
-            val embed = EntityBuilder(channel.jda).createMessageEmbed(obj)
-            when
-            {
-                embed.isEmpty -> channel.sendMessage("This embed is empty!").queue()
-                embed.length > EMBED_MAX_LENGTH_BOT -> channel.sendMessage("This embed is too large!").queue()
-                else -> channel.sendMessage(embed).queue()
-            }
-        }
-        catch (e: ParsingException)
-        {
-            if(e.cause is JsonParseException)
-            {
-                channel.sendMessage("Exception caught while trying to parse json ```${(e.cause as JsonParseException).message}```").queue()
-            }
-            else
-            {
-                channel.sendMessage("Caught Exception: $e").queue()
-            }
-        }
+        // Tries to convert content into JSON
+        JSONUtil.parseJson(content,
+                // Successfully parsed JSON
+                { data ->
+                    EmbedUtil.parseEmbed(event.jda, data,
+                            // Successfully parsed Embed
+                            { embed ->
+                                event.channel.sendMessage(embed).queue(
+                                        {},
+                                        // Unsuccessfully sent Embed
+                                        {
+                                            event.channel.sendMessage("Failed to send embed: ${it.localizedMessage}").queue()
+                                        })
+                            },
+                            // Unsuccessfully parsed Embed
+                            { error, type ->
+                                event.channel.sendMessage(type.errorMessage.invoke(error)).queue()
+                            })
+                },
+                // Unsuccessfully parsed JSON
+                { _, message ->
+                    event.channel.sendMessage(message).queue()
+                })
     }
-
 }

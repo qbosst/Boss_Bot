@@ -23,6 +23,11 @@ fun String.isBoolTrue(): Boolean = toLowerCase().matches(Regex("t(rue)?")) || th
  */
 fun String.isBoolFalse(): Boolean = toLowerCase().matches(Regex("f(alse)?")) || this == "0"
 
+/**
+ *  This will try to convert a String into a Boolean
+ *
+ *  @return Boolean. Null if the string could not be converted
+ */
 fun String.toBooleanOrNull(): Boolean? = when {
     this.isBoolFalse() -> false
     this.isBoolTrue() -> true

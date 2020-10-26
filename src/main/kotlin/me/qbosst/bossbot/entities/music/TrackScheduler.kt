@@ -11,13 +11,15 @@ import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.TextChannel
+import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
 
 class TrackScheduler(
         private val player: AudioPlayer,
 
-): GuildAudioEventListener
+): AudioEventListener
 {
+
     private val queue = LinkedBlockingQueue<AudioTrack>()
     private val reloadCount = mutableMapOf<String, Int>()
     private var messageId: Long = -1
@@ -28,13 +30,25 @@ class TrackScheduler(
     val channel: TextChannel?
         get() = BossBot.SHARDS_MANAGER.getTextChannelById(channelId)
 
+    /**
+     *  Gets the currently playing audio track. Null if no audio track is playing
+     */
     val currentTrack: AudioTrack?
         get() = player.playingTrack
 
+    var currentTrackInfoInfo: CurrentTrackInfo? = null
+        private set
+
+    /**
+     *  Variable used to pause and un-pause audio tracks
+     */
     var paused: Boolean
         get() = player.isPaused
         set(value) { player.isPaused = value }
 
+    /**
+     *  Determines whether the queue is being looped or not
+     */
     var isLooping: Boolean = false
 
     fun queue(track: AudioTrack)
@@ -110,7 +124,7 @@ class TrackScheduler(
             {
                 // Sometimes there are problems with loading tracks that can be solved by just trying again
                 // This will try 5 to load the track 5 times before it fails
-                if(reloadCount.getOrDefault(trackUrl, 0) < 5)
+                if(reloadCount.getOrDefault(trackUrl, 0) < 2)
                 {
                     reloadCount[trackUrl] = reloadCount.getOrDefault(trackUrl, 0)+1
                     loadAndPlay(message, trackUrl)
@@ -124,7 +138,7 @@ class TrackScheduler(
         })
     }
 
-    override fun onEvent(manager: GuildMusicManager, event: AudioEvent)
+    override fun onEvent(event: AudioEvent)
     {
         when(event)
         {
@@ -150,13 +164,20 @@ class TrackScheduler(
             }
 
             is TrackStartEvent ->
+            {
+                currentTrackInfoInfo = CurrentTrackInfo(Instant.now(), event.track.duration)
                 // Displays the currently playing track
                 channel?.sendMessage("Now playing: `${event.track.info.title}`")?.queue() { messageId = it.idLong }
+            }
 
             is TrackStuckEvent ->
                 // Starts the next track
                 nextTrack()
 
+            is PlayerPauseEvent ->
+                currentTrackInfoInfo?.update(Instant.now())
+            is PlayerResumeEvent ->
+                currentTrackInfoInfo?.update(null)
         }
     }
 }

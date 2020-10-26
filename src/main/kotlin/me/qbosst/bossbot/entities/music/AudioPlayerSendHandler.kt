@@ -20,5 +20,4 @@ class AudioPlayerSendHandler(private val audioPlayer: AudioPlayer) : AudioSendHa
     override fun provide20MsAudio(): ByteBuffer? = (buffer as Buffer).flip() as ByteBuffer
 
     override fun isOpus(): Boolean = true
-
 }

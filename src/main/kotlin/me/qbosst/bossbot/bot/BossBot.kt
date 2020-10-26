@@ -66,7 +66,7 @@ object BossBot {
         // Get event listeners
         val listeners = loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java)
 
-        LOG.debug("Registered ${listeners.size} listener(s): ${listeners.joinToString(", ")}")
+        LOG.debug("Registered ${listeners.size} listener(s): ${listeners.joinToString(", ") { it::class.java.simpleName }}")
 
         val events = mutableListOf<Class<out GenericEvent>>()
         for(listener in listeners)

@@ -9,7 +9,8 @@ import org.json.JSONObject
 object DeepDreamCommand: DeepAiCommand(
         "deepdream",
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
-        url = "https://api.deepai.org/api/deepdream"
+        url = "https://api.deepai.org/api/deepdream",
+        guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, json: JSONObject)

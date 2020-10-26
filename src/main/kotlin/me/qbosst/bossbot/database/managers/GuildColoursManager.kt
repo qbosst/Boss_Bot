@@ -146,9 +146,11 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
 
     fun clear(guild: Guild)
     {
+        // Deletes the records in the database
         transaction {
             GuildColoursTable.deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) }
         }
+        // Removes any cached values of the guild
         pull(guild.idLong)
     }
 

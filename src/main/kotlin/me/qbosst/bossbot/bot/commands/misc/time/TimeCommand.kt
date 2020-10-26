@@ -1,12 +1,9 @@
 package me.qbosst.bossbot.bot.commands.misc.time
 
+import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.database.managers.getUserData
-import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.getMemberByString
-import me.qbosst.bossbot.util.loadObjects
-import net.dv8tion.jda.api.entities.User
+import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -15,8 +12,9 @@ import java.time.ZonedDateTime
 object TimeCommand: Command(
         "time",
         "Shows the time that users are in",
-        usage_raw = listOf("[@user] [duration]"),
-        examples_raw = listOf("@boss", "@boss 3h")
+        usage_raw = listOf("[@user|zoneId] [duration]"),
+        examples_raw = listOf("", "@boss", "@boss 3h", "europe/london -30 minutes", "us/eastern"),
+        guildOnly = false
 )
 {
     init
@@ -26,75 +24,151 @@ object TimeCommand: Command(
 
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        val authorZoneId = getZoneId(event.author)
         if(args.isNotEmpty())
         {
-            val target = event.guild.getMemberByString(args[0])?.user
-            if(target == null)
-                event.channel.sendMessage(userNotFound(args[0])).queue()
-            else if(args.size > 1)
+            val target = event.getGuildOrNull()?.getMemberByString(args[0])?.user
+            if(target != null)
             {
-                val targetZoneId = getZoneId(target)
-                if(targetZoneId == null)
-                    event.channel.sendMessage("${target.asTag} does not have a timezone setup").queue()
-                else
+                val targetZoneId = target.getUserData().zone_id
+                val isSelfMention = target == event.author
+                if(targetZoneId != null)
                 {
-                    val seconds = TimeUtil.parseTime(args.drop(1).joinToString(" "))
-                    var date = ZonedDateTime.now(targetZoneId)
-                    if(seconds > 0)
-                        date = date.plusSeconds(seconds)
-                    else if(seconds < 0)
-                        date = date.minusSeconds(-seconds)
+                    val arguments = args.drop(1).joinToString(" ")
+                    if(arguments.isNotBlank())
+                    {
+                        val seconds = TimeUtil.parseTime(arguments)
+                        if(seconds != 0L)
+                            event.channel.sendMessage(getTimeIn("${if(isSelfMention) "you" else target.asTag} `(${targetZoneId.id})`", targetZoneId, seconds)).queue()
+                        else
+                            event.channel.sendMessage(argumentInvalid(arguments, "duration")).queue()
+                    }
+                    else
+                    {
+                        val sb = StringBuilder("The time for ${if(isSelfMention) "you" else target.asTag} `(${targetZoneId.id})`")
+                                .append("is `${getCurrentTime(targetZoneId)}`. ")
 
-                    event.channel.sendMessage("The time for ${target.asTag} in `${TimeUtil.secondsToString(seconds) { unit, count -> "$count ${unit.longName}" }}` will be `${formatZonedDateTime(date)}`").queue()
+                        val selfZoneId = event.author.getUserData().zone_id
+                        if(selfZoneId != null)
+                        {
+                            if(selfZoneId != targetZoneId)
+                            {
+                                val difference = getZoneDifference(selfZoneId, targetZoneId)
+                                val time = TimeUtil.secondsToString(difference) { unit, count -> "$count ${unit.longName}"}
+                                val isBehind = time.startsWith("-")
+                                sb.append("${target.asTag} is `${if(isBehind) time.substring(1) else time}` ")
+                                        .append("`${if(isBehind) "behind" else "ahead of"}` you.")
+                            }
+                            else if(!isSelfMention)
+                                sb.append("${target.asTag} is in the same time zone as you")
+                        }
+
+                        event.channel.sendMessage(sb).queue()
+                    }
                 }
+                else
+                    event.channel.sendMessage(noTimeZone(if(isSelfMention) "You do" else "${target.asTag} does")).queue()
             }
             else
-                event.channel.sendMessage(getZoneInfo(Pair(event.author, authorZoneId), Pair(target, getZoneId(target)))).queue()
+            {
+                val targetZoneId = zoneIdOf(args[0])
+                if(targetZoneId != null)
+                {
+                    val arguments = args.drop(1).joinToString(" ")
+                    if(arguments.isNotBlank())
+                    {
+                        val seconds = TimeUtil.parseTime(arguments)
+                        if(seconds != 0L)
+                            event.channel.sendMessage(getTimeIn("`${targetZoneId.id}`", targetZoneId, seconds)).queue()
+                        else
+                            event.channel.sendMessage(argumentInvalid(arguments, "duration")).queue()
+                    }
+                    else
+                    {
+                        val sb = StringBuilder("The time for `${targetZoneId.id}` is `${getCurrentTime(targetZoneId)}`. ")
+                        val selfZoneId = event.author.getUserData().zone_id
+                        if(selfZoneId != null && selfZoneId != targetZoneId)
+                        {
+                            val difference = getZoneDifference(selfZoneId, targetZoneId)
+                            val time = TimeUtil.secondsToString(difference) { unit, count -> "$count ${unit.longName}"}
+                            val isBehind = time.startsWith("-")
+                            sb.append("`${targetZoneId.id}` is `${if(isBehind) time.substring(1) else time}` ")
+                                    .append("`${if(isBehind) "behind" else "ahead of"}` you.")
+                        }
+
+                        event.channel.sendMessage(sb).queue()
+                    }
+                }
+                else
+                {
+                    val selfZoneId = event.author.getUserData().zone_id
+                    if(selfZoneId != null)
+                    {
+                        val arguments = args.joinToString(" ")
+                        val seconds = TimeUtil.parseTime(arguments)
+                        if(seconds != 0L)
+                            event.channel.sendMessage(getTimeIn("you `(${selfZoneId.id})`", selfZoneId, seconds)).queue()
+                        else
+                            event.channel.sendMessage(argumentInvalid(args[0], "user, zone or duration")).queue()
+                    }
+                    else
+                        event.channel.sendMessage(noTimeZone("You do")).queue()
+                }
+            }
         }
         else
         {
-            val zoneId = getZoneId(event.author)
-            event.channel.sendMessage(getZoneInfo(Pair(event.author, zoneId))).queue()
+            val targetZoneId = event.author.getUserData().zone_id
+            if(targetZoneId != null)
+            {
+                val sb = StringBuilder("The time for you `(${targetZoneId.id})` is `${getCurrentTime(targetZoneId)}`")
+                event.channel.sendMessage(sb).queue()
+            }
+            else
+                event.channel.sendMessage(noTimeZone("You do")).queue()
         }
     }
 
-    private fun getZoneId(user: User): ZoneId? = user.getUserData().zone_id
-
-    private fun getZoneInfo(author: Pair<User, ZoneId?>, target: Pair<User, ZoneId?> = author): String
+    private fun getTimeIn(who: String, zoneId: ZoneId, seconds: Long): String
     {
-        val isSelf = author.first == target.first
-        if(target.second == null)
-            return "${if(isSelf) "You" else target.first.asTag} does not have a timezone setup"
+        var date = ZonedDateTime.now(zoneId)
+        if(seconds > 0)
+            date = date.plusSeconds(seconds)
+        else if(seconds < 0)
+            date = date.minusSeconds(-seconds)
 
-        val sb = StringBuilder()
-                .append("The time for ${if(isSelf) "you" else target.first.asTag} is `${getCurrentTime(target.second!!)}`. ")
-                .append("${if(isSelf) "Your" else target.first.asTag.plus("'s")} time zone is `${target.second!!.id}`. ")
-
-        if(author.second != null)
-            if(author.second != target.second)
-            {
-                val differenceInSeconds = getZoneDifference(author.second!!, target.second!!)
-                val timeString = TimeUtil.secondsToString(differenceInSeconds) { unit, count -> "$count ${unit.longName}" }
-                val isBehind = timeString.startsWith("-")
-                sb.append("${target.first.asTag} is `${if(isBehind) timeString.substring(1) else timeString}` ${if(isBehind) "behind" else "ahead of"} you")
-            }
-            else if(!isSelf)
-                sb.append("They are in the same timezone as you!")
-
-        return sb.toString()
+        return StringBuilder()
+                .append("The time for $who in ")
+                .append("`${TimeUtil.secondsToString(seconds) {unit, count -> "$count ${unit.longName}"}}` ")
+                .append("will be `${formatDate(date)}`.")
+                .toString()
     }
 
-    private fun getZoneDifference(zone1: ZoneId, zone2: ZoneId): Int
+    /**
+     *  Gets the time difference between two different zones
+     *
+     *  @param zoneId1 The first zoneId
+     *  @param zoneId2 The second zoneId
+     *
+     *  @return The difference in time between the two zones given in seconds
+     */
+    private fun getZoneDifference(zoneId1: ZoneId, zoneId2: ZoneId): Int
     {
         val now = OffsetDateTime.now()
-        val zone1Time = now.atZoneSameInstant(zone1)
-        val zone2Time = now.atZoneSameInstant(zone2)
-
-        return zone2Time.offset.totalSeconds - zone1Time.offset.totalSeconds
+        val nowZone1 = now.atZoneSameInstant(zoneId1)
+        val nowZone2 = now.atZoneSameInstant(zoneId2)
+        return nowZone2.offset.totalSeconds - nowZone1.offset.totalSeconds
     }
 
-    private fun getCurrentTime(zoneId: ZoneId): String = formatZonedDateTime(ZonedDateTime.now(zoneId))
+    private fun getCurrentTime(zoneId: ZoneId): String = formatDate(ZonedDateTime.now(zoneId))
 
-    private fun formatZonedDateTime(time: ZonedDateTime): String = TimeUtil.DATE_TIME_FORMATTER.format(time)
+    private fun formatDate(date: ZonedDateTime): String = TimeUtil.DATE_TIME_FORMATTER.format(date)
+
+    /**
+     *  Message sent for when a user does not have a time zone setup
+     *
+     *  @param who Who doesn't have a time zone setup
+     *
+     *  @return Error message for not having a time zone setup.
+     */
+    private fun noTimeZone(who: String): String = "$who not have a time zone setup"
 }

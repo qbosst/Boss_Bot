@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.CROSS
 import me.qbosst.bossbot.bot.TICK
-import me.qbosst.bossbot.bot.listeners.EventWaiter
+import me.qbosst.bossbot.bot.listeners.BotEventWaiter
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
@@ -24,7 +24,7 @@ object ShutdownCommand: DeveloperCommand(
             message.addReaction(TICK).queue()
             message.addReaction(CROSS).queue()
 
-            EventWaiter.waitForEvent(MessageReactionAddEvent::class.java,
+            BotEventWaiter.waitForEvent(MessageReactionAddEvent::class.java,
                 { reactionEvent ->
                     reactionEvent.messageIdLong == message.idLong && reactionEvent.userIdLong == event.author.idLong
                 },
@@ -44,8 +44,8 @@ object ShutdownCommand: DeveloperCommand(
                     }
                 }, 120, TimeUnit.SECONDS,
                 {
-                    message.editMessage("Timed out...").queue()
                     message.clearReactions().queue()
+                    message.editMessage("Timed out...").queue()
                 }
             )
         }

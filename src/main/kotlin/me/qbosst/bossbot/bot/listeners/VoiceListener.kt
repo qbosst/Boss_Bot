@@ -6,7 +6,6 @@ import me.qbosst.bossbot.bot.PASTEL_RED
 import me.qbosst.bossbot.bot.PASTEL_YELLOW
 import me.qbosst.bossbot.database.managers.MemberDataManager
 import me.qbosst.bossbot.database.managers.getSettings
-import me.qbosst.bossbot.database.tables.MemberDataTable
 import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -150,15 +149,12 @@ object VoiceListener: EventListener
         BossBot.LOG.debug("${guild.name} (${guild.id}): ${member?.user?.asTag ?: ""} (${userId}) has; spent ${TimeUtil.secondsToString(total)} in vc, spent ${TimeUtil.secondsToString(unMuted)} un-muted and ${TimeUtil.secondsToString(data.secondsMuted)}s muted in vc.")
 
         val loop: Long = (total - data.secondsMuted) / seconds_until_eligible
-        MemberDataManager.update(guild.idLong, userId,
-                { insert ->
-                    insert[MemberDataTable.experience] = xp_to_give
-                    insert[MemberDataTable.voice_chat_time] = total
-                },
-                { old, update ->
-                    update[MemberDataTable.experience] = old.experience + (xp_to_give * loop).toInt()
-                    update[MemberDataTable.voice_chat_time] = old.voice_chat_time + total
-                })
+        MemberDataManager.update(guild.idLong, userId) { old ->
+            return@update old.clone(
+                    experience = old.experience + (loop * xp_to_give).toInt(),
+                    voice_chat_time = old.voice_chat_time + total
+            )
+        }
     }
 
     private fun loadVoiceData(guild: Guild): MutableMap<Long, VoiceMemberStatus>

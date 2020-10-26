@@ -23,7 +23,7 @@ fun getId(id: String): Long
     if(id.matches(LONG_REGEX))
         return id.replace(Regex("\\D+"), "").toLong()
 
-    for(type in enumValues<Message.MentionType>())
+    for(type in listOf(Message.MentionType.USER, Message.MentionType.CHANNEL, Message.MentionType.ROLE))
         if(id.matches(type.pattern.toRegex()))
             return id.replace(Regex("\\D+"), "").toLong()
 
@@ -37,9 +37,7 @@ fun getId(id: String): Long
  *
  *  @return The member in that guild. Null if no member was found
  */
-fun Guild.getMemberByString(query: String): Member? = getMemberById(getId(query)) ?: if(query.matches(User.USER_TAG.toRegex())) getMemberByTag(
-    query
-) else null ?: getMembersByEffectiveName(query, false).firstOrNull()
+fun Guild.getMemberByString(query: String): Member? = getMemberById(getId(query)) ?: if(query.matches(User.USER_TAG.toRegex())) getMemberByTag(query) else null ?: getMembersByName(query, true).firstOrNull()
 
 /**
  *  Searches for a user within the whole bot by their ID or tag.
@@ -66,10 +64,7 @@ fun Guild.getRoleByString(query: String): Role? = getRoleById(getId(query)) ?: g
  *
  *  @return A text channel. Null if no text channel was found.
  */
-fun Guild.getTextChannelByString(query: String): TextChannel? = getTextChannelById(getId(query)) ?: getTextChannelsByName(
-    query,
-    true
-).firstOrNull()
+fun Guild.getTextChannelByString(query: String): TextChannel? = getTextChannelById(getId(query)) ?: getTextChannelsByName(query, true).firstOrNull()
 
 /**
  *  Moves a member in a voice channel
@@ -80,25 +75,60 @@ fun Guild.getTextChannelByString(query: String): TextChannel? = getTextChannelBy
  */
 fun Member.move(vc: VoiceChannel): RestAction<Void> = guild.moveVoiceMember(this, vc)
 
-
+/**
+ *  Cuts off a string if it reaches the max length allowed
+ *
+ *  @param maxLength The maximum allowed of length that the string is allowed to be. Default is 32
+ *
+ *  @return String that is no longer than the maximum length specified.
+ */
 fun String.maxLength(maxLength: Int = 32): String = if(this.length > maxLength) "${this.substring(0, maxLength - 3)}..." else this
 
+/**
+ *  Prevents Discord mentions by putting a zero width character after an '@'
+ *
+ *  @return Safe string that cannot mention anyone
+ */
 fun String.makeSafe(): String = replace("@", "@$ZERO_WIDTH")
 
+/**
+ *  Gets the guild from the generic message event. Null if the message was not from a guild
+ *
+ *  @return Guild that the message came from. Null if it did not come from a guild
+ */
 fun GenericMessageEvent.getGuildOrNull(): Guild? = if(isFromGuild) guild else null
 
+/**
+ *  Gets the self user's prefix for commands
+ *
+ *  @return String the prefix used to invoke commands
+ */
 fun MessageReceivedEvent.getPrefix(): String = getGuildOrNull()?.getSettings()?.prefix ?: BotConfig.default_prefix
 
-fun getZoneId(zoneId: String?): ZoneId?
+/**
+ *  Better way of getting zone ids.
+ *
+ *  @param zoneId The zoneId string to try and get the Zone Id object from
+ *
+ *  @return Zone Id object. Null if no zone id corresponded to the parameter given
+ */
+fun zoneIdOf(zoneId: String?): ZoneId?
 {
     return ZoneId.of(ZoneId.getAvailableZoneIds().firstOrNull { it.equals(zoneId, true) } ?: return null)
 }
 
+/**
+ *  Splits a string up every n amount of characters
+ *
+ *  @param partitionSize The amount of characters to split it up after
+ *
+ *  @return List of strings
+ */
 fun String.split(partitionSize: Int): List<String>
 {
     val parts = mutableListOf<String>()
     val len = length
-    var i = 0;
+    var i = 0
     while (i < len)
     {
         parts.add(this.substring(i, Math.min(len, i+partitionSize)))

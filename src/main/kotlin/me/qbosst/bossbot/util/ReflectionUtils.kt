@@ -36,7 +36,9 @@ fun <T> loadClasses(path: String, clazz: Class<out T>, parameterTypes: Array<Cla
 {
     return Reflections(path)
             .getSubTypesOf(clazz)
+            // Filters the abstract classes out
             .filter { !Modifier.isAbstract(it.modifiers) }
+            // Creates an instance
             .mapNotNull { it.getDeclaredConstructor(*parameterTypes).newInstance(*initargs) }
 }
 
@@ -53,7 +55,9 @@ fun <T> loadObjectOrClass(path: String, clazz: Class<out T>): List<T>
     @Suppress("UNCHECKED_CAST")
     return Reflections(path)
             .getSubTypesOf(clazz)
+            // Filters the abstract classes out
             .filter { !Modifier.isAbstract(it.modifiers) }
+            // Creates an instance
             .mapNotNull {
                 if((it as Class<Any>).kotlin.objectInstance == null)
                     it.getDeclaredConstructor().newInstance()

@@ -1,9 +1,7 @@
 package me.qbosst.bossbot.bot.commands.music
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.entities.music.GuildAudioEventListener
 import me.qbosst.bossbot.entities.music.GuildMusicManager
-import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
@@ -27,8 +25,6 @@ abstract class MusicCommand(
 
 ): Command(name, description, usage, examples, aliases, true, userPermissions, botPermissions)
 {
-    private val listeners = loadObjects(this::class.java.`package`.name, GuildAudioEventListener::class.java)
-
     final override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         val member = event.member!!
@@ -102,9 +98,6 @@ abstract class MusicCommand(
             {
                 val manager = GuildMusicManager.get(event.guild)
                 manager.scheduler.channelId = event.channel.idLong
-                for(listener in listeners)
-                    manager.addListener(listener)
-
                 run(event, args)
             }
             else

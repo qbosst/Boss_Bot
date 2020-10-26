@@ -2,47 +2,46 @@ package me.qbosst.bossbot.bot.commands.misc.embed
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
+import me.qbosst.bossbot.util.toJson
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.json.JSONObject
 import java.time.OffsetDateTime
 import kotlin.random.Random
 
-object EmbedTemplateCommand : Command(
+object EmbedTemplateCommand: Command(
         "template",
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS),
+        "Provides a JSON template/example for a message embed",
         guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        event.channel.sendFile(JSONObject(createTemplate(event.author).decodeToString()).toString(4).toByteArray(), "template.json").queue()
+        val embed = createTemplate(event)
+        event.channel
+                .sendMessage(embed)
+                .addFile(embed.toData().toJson(4), "template.json")
+                .queue()
     }
 
-    private fun createTemplate(author: User): ByteArray
+    private fun createTemplate(event: MessageReceivedEvent): MessageEmbed
     {
-        val jda = author.jda
         return EmbedBuilder()
-                .setTitle("This is the title!", "https://www.youtube.co.uk")
-                .setColor(Random.nextColour(false))
+                .setTitle("Example Message Embed", getRandomURL(event))
+                .setAuthor("Author: ${event.author.asTag}", event.author.effectiveAvatarUrl, event.author.effectiveAvatarUrl)
+                .setImage(getRandomURL(event))
+                .setThumbnail(getRandomURL(event))
+                .setDescription("Write a description here...")
+                .setColor(Random.nextColour())
+                .setFooter("Author ID: ${event.author.idLong}")
                 .setTimestamp(OffsetDateTime.now())
-                .setDescription("This is the description!")
-                .setFooter("Footer Text!", jda.selfUser.avatarUrl)
-                .setAuthor("Author: ${jda.selfUser.asTag}", jda.selfUser.avatarUrl, jda.selfUser.avatarUrl)
-                .setThumbnail(jda.selfUser.defaultAvatarUrl)
-                .setImage(author.avatarUrl)
-                .addField(
-                        "First",
-                        "This is the value of the first field!",
-                        true
-                )
-                .addField(
-                        "Second",
-                        "This is the value of the second field!",
-                        true
-                )
-                .build().toData().toJson()
+                .addField("First Field", "Put something here :skull:", true)
+                .addField("Second Field", "Put something else here :rofl:", true)
+                .build()
+    }
+
+    private fun getRandomURL(event: MessageReceivedEvent): String
+    {
+        return event.jda.users.filter { it.isBot }.random().effectiveAvatarUrl
     }
 }

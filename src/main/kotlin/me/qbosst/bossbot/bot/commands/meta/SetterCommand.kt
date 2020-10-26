@@ -17,14 +17,14 @@ abstract class SetterCommand<T>(
         val displayName: String
 
 ): Command(name, description,
-        usage.plus("<none|null|default>"), examples.plus("default"), aliases, true, userPermissions, botPermissions)
+        usage.plus("<${SET_DEFAULT.joinToString("|")}>"), examples.plus(SET_DEFAULT.random()), aliases, true, userPermissions, botPermissions)
 {
     final override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
         if(args.isNotEmpty())
         {
             // If the user wants to clear the current value, sets it to null
-            if(args[0].equals("none", true) || args[0].equals("null", true) || args[0].equals("default", true))
+            if(SET_DEFAULT.firstOrNull { args[0].equals(it, true) } != null)
             {
                 val old = set(event.guild, null)
                 onSuccessfulSet(event.textChannel, old, null)
@@ -118,4 +118,9 @@ abstract class SetterCommand<T>(
      *  @return The new value. Null if there was an error getting the new value (i.e. user error)
      */
     abstract fun getFromArguments(event: MessageReceivedEvent, args: List<String>): T?
+
+    companion object
+    {
+        private val SET_DEFAULT = listOf("default", "none", "null")
+    }
 }

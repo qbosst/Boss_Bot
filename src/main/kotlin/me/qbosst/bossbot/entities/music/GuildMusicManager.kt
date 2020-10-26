@@ -3,48 +3,25 @@ package me.qbosst.bossbot.entities.music
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Guild
-import org.slf4j.LoggerFactory
 
-class GuildMusicManager(guild: Guild, manager: AudioPlayerManager): AudioEventListener
+class GuildMusicManager(guild: Guild, manager: AudioPlayerManager)
 {
-    private val listeners = mutableSetOf<GuildAudioEventListener>()
-
     private val player: AudioPlayer = manager.createPlayer()
     val scheduler = TrackScheduler(player)
     val guildId = guild.idLong
 
     init
     {
-        player.addListener(this)
-        listeners.add(scheduler)
+        player.addListener(scheduler)
     }
     
     fun getSendHandler(): AudioSendHandler = AudioPlayerSendHandler(player)
 
-    fun addListener(listener: GuildAudioEventListener) = listeners.add(listener)
-
-    override fun onEvent(event: AudioEvent)
-    {
-        for(listener in listeners)
-            try
-            {
-                listener.onEvent(this, event)
-            }
-            catch (t: Throwable)
-            {
-                LOG.error("Caught exception:", t)
-            }
-    }
-
     companion object
     {
-        private val LOG = LoggerFactory.getLogger(this::class.java)
-
         val audioManager = DefaultAudioPlayerManager()
         private val playerManager = mutableMapOf<Long, GuildMusicManager>()
 

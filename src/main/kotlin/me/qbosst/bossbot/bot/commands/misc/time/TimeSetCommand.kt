@@ -1,19 +1,18 @@
 package me.qbosst.bossbot.bot.commands.misc.time
 
+import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.bossbot.util.getZoneId
-import me.qbosst.bossbot.util.maxLength
-import net.dv8tion.jda.api.Permission
+import me.qbosst.bossbot.util.zoneIdOf
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import java.time.ZoneId
 
 object TimeSetCommand: Command(
         "set",
-        description = "Sets the timezone that you are in",
+        description = "Sets the time zone that you are in",
         usage_raw = listOf("<zoneId>"),
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES)
+        guildOnly = false
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
@@ -21,23 +20,17 @@ object TimeSetCommand: Command(
         if(args.isNotEmpty())
         {
             val name = args.joinToString(" ")
-            val zoneId = getZoneId(name)
+            val zoneId = zoneIdOf(name)
             if(zoneId == null)
-                event.channel.sendMessage("`${name.maxLength()}` is not a valid time zone!").queue()
+                event.channel.sendMessage(argumentInvalid(args[0], "time zone")).queue()
             else
             {
                 val old = UserDataManager.update(event.author, UserDataTable.zone_id, zoneId.id)
-                val oldZoneId = try { ZoneId.of(old) } catch (t: Throwable) { null }
+                val oldZoneId = zoneIdOf(old)
                 event.channel.sendMessage("Your timezone has been updated from `${if(oldZoneId == null) "none" else oldZoneId.id}` to `${zoneId.id}`").queue()
             }
         }
         else
-            event.channel
-                    .sendMessage("Here is a list of zones that you can use.")
-                    .addFile(ZoneId.getAvailableZoneIds()
-                            .sortedBy { it }
-                            .joinToString("\n")
-                            .toByteArray(), "zone_ids.txt")
-                    .queue()
+            event.channel.sendMessage(argumentMissing("zone")).queue()
     }
 }

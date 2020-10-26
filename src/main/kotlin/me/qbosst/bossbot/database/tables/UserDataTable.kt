@@ -3,7 +3,8 @@ package me.qbosst.bossbot.database.tables
 import org.jetbrains.exposed.sql.Table
 import java.time.ZoneId
 
-object UserDataTable : Table() {
+object UserDataTable : Table()
+{
     const val max_greeting_length = 512
     private val max_zone_id_length = ZoneId.getAvailableZoneIds().maxOf { it.length }
 

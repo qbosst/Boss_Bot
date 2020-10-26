@@ -3,55 +3,67 @@ package me.qbosst.bossbot.bot.commands.misc.embed
 import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.util.LONG_REGEX
+import me.qbosst.bossbot.util.getTextChannelByString
+import me.qbosst.bossbot.util.toJSONObject
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import org.json.JSONArray
 
-/**
- *  This command is used to get already existing messages and convert the embeds in that message into json representations
- */
-object EmbedGetCommand : Command(
+object EmbedGetCommand: Command(
         "get",
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES),
-        guildOnly = false
+        description = "Gets the embeds from a message",
+        usage_raw = listOf("<message id> [#channel]"),
+        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES)
 )
 {
-
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        // Gets message id
-        val messageId = if (args.isNotEmpty()) args[0].toLongOrNull() ?: kotlin.run()
+        if(args.isNotEmpty())
         {
-            event.channel.sendMessage(argumentInvalid(args[0], "ID")).queue()
-            return
+            if(args[0].matches(LONG_REGEX))
+            {
+                val messageId = args[0].toLong()
+                val channel = if(args.size > 1)
+                    event.guild.getTextChannelByString(args[1]) ?: kotlin.run {
+                        event.channel.sendMessage("I could not find that channel").queue()
+                        return
+                    }
+                else
+                    event.textChannel
+
+                channel.retrieveMessageById(messageId).queue(
+                    {
+                        val array = JSONArray()
+                        for(embed in it.embeds)
+                            array.put(embed.toData().toJSONObject())
+
+                        if(array.isEmpty)
+                            event.channel.sendMessage("There are no embeds in this message").queue()
+                        else
+                            event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
+                    },
+                    {
+                        when(it) {
+                            is ErrorResponseException ->
+                                // Message was not found
+                                if(it.errorCode == 10008)
+                                    event.channel.sendMessage("I could not find any message with the id of `${messageId}` in this channel.").queue()
+                                // Other error
+                                else
+                                    event.channel.sendMessage("Error while trying to retrieve message $messageId: `${it.localizedMessage}`").queue()
+                            // Other error
+                            else ->
+                                event.channel.sendMessage("Error while trying to retrieve message $messageId: `${it.localizedMessage}`").queue()
+                        }
+                    }
+                )
+            }
+            else
+                event.channel.sendMessage(argumentInvalid(args[0], "message Id")).queue()
         }
         else
-        {
-            event.channel.sendMessage(argumentMissing("message ID", "a")).queue()
-            return
-        }
-
-        // Retrieves message from channel
-        event.channel.retrieveMessageById(messageId).map { it.embeds }.queue(
-                {
-                    if(it.isNotEmpty())
-
-                        // Returns json representation of embed
-                        if(it.size == 1)
-                            event.channel.sendFile(it.first().toData().toJson(), "${messageId}.json").queue()
-                        else
-                        {
-                            val array = JSONArray()
-                            for(embed in it)
-                                array.put(embed.toData().toJson())
-                            event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
-                        }
-                    else
-                        event.channel.sendMessage("There are not embeds in this message.").queue()
-                },
-                {
-                    event.channel.sendMessage("Exception caught: $it").queue()
-                }
-        )
+            event.channel.sendMessage(argumentMissing("message Id")).queue()
     }
 }

@@ -8,21 +8,23 @@ import me.qbosst.bossbot.bot.commands.meta.CommandManagerImpl
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.managers.MemberDataManager
 import me.qbosst.bossbot.database.managers.getSettings
-import me.qbosst.bossbot.database.tables.MemberDataTable
 import me.qbosst.bossbot.entities.MessageCache
 import me.qbosst.bossbot.util.*
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.GenericEvent
+import net.dv8tion.jda.api.events.StatusChangeEvent
 import net.dv8tion.jda.api.events.message.MessageDeleteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.internal.utils.tuple.MutablePair
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.OffsetDateTime
 
 object MessageListener: EventListener, CommandManagerImpl()
@@ -55,6 +57,8 @@ object MessageListener: EventListener, CommandManagerImpl()
                 onMessageUpdateEvent(event)
             is MessageDeleteEvent ->
                 onMessageDeleteEvent(event)
+            is StatusChangeEvent ->
+                onStatusChangeEvent(event)
         }
     }
 
@@ -66,7 +70,7 @@ object MessageListener: EventListener, CommandManagerImpl()
             if(event.guild.getSettings().getMessageLogsChannel(event.guild) != null)
                 messageCache.putMessage(event.message)
 
-            if(event.member != null)
+            if(event.member != null && !event.author.isBot)
             {
                 val member = event.member!!
                 val key = Pair(event.guild.idLong, member.idLong)
@@ -85,9 +89,9 @@ object MessageListener: EventListener, CommandManagerImpl()
 
                         // Update message counter for member removed
                         else if(value.right > 0)
-                        {
-                            //TODO UPDATE
-                        }
+                            MemberDataManager.update(removedKey.first, removedKey.second) { old ->
+                                return@update old.clone(message_count = old.message_count + value.right)
+                            }
                     }
                 textCache.get(key)?.setRight((textCache.get(key)?.right ?: 0)+1)
             }
@@ -155,6 +159,9 @@ object MessageListener: EventListener, CommandManagerImpl()
         if(event.isFromGuild)
         {
             val old = messageCache.putMessage(event.message)
+            if(event.author.isBot)
+                return
+
             val textChannel = event.guild.getSettings().getMessageLogsChannel(event.guild) ?: return
 
             val embed = EmbedBuilder()
@@ -164,7 +171,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                     .addField("Channel", event.textChannel.asMention, true)
                     .addField("Author", "${event.author.asMention} ${event.author.asTag}", true)
                     .addField("Message", "[Jump to Message](${event.message.jumpUrl})", true)
-                    .addField("Message Content Before", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", true)
+                    .addField("Message Content Before", old?.contentRaw?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", true)
                     .addField("Message Content After", event.message.contentRaw.maxLength(MessageEmbed.VALUE_MAX_LENGTH), true)
                     .setFooter("User ID: ${event.author.idLong} | Message ID: ${event.messageIdLong}")
 
@@ -184,6 +191,9 @@ object MessageListener: EventListener, CommandManagerImpl()
 
             val author = old?.getAuthor(event.jda.shardManager!!)
 
+            if(author?.isBot == true)
+                return
+
             val embed = EmbedBuilder()
                     .setAuthor("Message Deleted", null, old?.getAuthor(event.jda.shardManager!!)?.effectiveAvatarUrl)
                     .setTimestamp(OffsetDateTime.now())
@@ -196,7 +206,7 @@ object MessageListener: EventListener, CommandManagerImpl()
             if(attachments.isNotEmpty())
                 embed.addField("Attachments", attachments.size.toString(), true)
 
-            embed.addField("Content", old?.content?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
+            embed.addField("Content", old?.contentRaw?.maxLength(MessageEmbed.VALUE_MAX_LENGTH) ?: "N/A", false)
 
             val action = textChannel.sendMessage(embed.build())
             for(file in attachments)
@@ -208,31 +218,43 @@ object MessageListener: EventListener, CommandManagerImpl()
 
     private fun onNonCommandEvent(event: MessageReceivedEvent)
     {
+        if(event.author.isBot)
+            return
+
         if(event.message.contentRaw.matches(Message.MentionType.USER.pattern.toRegex()) && event.message.mentionedUsers.contains(event.jda.selfUser))
             event.channel.sendMessage("My prefix is: `${event.getPrefix()}`").queue()
 
         if(event.isFromGuild && event.member != null)
         {
             val key = Pair(event.guild.idLong, event.author.idLong)
-            val record = textCache.get(key)!!
+            val record = textCache.get(key) ?: return
             if(record.left.plusSeconds(seconds_until_eligible).isBefore(event.message.timeCreated))
             {
                 val counter = record.right
                 record.setRight(0)
                 record.setLeft(event.message.timeCreated)
-
-                MemberDataManager.update(event.member!!,
-                        { insert ->
-                            insert[MemberDataTable.message_count] = counter
-                            insert[MemberDataTable.text_chat_time] = seconds_until_eligible
-                            insert[MemberDataTable.experience] = xp_to_give
-                        },
-                        { old, update ->
-                            update[MemberDataTable.message_count] = old.message_count + counter
-                            update[MemberDataTable.text_chat_time] = old.text_chat_time + seconds_until_eligible
-                            update[MemberDataTable.experience] = old.experience + xp_to_give
-                        })
+                MemberDataManager.update(event.member!!) { old ->
+                    return@update old.clone(
+                            message_count = old.message_count + counter,
+                            text_chat_time = old.text_chat_time + seconds_until_eligible,
+                            experience = old.experience + xp_to_give
+                    )
+                }
             }
+        }
+    }
+
+    private fun onStatusChangeEvent(event: StatusChangeEvent)
+    {
+        when(event.newStatus)
+        {
+            JDA.Status.SHUTTING_DOWN ->
+                transaction {
+                    for (record in textCache.keys())
+                        MemberDataManager.update(record.first, record.second) { old ->
+                            return@update old.clone(message_count = old.message_count + (textCache.get(record)?.right ?: 0))
+                        }
+                }
         }
     }
 
