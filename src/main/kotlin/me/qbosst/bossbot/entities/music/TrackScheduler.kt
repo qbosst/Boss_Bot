@@ -21,7 +21,6 @@ class TrackScheduler(
 {
 
     private val queue = LinkedBlockingQueue<AudioTrack>()
-    private val reloadCount = mutableMapOf<String, Int>()
     private var messageId: Long = -1
     private lateinit var lastException: FriendlyException
 
@@ -105,7 +104,6 @@ class TrackScheduler(
             {
                 queue(track)
                 message.editMessage("Added to queue: `${track.info.title}`").queue()
-                reloadCount.remove(trackUrl)
             }
 
             override fun playlistLoaded(playlist: AudioPlaylist)
@@ -122,18 +120,7 @@ class TrackScheduler(
 
             override fun loadFailed(exception: FriendlyException)
             {
-                // Sometimes there are problems with loading tracks that can be solved by just trying again
-                // This will try 5 to load the track 5 times before it fails
-                if(reloadCount.getOrDefault(trackUrl, 0) < 2)
-                {
-                    reloadCount[trackUrl] = reloadCount.getOrDefault(trackUrl, 0)+1
-                    loadAndPlay(message, trackUrl)
-                }
-                else
-                {
-                    reloadCount.remove(trackUrl)
-                    message.editMessage("Could not play: `${exception.localizedMessage.maxLength(256)}`").queue()
-                }
+                message.editMessage("Could not play: `${exception.localizedMessage.maxLength(256)}`").queue()
             }
         })
     }

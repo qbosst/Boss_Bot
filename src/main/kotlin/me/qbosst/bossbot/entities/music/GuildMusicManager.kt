@@ -4,6 +4,9 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
+import me.qbosst.bossbot.config.BotConfig
+import me.qbosst.bossbot.entities.music.source.spotify.SpotifyAudioSourceManager
+import me.qbosst.bossbot.entities.music.source.youtube.YoutubeModifiedAudioSourceManager
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Guild
 
@@ -26,6 +29,13 @@ class GuildMusicManager(guild: Guild, manager: AudioPlayerManager)
         private val playerManager = mutableMapOf<Long, GuildMusicManager>()
 
         init {
+            // add spotify manager
+            audioManager.registerSourceManager(SpotifyAudioSourceManager(
+                    clientId = BotConfig.spotify_client_id,
+                    clientSecret = BotConfig.spotify_client_secret
+            ))
+            audioManager.registerSourceManager(YoutubeModifiedAudioSourceManager())
+
             AudioSourceManagers.registerRemoteSources(audioManager)
             AudioSourceManagers.registerLocalSource(audioManager)
         }

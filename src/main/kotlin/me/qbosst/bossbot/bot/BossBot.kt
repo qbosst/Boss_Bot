@@ -42,7 +42,10 @@ object BossBot {
         )
 
         // Connects to discord
-        SHARDS_MANAGER = getShardsManager(BotConfig.discord_token)
+        SHARDS_MANAGER = getShardsManager(
+                token = BotConfig.discord_token,
+                intents = setOf(GatewayIntent.GUILD_MEMBERS)
+        )
 
         Runtime.getRuntime().addShutdownHook(object : Thread("$name Shutdown Hook")
         {
@@ -58,15 +61,16 @@ object BossBot {
      *  Used to connect the bot to discord
      *
      *  @param token The token to connect to discord with
+     *  @param intents Any additional intents to enable
      *
      *  @return shard manager
      */
-    private fun getShardsManager(token: String): ShardManager
+    private fun getShardsManager(token: String, intents: Set<GatewayIntent> = setOf()): ShardManager
     {
         // Get event listeners
         val listeners = loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java)
 
-        LOG.debug("Registered ${listeners.size} listener(s): ${listeners.joinToString(", ") { it::class.java.simpleName }}")
+        LOG.info("Registered ${listeners.size} listener(s): ${listeners.joinToString(", ") { it::class.java.simpleName }}")
 
         val events = mutableListOf<Class<out GenericEvent>>()
         for(listener in listeners)
@@ -80,7 +84,7 @@ object BossBot {
                         if(!events.contains(parameter.type))
                             @Suppress("UNCHECKED_CAST") events.add(parameter.type as Class<out GenericEvent>)
 
-        LOG.debug("Registered ${events.size} events(s): ${events.joinToString(", ") { it.simpleName }}")
+        LOG.info("Registered ${events.size} events(s): ${events.joinToString(", ") { it.simpleName }}")
 
         return DefaultShardManagerBuilder.create(GatewayIntent.fromEvents(events))
                 .setToken(token)
@@ -89,7 +93,7 @@ object BossBot {
                 .addEventListeners(listeners)
                 .setAudioSendFactory(NativeAudioSendFactory())
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .enableIntents(GatewayIntent.GUILD_MEMBERS)
+                .enableIntents(intents)
                 .build()
     }
 }

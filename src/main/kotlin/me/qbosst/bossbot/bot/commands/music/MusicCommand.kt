@@ -23,7 +23,9 @@ abstract class MusicCommand(
         private val requiresMemberConnected: Boolean = true,
         private val requiresSelfConnected: Boolean = true
 
-): Command(name, description, usage, examples, aliases, true, userPermissions, botPermissions)
+): Command(name, description, usage, examples, aliases, true, userPermissions,
+        if(connect) botPermissions.plus(Permission.VOICE_CONNECT) else botPermissions
+)
 {
     final override fun execute(event: MessageReceivedEvent, args: List<String>)
     {

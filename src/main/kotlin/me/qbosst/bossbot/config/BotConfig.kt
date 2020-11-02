@@ -36,6 +36,12 @@ object BotConfig: JSONConfig(
     val deepai_token: String
         get() = data.getString(Values.DEEPAI_TOKEN.key, Values.DEEPAI_TOKEN.default as String)
 
+    val spotify_client_id: String
+        get() = data.getString(Values.SPOTIFY_CLIENT_ID.key, Values.SPOTIFY_CLIENT_ID.default as String)
+
+    val spotify_client_secret: String
+        get() = data.getString(Values.SPOTIFY_CLIENT_SECRET.key, Values.SPOTIFY_CLIENT_SECRET.default as String)
+
     fun reload()
     {
         read()
@@ -46,6 +52,8 @@ object BotConfig: JSONConfig(
     {
         DISCORD_TOKEN("token-here"),
         DEEPAI_TOKEN(""),
+        SPOTIFY_CLIENT_ID(""),
+        SPOTIFY_CLIENT_SECRET(""),
 
         DEFAULT_PREFIX("!"),
 

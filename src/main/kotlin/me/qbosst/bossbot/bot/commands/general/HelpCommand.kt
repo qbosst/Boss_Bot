@@ -18,7 +18,8 @@ object HelpCommand: Command(
         description = "Provides a help menu or additional information about a command",
         usage_raw = listOf("<page number>", "<command>"),
         examples_raw = listOf("1", loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java).random().name),
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        guildOnly = false
 )
 {
     private val allCommands: Collection<Command>

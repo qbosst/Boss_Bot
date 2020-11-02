@@ -21,19 +21,20 @@ open class JSONConfig(directory: String, protected var default: DataObject)
 
     init
     {
+        log.info("Config path: ${config.absolutePath}")
         // Create config if it doesn't exist
-        if(!config.exists())
+        data = if(!config.exists())
             if(config.createNewFile())
             {
-                LOG.info("A config file has been generated at '${config.absolutePath}'")
+                log.info("A config file has been generated at '${config.absolutePath}'")
                 generateDefault()
-                data = read()
+                read()
             }
             else
                 throw IOException("A config file could not be generated at '${config.absolutePath}'")
 
         else
-            data = read()
+            read()
     }
 
     /**
@@ -73,6 +74,6 @@ open class JSONConfig(directory: String, protected var default: DataObject)
 
     companion object
     {
-        val LOG: Logger = LoggerFactory.getLogger(this::class.java)
+        val log: Logger = LoggerFactory.getLogger(this::class.java)
     }
 }

@@ -7,6 +7,7 @@ import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.getUserByString
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import kotlin.random.Random
@@ -16,7 +17,8 @@ object AvatarCommand: Command(
         "Displays a user's avatar",
         usage_raw = listOf("[@user]"),
         aliases_raw = listOf("av"),
-        guildOnly = false
+        guildOnly = false,
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)

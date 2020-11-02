@@ -4,6 +4,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import me.qbosst.bossbot.util.toJson
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.OffsetDateTime
@@ -12,7 +13,8 @@ import kotlin.random.Random
 object EmbedTemplateCommand: Command(
         "template",
         "Provides a JSON template/example for a message embed",
-        guildOnly = false
+        guildOnly = false,
+        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_EMBED_LINKS)
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)

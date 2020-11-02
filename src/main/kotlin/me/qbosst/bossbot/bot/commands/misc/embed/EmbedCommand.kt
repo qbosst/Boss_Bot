@@ -4,13 +4,15 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.util.EmbedUtil
 import me.qbosst.bossbot.util.JSONUtil
 import me.qbosst.bossbot.util.loadObjects
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object EmbedCommand: Command(
         "embed",
         description = "Creates and sends a Message Embed based on JSON input",
         usage_raw = listOf("<json>", "(file.json)"),
-        guildOnly = false
+        guildOnly = false,
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
     init {

@@ -15,55 +15,56 @@ object EmbedGetCommand: Command(
         "get",
         description = "Gets the embeds from a message",
         usage_raw = listOf("<message id> [#channel]"),
-        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES)
+        botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_HISTORY)
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>)
     {
-        if(args.isNotEmpty())
-        {
-            if(args[0].matches(LONG_REGEX))
+        val messageId = kotlin.run {
+            val arg = (args.getOrNull(0) ?: kotlin.run {
+                event.channel.sendMessage(argumentMissing("message Id")).queue(); return
+            })
+            if(!arg.matches(LONG_REGEX))
             {
-                val messageId = args[0].toLong()
-                val channel = if(args.size > 1)
-                    event.guild.getTextChannelByString(args[1]) ?: kotlin.run {
-                        event.channel.sendMessage("I could not find that channel").queue()
-                        return
-                    }
-                else
-                    event.textChannel
-
-                channel.retrieveMessageById(messageId).queue(
-                    {
-                        val array = JSONArray()
-                        for(embed in it.embeds)
-                            array.put(embed.toData().toJSONObject())
-
-                        if(array.isEmpty)
-                            event.channel.sendMessage("There are no embeds in this message").queue()
-                        else
-                            event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
-                    },
-                    {
-                        when(it) {
-                            is ErrorResponseException ->
-                                // Message was not found
-                                if(it.errorCode == 10008)
-                                    event.channel.sendMessage("I could not find any message with the id of `${messageId}` in this channel.").queue()
-                                // Other error
-                                else
-                                    event.channel.sendMessage("Error while trying to retrieve message $messageId: `${it.localizedMessage}`").queue()
-                            // Other error
-                            else ->
-                                event.channel.sendMessage("Error while trying to retrieve message $messageId: `${it.localizedMessage}`").queue()
-                        }
-                    }
-                )
+                event.channel.sendMessage(argumentInvalid(arg, "message Id")).queue(); return
             }
-            else
-                event.channel.sendMessage(argumentInvalid(args[0], "message Id")).queue()
+            arg.toLong()
         }
-        else
-            event.channel.sendMessage(argumentMissing("message Id")).queue()
+
+        val channel = kotlin.run {
+            val arg = args.getOrNull(1) ?: return@run event.textChannel
+            val channel = event.guild.getTextChannelByString(arg) ?: kotlin.run {
+                event.channel.sendMessage("I could not find that channel").queue(); return
+            }
+            if(!event.guild.selfMember.hasPermission(channel, botPermissions))
+            {
+                event.channel.sendMessage("I do not have the correct permissions for ${channel.asMention}").queue();
+                return
+            }
+            channel
+        }
+
+        channel.retrieveMessageById(messageId).queue(
+                {
+                    val array = JSONArray()
+                    for(embed in it.embeds)
+                        array.put(embed.toData().toJSONObject())
+
+                    if(array.isEmpty)
+                        event.channel.sendMessage("There are no embeds in this message").queue()
+                    else
+                        event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
+                },
+                {
+                    when {
+                        // Message was not found
+                        it is ErrorResponseException && it.errorCode == 10008 ->
+                            event.channel.sendMessage("I could not find any message with the id of `${messageId}` in this channel.").queue()
+                        // Other error
+                        else ->
+                            event.channel.sendMessage("Error while trying to retrieve message $messageId from ${channel.asMention}: `${it.localizedMessage}`").queue()
+                    }
+                }
+        )
     }
 }

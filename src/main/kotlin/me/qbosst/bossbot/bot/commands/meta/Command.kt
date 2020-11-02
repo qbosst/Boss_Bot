@@ -39,7 +39,9 @@ abstract class Command (
     val aliases: List<String>
         get() = aliases_raw.map { it.replace(Regex("\\s+"), "") }
 
-    val botPermissions: List<Permission> = botPermissions.plus(Permission.MESSAGE_WRITE)
+    val botPermissions: List<Permission> = botPermissions
+            .plus(Permission.MESSAGE_WRITE)
+            .plus(Permission.MESSAGE_READ)
 
     var parent: Command? = null
         private set

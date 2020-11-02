@@ -16,10 +16,12 @@ import java.lang.reflect.Modifier
 fun <T> loadObjects(path: String, clazz: Class<out T>) : List<T>
 {
     @Suppress("UNCHECKED_CAST")
-    return Reflections(path).getSubTypesOf(clazz)
+    val result =  Reflections(path).getSubTypesOf(clazz)
         .filter { !Modifier.isAbstract(it.modifiers) }
         .mapNotNull { it.getDeclaredField("INSTANCE").get(null) }
         .toList() as List<T>
+    logPostScan(path, clazz, result)
+    return result
 }
 
 /**
@@ -34,12 +36,14 @@ fun <T> loadObjects(path: String, clazz: Class<out T>) : List<T>
  */
 fun <T> loadClasses(path: String, clazz: Class<out T>, parameterTypes: Array<Class<*>> = arrayOf(), vararg initargs: Array<Any> = arrayOf()): List<T>
 {
-    return Reflections(path)
+    val result = Reflections(path)
             .getSubTypesOf(clazz)
             // Filters the abstract classes out
             .filter { !Modifier.isAbstract(it.modifiers) }
             // Creates an instance
             .mapNotNull { it.getDeclaredConstructor(*parameterTypes).newInstance(*initargs) }
+    logPostScan(path, clazz, result)
+    return result
 }
 
 /**
@@ -53,7 +57,7 @@ fun <T> loadClasses(path: String, clazz: Class<out T>, parameterTypes: Array<Cla
 fun <T> loadObjectOrClass(path: String, clazz: Class<out T>): List<T>
 {
     @Suppress("UNCHECKED_CAST")
-    return Reflections(path)
+    val result = Reflections(path)
             .getSubTypesOf(clazz)
             // Filters the abstract classes out
             .filter { !Modifier.isAbstract(it.modifiers) }
@@ -65,4 +69,8 @@ fun <T> loadObjectOrClass(path: String, clazz: Class<out T>): List<T>
                     it.getDeclaredField("INSTANCE").get(null)
             }
             .toList() as List<T>
+    logPostScan(path, clazz, result)
+    return result
 }
+
+private fun logPostScan(path: String, clazz: Class<*>, result: List<*>) = Reflections.log.debug("Found ${result.size} classes of type '${clazz}' in path `${path}`: ${result.joinToString(", ") { it?.javaClass?.simpleName ?: it.toString() }}")
