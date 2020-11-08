@@ -6,6 +6,7 @@ import me.qbosst.bossbot.bot.PASTEL_RED
 import me.qbosst.bossbot.bot.PASTEL_YELLOW
 import me.qbosst.bossbot.database.managers.MemberDataManager
 import me.qbosst.bossbot.database.managers.getSettings
+import me.qbosst.bossbot.entities.music.GuildAudioHandler
 import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -88,6 +89,9 @@ object VoiceListener: EventListener
                         .setThumbnail(event.member.user.effectiveAvatarUrl)
                         .build())
                 ?.queue()
+
+        if(event.member == event.guild.selfMember)
+            GuildAudioHandler.destroy(event.guild)
     }
 
     private fun onGuildVoiceMoveEvent(event: GuildVoiceMoveEvent)

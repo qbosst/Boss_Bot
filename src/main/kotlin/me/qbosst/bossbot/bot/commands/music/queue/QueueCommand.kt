@@ -2,45 +2,39 @@ package me.qbosst.bossbot.bot.commands.music.queue
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.music.MusicCommand
-import me.qbosst.bossbot.entities.music.GuildMusicManager
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
 import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object QueueCommand: MusicCommand(
         "queue",
-        requiresMemberConnected = false
+        requiresMemberConnected = false,
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
-    init
-    {
+    init {
         addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
     }
 
     override fun run(event: MessageReceivedEvent, args: List<String>)
     {
-        val manager = GuildMusicManager.get(event.guild).scheduler
-
-        val queue = manager.getQueue()
+        val handler = event.guild.getAudioHandler()
+        val queue = handler.getQueue()
         if(queue.isEmpty())
             event.channel.sendMessage("The queue is empty!").queue()
         else
         {
-            val formattedQueue = queue.mapIndexed { index, track ->
-                val sb = StringBuilder("${index+1}. [${track.info.title}](${track.info.uri})")
-                if(track == manager.currentTrack)
-                    sb.insert(0, "**").append("**")
-                sb.append("\n").toString()
-            }
+            val page = if(args.isNotEmpty()) args[0].toIntOrNull() ?: 0 else 0
 
-            val menu = DescriptionMenuEmbed(5, formattedQueue)
-            val page = args.getOrNull(0)?.toIntOrNull() ?: 0
+            val embed = DescriptionMenuEmbed(5, queue.mapIndexed { index, track -> "${index+1}. [${track.info.title}](${track.info.uri}) [${event.guild.getMemberById(track.userData.toString().toLongOrNull() ?: 0)?.asMention ?: "N/A"}]\n" })
+                    .createPage(EmbedBuilder()
+                            .setColor(event.guild.selfMember.colorRaw)
+                            .setTitle("Queue for ${event.guild.name}")
+                            , page)
 
-            event.channel.sendMessage(menu.createPage(EmbedBuilder()
-                    .setTitle("Queue for ${event.guild.name}")
-                    .setColor(event.guild.selfMember.colorRaw)
-                    , page).build()).queue()
+            event.channel.sendMessage(embed.build()).queue()
         }
     }
 }

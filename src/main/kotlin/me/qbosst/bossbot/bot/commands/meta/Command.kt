@@ -74,7 +74,7 @@ abstract class Command (
         get() {
             val permissions = mutableListOf<Permission>()
             forEachParent(this) { permissions.addAll(it.userPermissions) }
-            return permissions
+            return permissions.distinct()
         }
 
     /**
@@ -84,7 +84,7 @@ abstract class Command (
         get() {
             val permissions = mutableListOf<Permission>()
             forEachParent(this) { permissions.addAll(it.botPermissions) }
-            return permissions
+            return permissions.distinct()
         }
 
     private fun forEachParent(command: Command, consumer: (Command) -> Unit)

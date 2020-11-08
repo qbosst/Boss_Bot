@@ -4,7 +4,6 @@ import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
-import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.getGuildOrNull
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -63,7 +62,7 @@ fun Collection<Color>.blend(): Color
         alpha += (colour.alpha * ratio).roundToInt()
     }
 
-    return Color(assertNumber(0, 255, red), assertNumber(0, 255, green), assertNumber(0, 255, blue), assertNumber(0, 255, alpha))
+    return Color(red.coerceIn(0, 255), green.coerceIn(0, 255), blue.coerceIn(0, 255), alpha.coerceIn(0, 255))
 }
 
 fun mixColours(vararg pair: Pair<Color, Float>): Color
@@ -82,5 +81,5 @@ fun mixColours(vararg pair: Pair<Color, Float>): Color
         percentage += pair[index].second
         index++
     }
-    return Color(assertNumber(0, 255, r), assertNumber(0, 255, g), assertNumber(0, 255, b), assertNumber(0, 255, a))
+    return Color(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
 }

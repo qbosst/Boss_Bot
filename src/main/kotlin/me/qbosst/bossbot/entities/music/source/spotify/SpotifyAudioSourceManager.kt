@@ -1,166 +1,164 @@
 package me.qbosst.bossbot.entities.music.source.spotify
 
+import com.neovisionaries.i18n.CountryCode
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioTrack
-import com.sedmelluq.discord.lavaplayer.track.AudioItem
-import com.sedmelluq.discord.lavaplayer.track.AudioReference
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo
-import com.sedmelluq.discord.lavaplayer.track.BasicAudioPlaylist
+import com.sedmelluq.discord.lavaplayer.track.*
 import com.wrapper.spotify.SpotifyApi
-import com.wrapper.spotify.model_objects.credentials.ClientCredentials
+import com.wrapper.spotify.model_objects.IModelObject
+import com.wrapper.spotify.model_objects.specification.PlaylistTrack
 import com.wrapper.spotify.model_objects.specification.Track
-import com.wrapper.spotify.model_objects.specification.TrackSimplified
-import me.qbosst.bossbot.entities.music.source.youtube.YoutubeScraper
-import java.time.Duration
-import java.time.OffsetDateTime
+import java.io.DataInput
+import java.io.DataOutput
 import java.util.regex.Pattern
-import kotlin.math.abs
 
 class SpotifyAudioSourceManager(
-        clientId: String,
-        clientSecret: String
-): YoutubeAudioSourceManager()
+        private val api: SpotifyApi,
+        private val youtubeAudioSourceManager: YoutubeAudioSourceManager
+): AudioSourceManager
 {
-    private val spotifyApi = SpotifyApi.Builder()
-            .setClientSecret(clientSecret)
-            .setClientId(clientId)
-            .build()
-
-    private val scraper = YoutubeScraper(this.httpInterface)
-
-    private lateinit var accessToken: AccessToken
 
     override fun loadItem(manager: DefaultAudioPlayerManager, reference: AudioReference): AudioItem?
     {
-        // Checks if identifier matches spotify links
-        if (!trackUrlPattern.matcher(reference.identifier).matches())
-            return null
+        val urlMatcher = URL_PATTERN.matcher(reference.identifier)
+        val uriMatcher = URI_PATTERN.matcher(reference.identifier)
 
-        // Checks if access token is still valid, if not generates a new one
-        if(!this::accessToken.isInitialized || accessToken.isExpired())
+        // Checks if the identifier matches the spotify urls, if not return null
+        val matcher = if(urlMatcher.matches()) urlMatcher else if(uriMatcher.matches()) uriMatcher else return null
+
+        // gets the route and id of the link
+        val route = enumValues<SpotifyRoute>().first { matcher.group(1) == it.regex }
+        val id = matcher.group(2)
+
+        api.accessToken = api.clientCredentials().build().execute().accessToken
+
+        // Return an audio item, depending on what the route is
+        return when(route)
         {
-            val credentials = AccessToken(spotifyApi.clientCredentials().build().execute())
-            spotifyApi.accessToken = credentials.accessToken
-            accessToken = credentials
-        }
+            SpotifyRoute.TRACK ->
+            {
+                val track = api.getTrack(id).build().execute()
 
-        // Gets the query and id from the spotify link
-        val splitUrl = reference.identifier.split(Regex("/"))
-        val query = enumValues<SpotifyQuery>().first { splitUrl[splitUrl.lastIndex-1] == it.regex }
-        val id = splitUrl[splitUrl.lastIndex].split(Regex("\\?"))[0]
+                val info = AudioTrackInfo(track.name, track.artists.joinToString(", ") {it.name},
+                        track.durationMs.toLong(), track.id, false, track.uri)
 
+                SpotifyAudioTrack(info, youtubeAudioSourceManager)
+            }
+            SpotifyRoute.PLAYLIST ->
+            {
+                val playlist = api.getPlaylist(id).build().execute()
+                val tracks = mutableListOf<PlaylistTrack>()
+                tracks.addAll(playlist.tracks.items)
 
-        val tracks = query.getTracks(spotifyApi, id)
-                .mapNotNull { track ->
-                    // Name to try and search the tracks by on youtube
-                    val trackQuery = "${track.artists.joinToString(",")} ${track.name}"
+                val totalCount = playlist.tracks.total
+                var currentCount = tracks.size
 
-                    // List containing all the videos found on youtube
-                    val foundVideos = scraper.scrapeVideos(trackQuery)
-
-                    println(foundVideos)
-
-                    // Finds the video that has the closest duration to the spotify track
-                    foundVideos
-                            .filter { it.uploader.verified }
-                            .minByOrNull { abs(track.durationMs/1000 - it.getDurationAsSeconds()) } ?: foundVideos
-                            .filter { track.artists.firstOrNull { name -> name.equals(it.uploader.username, true) } != null }
-                            .minByOrNull { abs(track.durationMs/1000 - it.getDurationAsSeconds()) } ?: foundVideos
-                            .minByOrNull { abs(track.durationMs/1000 - it.getDurationAsSeconds()) }
+                // Queries the api until it has all the tracks, spotify api can only retrieve 100 tracks from a playlist at a time
+                while (totalCount > currentCount)
+                {
+                    val remaining = api.getPlaylistsItems(id).offset(currentCount).build().execute()
+                    tracks.addAll(remaining.items)
+                    currentCount = tracks.size
                 }
 
-        return when(tracks.size)
-        {
-            // No tracks were loaded
-            0 -> null
+                createPlaylist(playlist.name, tracks
+                        .mapNotNull { try { it.track as Track } catch (e: ClassCastException) { null } }.toTypedArray()
+                )
+            }
+            SpotifyRoute.ALBUM ->
+            {
+                val album = api.getAlbum(id).build().execute()
 
-            // One track was loaded
-            1 -> loadTrackWithVideoId(tracks.first().id, true)
+                // HIGHLY UNLIKELY that an artist album has more than 100 tracks so does not check for it
 
-            // Multiple tracks were loaded
-            else -> {
-                // Turns them into youtube audio tracks
-                val ytTracks = tracks.map { track ->
-                    val info = AudioTrackInfo(track.title, track.uploader.username, track.getDurationAsSeconds()*1000, track.id, false, track.url)
-                    YoutubeAudioTrack(info, this)
-                }
-                // Returns playlist
-                BasicAudioPlaylist("Playlist", ytTracks, ytTracks.first(), false)
+                createPlaylist(album.name, album.tracks.items)
+            }
+            SpotifyRoute.ARTIST ->
+            {
+                val tracks = api.getArtistsTopTracks(id, CountryCode.US).build().execute()
+
+                createPlaylist("Top Tracks", tracks)
             }
         }
     }
 
-    companion object
+    /**
+     * Turns a list of spotify tracks into a playlist
+     *
+     * @param name The name of the playlist
+     * @param tracks The tracks to add to the playlist
+     *
+     * @return BasicAudioPlaylist item
+     */
+    private fun createPlaylist(name: String, tracks: Array<out IModelObject>): BasicAudioPlaylist
     {
-        private val SPOTIFY_URL_REGEX = "https?://open.spotify.com/(${enumValues<SpotifyQuery>().joinToString("|"){it.regex}})/[a-zA-Z0-9]+(\\?si=[a-zA-Z0-9-_]+)?"
-        private val trackUrlPattern: Pattern = Pattern.compile(SPOTIFY_URL_REGEX)
+        return BasicAudioPlaylist(name, tracks
+                .mapNotNull { track ->
+                    try {
+                        val clazz = track::class.java
+
+                        // Get track parameters using reflection (spotify can return a TrackSimplified and Track)
+                        val trackName = clazz.getMethod("getName").invoke(track) as String
+                        val artists = (clazz.getMethod("getArtists").invoke(track) as Array<*>).mapNotNull { artist ->
+                            if(artist != null)
+                                artist::class.java.getMethod("getName").invoke(artist) as String
+                            else
+                                null
+                        }.joinToString(", ")
+
+                        val durationMs = clazz.getMethod("getDurationMs").invoke(track) as Int
+                        val id = clazz.getMethod("getId").invoke(track) as String
+                        val uri = clazz.getMethod("getUri").invoke(track) as String
+
+                        // Put these parameters into an info object
+                        val info = AudioTrackInfo(trackName, artists, durationMs.toLong(), id, false, uri)
+
+                        // Return audio track
+                        SpotifyAudioTrack(info, youtubeAudioSourceManager)
+                    }
+                    catch (e: Exception)
+                    {
+                        println("Could not load track: $track due to $e")
+                        null
+                    }
+                },
+                null, false
+        )
     }
 
-    private enum class SpotifyQuery(val regex: String, val getTracks: (SpotifyApi, String) -> List<SpotifyTrack>)
+    override fun encodeTrack(track: AudioTrack?, output: DataOutput?) =
+            youtubeAudioSourceManager.encodeTrack(track, output)
+
+    override fun decodeTrack(trackInfo: AudioTrackInfo, input: DataInput): AudioTrack =
+            youtubeAudioSourceManager.decodeTrack(trackInfo, input)
+
+    override fun getSourceName(): String = "spotify"
+
+    override fun shutdown() = youtubeAudioSourceManager.shutdown()
+
+    override fun isTrackEncodable(track: AudioTrack): Boolean = youtubeAudioSourceManager.isTrackEncodable(track)
+
+    companion object
     {
-        TRACK("track", { api, id ->
-            listOf(api.getTrack(id).build().execute().toSpotifyTrack())
-        }),
-        ALBUM("album", {api, id ->
-            api.getAlbumsTracks(id).build().execute().items.map { it.toSpotifyTrack() }
-        }),
-        PLAYLIST("playlist", {api, id ->
-            api.getPlaylistsItems(id).build().execute().items
-                    .filter { it.track.type == com.wrapper.spotify.enums.ModelObjectType.TRACK }
-                    .map { (it.track as Track).toSpotifyTrack() }
-        }),
-        ARTIST("artist", {api, id ->
-            api.getArtistsTopTracks(id, com.neovisionaries.i18n.CountryCode.EU).build().execute().map { it.toSpotifyTrack() }
-        })
-        ;
+        private val URL_REGEX = "https?://open.spotify.com/(${enumValues<SpotifyRoute>().joinToString("|") {
+            it.regex }})/([a-zA-Z0-9]+)(\\?si=[a-zA-Z0-9-_]+)?"
+        val URL_PATTERN: Pattern = Pattern.compile(URL_REGEX)
 
-        companion object
-        {
-            private fun Track.toSpotifyTrack(): SpotifyTrack = SpotifyTrack(
-                    artists = artists.map { it.name },
-                    name = name,
-                    uri = uri,
-                    durationMs = durationMs,
-                    id = id
-            )
-
-            private fun TrackSimplified.toSpotifyTrack(): SpotifyTrack = SpotifyTrack(
-                    artists = artists.map { it.name },
-                    name = name,
-                    uri = uri,
-                    durationMs = durationMs,
-                    id = id
-            )
-        }
+        private val URI_REGEX = "spotify:(${enumValues<SpotifyRoute>().joinToString("|") {it.regex}}):([a-zA-Z0-9]+)"
+        val URI_PATTERN: Pattern = Pattern.compile(URI_REGEX)
     }
 
     /**
-     *  Keeps track of the current access token and its expiry
+     * Different types of spotify routes
      *
-     *  @param credentials The spotify credentials containing data needed for this class
+     * @param regex how to filter them
      */
-    private class AccessToken(credentials: ClientCredentials)
+    private enum class SpotifyRoute(val regex: String)
     {
-        /**
-         *  The date of which this access token will expire
-         */
-        private val expireDate = OffsetDateTime.now().plusSeconds(credentials.expiresIn.toLong())
-
-        val accessToken: String = credentials.accessToken
-
-        /**
-         *  Method used to determine whether the access token has expired
-         *
-         *  @param date The date to check from (default is the time of which the method is executed)
-         */
-        fun isExpired(date: OffsetDateTime = OffsetDateTime.now()): Boolean = date.isAfter(expireDate)
-
-        /**
-         *  Returns the amount of seconds left until the access token expires
-         *
-         *  @param date The date to check from (default is the time of which the method is executed)
-         */
-        fun expiresIn(date: OffsetDateTime = OffsetDateTime.now()): Long = Duration.between(date, expireDate).seconds
+        TRACK("track"),
+        PLAYLIST("playlist"),
+        ALBUM("album"),
+        ARTIST("artist"),
     }
 }

@@ -1,23 +1,24 @@
 package me.qbosst.bossbot.bot.commands.music
 
-import me.qbosst.bossbot.bot.TICK
-import me.qbosst.bossbot.entities.music.GuildMusicManager
+import me.qbosst.bossbot.util.toBooleanOrNull
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object PauseCommand: MusicCommand(
         "pause",
-        description = "Pauses the current song"
+        "Pauses the currently playing song",
+        usage = listOf("[true|false]")
 )
 {
     override fun run(event: MessageReceivedEvent, args: List<String>)
     {
-        val manager = GuildMusicManager.get(event.guild).scheduler
-        if(manager.getQueue().isEmpty())
-            event.channel.sendMessage("There is nothing in the queue!").queue()
+        val handler = event.guild.getAudioHandler()
+        val value = if(args.isNotEmpty()) args[0].toBooleanOrNull() else !handler.paused
+        if(value == null)
+            event.channel.sendMessage("That is not a valid option!").queue()
         else
         {
-            manager.paused = !manager.paused
-            event.message.addReaction(TICK).queue()
+            handler.paused = value
+            event.channel.sendMessage("Paused has been set to `${value}`").queue()
         }
     }
 }

@@ -6,7 +6,6 @@ import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.database.tables.MemberDataTable
 import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.assertNumber
 import me.qbosst.bossbot.util.embed.DescriptionMenuEmbed
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -52,7 +51,7 @@ object LeaderboardCommand : Command(
                     val max = getMaxPages(results.size)
 
                     // Get page number
-                    val page = assertNumber(1, max, (args.getOrNull(1) ?: "0").toIntOrNull() ?: 0)
+                    val page = (args.getOrNull(1)?.toIntOrNull() ?: 0).coerceIn(1, max)
 
                     // Position of user that typed command
                     val pos = results.indexOfFirst { it.contains(event.author.id) }

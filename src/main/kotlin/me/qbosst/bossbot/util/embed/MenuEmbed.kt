@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.util.embed
 
-import me.qbosst.bossbot.util.assertNumber
 import net.dv8tion.jda.api.EmbedBuilder
 
 /**
@@ -24,17 +23,11 @@ abstract class MenuEmbed<T>(private val maxObjectsPerPage: Int, protected val ob
         // Clear any records in the embed
         clearMenu(embed)
         val maxPages = getMaxPages()
-        val pg = assertNumber(0, maxPages, page-1)
+        val pg = (page-1).coerceIn(0, maxPages)
 
         // Adds the records into the page
-        for (i in maxObjectsPerPage * pg until
-                if (maxObjectsPerPage * pg + maxObjectsPerPage > objects.size)
-                    objects.size
-                else
-                    maxObjectsPerPage * pg + maxObjectsPerPage
-        ) {
+        for(i in (maxObjectsPerPage*pg) until (maxObjectsPerPage*pg+maxObjectsPerPage).coerceAtMost(objects.size))
             addObjectToPage(embed, i)
-        }
 
         if(isEmpty(embed))
             embed.appendDescription("None!")

@@ -28,7 +28,7 @@ object BossBot {
     val LOG: Logger = LoggerFactory.getLogger(BossBot::class.java)
     val SHARDS_MANAGER: ShardManager
     val START_UP: OffsetDateTime = OffsetDateTime.now()
-    val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(3)
+    val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(6)
 
     private val name = this::class.java.simpleName
 

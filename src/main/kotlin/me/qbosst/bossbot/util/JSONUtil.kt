@@ -32,13 +32,13 @@ object JSONUtil
                 .append("\n[ -> ${line.trim().maxLength(128)} <- ]")
                 .append("\nAt around...")
                 .append("\n[ -> ${line.substring(
-                    assertNumber(0, line.length, info.atCharacterInLine- BROAD_NUM),
-                    assertNumber(0, line.length, info.atCharacterInLine+ BROAD_NUM)
+                        (info.atCharacterInLine-BROAD_NUM).coerceIn(0, line.length),
+                        (info.atCharacterInLine+BROAD_NUM).coerceIn(0, line.length)
                 ).trim()} <-]")
                 .append("\nAt around...")
                 .append("\n[ -> ${line.substring(
-                    assertNumber(0, line.length, info.atCharacterInLine- CLOSE_NUM),
-                    assertNumber(0, line.length, info.atCharacterInLine+ CLOSE_NUM)
+                        (info.atCharacterInLine-CLOSE_NUM).coerceIn(0, line.length),
+                        (info.atCharacterInLine+ CLOSE_NUM).coerceIn(0, line.length)
                 ).trim()} <-]")
                 .append("\nAt character ${info.atCharacter}:")
                 .append("\n[ -> ${contentAsString.substring(info.atCharacter-1, info.atCharacter)} <- ]")
