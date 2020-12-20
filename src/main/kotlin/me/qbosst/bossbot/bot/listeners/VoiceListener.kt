@@ -19,12 +19,15 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMuteEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.OffsetDateTime
 
 object VoiceListener: EventListener
 {
     private val voiceCache = mutableMapOf<Long, MutableMap<Long, VoiceMemberStatus>>()
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     private const val seconds_until_eligible = 60L
     private const val xp_to_give = 10 //TODO make adjustable
@@ -150,7 +153,7 @@ object VoiceListener: EventListener
 
         val total = Duration.between(data.join, OffsetDateTime.now()).seconds
         val unMuted = total - data.secondsMuted
-        BossBot.LOG.debug("${guild.name} (${guild.id}): ${member?.user?.asTag ?: ""} (${userId}) has; spent ${TimeUtil.secondsToString(total)} in vc, spent ${TimeUtil.secondsToString(unMuted)} un-muted and ${TimeUtil.secondsToString(data.secondsMuted)}s muted in vc.")
+        log.debug("${guild.name} (${guild.id}): ${member?.user?.asTag ?: ""} (${userId}) has; spent ${TimeUtil.secondsToString(total)} in vc, spent ${TimeUtil.secondsToString(unMuted)} un-muted and ${TimeUtil.secondsToString(data.secondsMuted)}s muted in vc.")
 
         val loop: Long = (total - data.secondsMuted) / seconds_until_eligible
         MemberDataManager.update(guild.idLong, userId) { old ->

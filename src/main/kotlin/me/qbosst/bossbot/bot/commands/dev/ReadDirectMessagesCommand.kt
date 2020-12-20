@@ -22,7 +22,7 @@ object ReadDirectMessagesCommand : DeveloperCommand(
         if(args.isNotEmpty())
         {
             val string = args.joinToString(" ")
-            val user = BossBot.SHARDS_MANAGER.getUserByString(string) ?: kotlin.run {
+            val user = event.jda.shardManager!!.getUserByString(string) ?: kotlin.run {
                 event.channel.sendMessage(userNotFound(string)).queue()
                 return
             }

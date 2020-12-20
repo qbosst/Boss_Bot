@@ -113,7 +113,7 @@ object SuggestionCommand: Command(
             { message ->
                 if(isSuggestionEmbed(message))
                 {
-                    val user = BossBot.SHARDS_MANAGER.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
+                    val user = event.jda.shardManager!!.getUserById(message.embeds[0].footer?.text?.replace("\\D+".toRegex(), "") ?: "")
                     if(user != null)
                         message.delete().queue()
                         {

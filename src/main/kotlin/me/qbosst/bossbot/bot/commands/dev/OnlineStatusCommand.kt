@@ -22,7 +22,7 @@ object OnlineStatusCommand : DeveloperCommand(
                 event.channel.sendMessage(argumentInvalid(args[0], "status")).queue()
             else
             {
-                BossBot.SHARDS_MANAGER.setPresence(status, event.jda.presence.activity)
+                event.jda.shardManager!!.setStatus(status)
                 event.channel.sendMessage("Setting status to `${status.name.toLowerCase()}`. This may take a minute to show up.").queue()
             }
         }

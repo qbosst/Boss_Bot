@@ -36,7 +36,7 @@ object ActivityCommand : DeveloperCommand(
                 else
                 {
                     val activity = Activity.of(type, description, url)
-                    BossBot.SHARDS_MANAGER.setPresence(event.jda.presence.status, activity)
+                    event.jda.shardManager!!.setActivity(activity)
                     event.channel.sendMessage("Setting the new activity to `${type.name.toLowerCase()}`... This may take a few minutes").queue()
                 }
             }

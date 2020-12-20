@@ -25,10 +25,13 @@ import net.dv8tion.jda.api.events.message.MessageUpdateEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.internal.utils.tuple.MutablePair
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
 
 object MessageListener: EventListener, CommandManagerImpl()
 {
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
     val allCommands: Collection<Command>
     init
@@ -36,7 +39,7 @@ object MessageListener: EventListener, CommandManagerImpl()
         allCommands = loadObjects("${BossBot::class.java.`package`.name}.commands", Command::class.java)
                 .sortedBy { it.fullName }
         val commands = allCommands.filter { it.parent == null }
-        BossBot.LOG.info("Registered ${commands.size} command(s): ${commands.joinToString(", ") { it.fullName }}")
+        log.info("Registered ${commands.size} command(s): ${commands.joinToString(", ") { it.fullName }}")
         addCommands(commands)
     }
 
@@ -81,7 +84,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                         // Checks if the record was removed without the cooldown being finished
                         if(value.left.plusSeconds(seconds_until_eligible).isAfter(OffsetDateTime.now()))
                         {
-                            BossBot.LOG.warn("The cache size for ${this::textCache.name} needs to be increased!")
+                            log.warn("The cache size for ${this::textCache.name} needs to be increased!")
                             val new = FixedCache(textCache.size()+25, textCache)
                             new.put(removedKey, value)
                             textCache = new
@@ -141,7 +144,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                         }
                         catch (t: Throwable)
                         {
-                            BossBot.LOG.error("An error has occurred while trying to execute command '${content}' by User ${event.author.id}" + if(event.isFromGuild) "on Guild ${event.guild.id}" else "", t)
+                            log.error("An error has occurred while trying to execute command '${content}' by User ${event.author.id}" + if(event.isFromGuild) "on Guild ${event.guild.id}" else "", t)
                         }
                 }
                 else

@@ -27,7 +27,7 @@ object AvatarCommand: Command(
         val target: User = if(args.isNotEmpty())
         {
             val arguments = args.joinToString(" ")
-            BossBot.SHARDS_MANAGER.getUserByString(arguments) ?: kotlin.run {
+            event.jda.shardManager!!.getUserByString(arguments) ?: kotlin.run {
                 event.channel.sendMessage(userNotFound(arguments)).queue()
                 return
             }

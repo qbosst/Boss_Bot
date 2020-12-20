@@ -19,7 +19,7 @@ object GreetingUpdateCommand : DeveloperCommand(
     override fun execute(event: MessageReceivedEvent, args: List<String>) {
         if (args.isNotEmpty())
         {
-            val user = BossBot.SHARDS_MANAGER.getUserByString(args[0])
+            val user = event.jda.shardManager!!.getUserByString(args[0])
             if (user != null)
             {
                 if (args.size > 1)

@@ -115,8 +115,8 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
     {
         // Puts the new value in cache
         putCache(genKey(guildId, userId), new)
-        val guild = BossBot.SHARDS_MANAGER.getGuildById(guildId)
-        val user = BossBot.SHARDS_MANAGER.getUserById(userId)
+        //val guild = BossBot.api.getGuildById(guildId)
+        //val user = BossBot.api.getUserById(userId)
     }
 
     /**

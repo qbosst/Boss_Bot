@@ -46,7 +46,7 @@ fun Guild.getMemberByString(query: String): Member? = getMemberById(getId(query)
  *
  *  @return A user object. Null if no user was found.
  */
-fun ShardManager.getUserByString(query: String): User? = getUserById(getId(query)) ?: getUserByTag(query)
+fun ShardManager.getUserByString(query: String): User? = getUserById(getId(query)) ?: if(query.matches(User.USER_TAG.toRegex())) getUserByTag(query) else null
 
 /**
  *  Searches for a role in a guild based on it's id and name
