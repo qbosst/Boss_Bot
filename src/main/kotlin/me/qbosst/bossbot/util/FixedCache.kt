@@ -37,6 +37,9 @@ class FixedCache<K, V>(size: Int)
     val values
         get() = map.values
 
+    val keySet
+        get() = map.keys
+
     /**
      * Returns the number of key/value pairs in the map.
      */

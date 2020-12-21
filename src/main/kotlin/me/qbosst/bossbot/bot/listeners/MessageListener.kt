@@ -85,7 +85,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                         if(value.left.plusSeconds(seconds_until_eligible).isAfter(OffsetDateTime.now()))
                         {
                             log.warn("The cache size for ${this::textCache.name} needs to be increased!")
-                            val new = FixedCache(textCache.size()+25, textCache)
+                            val new = FixedCache(textCache.size+25, textCache)
                             new.put(removedKey, value)
                             textCache = new
                         }
@@ -253,7 +253,7 @@ object MessageListener: EventListener, CommandManagerImpl()
         {
             JDA.Status.SHUTTING_DOWN ->
                 transaction {
-                    for (record in textCache.keys())
+                    for (record in textCache.keySet)
                         MemberDataManager.update(record.first, record.second) { old ->
                             return@update old.clone(message_count = old.message_count + (textCache.get(record)?.right ?: 0))
                         }

@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.dv8tion.jda.api.sharding.ShardManager
 import net.dv8tion.jda.api.utils.ChunkingFilter
 import net.dv8tion.jda.api.utils.MemberCachePolicy
+import net.dv8tion.jda.api.utils.cache.CacheFlag
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
@@ -39,7 +40,7 @@ object BossBot
         // Connects to discord
         api = getApi(
                 token = BotConfig.discord_token,
-                enableIntents = setOf(GatewayIntent.GUILD_MEMBERS)
+                enableIntents = setOf(GatewayIntent.GUILD_MEMBERS, GatewayIntent.DIRECT_MESSAGE_REACTIONS)
         )
     }
 
@@ -53,29 +54,32 @@ object BossBot
      */
     private fun getApi(token: String, enableIntents: Collection<GatewayIntent> = listOf()): ShardManager
     {
-        val builder = DefaultShardManagerBuilder.create(token, enableIntents)
+        log.info("Registering Event Listeners...")
+        val listeners = loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java)
+
+        val intents = listeners
+                // get events from listener
+                .map { listener ->
+                    log.debug("Registering ${listener::class.java.simpleName}")
+
+                    @Suppress("UNCHECKED_CAST")
+                    listener::class.java.declaredMethods
+                            .map { it.parameters.toList() }.flatten()
+                            .filter { parameter -> GenericEvent::class.java.isAssignableFrom(parameter.type) }
+                            .map { parameter -> parameter.type as Class<out GenericEvent> }
+                }
+                // convert events to intents
+                .flatten()
+                .let { events -> GatewayIntent.fromEvents(events) }
+                .plus(enableIntents)
+
+        return DefaultShardManagerBuilder.create(token, intents)
                 .setChunkingFilter(ChunkingFilter.ALL) // TODO set to NONE
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
                 .setActivity(Activity.playing("Loading..."))
                 .setStatus(OnlineStatus.DO_NOT_DISTURB)
                 .setAudioSendFactory(NativeAudioSendFactory())
-
-        log.info("Registering Event Listeners...")
-        loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java).forEach { listener ->
-            log.debug("Registering ${listener::class.java.simpleName}")
-
-
-            @Suppress("UNCHECKED_CAST")
-            val events = listener::class.java.declaredMethods
-                    .map { it.parameters.toList() }.flatten()
-                    .filter { parameter -> GenericEvent::class.java.isAssignableFrom(parameter.type) }
-                    .map { parameter -> parameter.type as Class<out GenericEvent> }
-
-            builder
-                    .addEventListeners(listener)
-                    .enableIntents(GatewayIntent.fromEvents(events))
-        }
-
-        return builder.build()
+                .addEventListeners(listeners)
+                .build()
     }
 }

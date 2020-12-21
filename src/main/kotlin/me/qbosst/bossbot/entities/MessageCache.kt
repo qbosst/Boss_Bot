@@ -69,7 +69,7 @@ class MessageCache(val size: Int)
      *
      *  @return List of cached messages that met the condition
      */
-    fun getMessages(guild: Guild, predicate: (CachedMessage) -> Boolean): List<CachedMessage> = cache[guild.idLong]?.values()?.filter{ predicate.invoke(it) } ?: listOf()
+    fun getMessages(guild: Guild, predicate: (CachedMessage) -> Boolean): List<CachedMessage> = cache[guild.idLong]?.values?.filter{ predicate.invoke(it) } ?: listOf()
 
     /**
      *  Returns a cached message
