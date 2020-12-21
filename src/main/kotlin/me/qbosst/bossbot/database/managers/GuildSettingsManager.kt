@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
-import me.qbosst.bossbot.util.zoneIdOf
+import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.TextChannel
@@ -25,7 +25,7 @@ object GuildSettingsManager: Manager<Long, GuildSettingsManager.GuildSettings>()
                                 message_logs_channel_id = row[GuildSettingsTable.message_logs_channel_id],
                                 voice_logs_channel_id = row[GuildSettingsTable.voice_logs_channel_id],
                                 dj_role_id = row[GuildSettingsTable.dj_role_id],
-                                zone_id = zoneIdOf(row[GuildSettingsTable.zone_id]),
+                                zone_id = TimeUtil.zoneIdOf(row[GuildSettingsTable.zone_id]),
                                 prefix = row[GuildSettingsTable.prefix]
                         )
                     }

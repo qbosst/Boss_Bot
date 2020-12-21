@@ -153,7 +153,7 @@ object VoiceListener: EventListener
 
         val total = Duration.between(data.join, OffsetDateTime.now()).seconds
         val unMuted = total - data.secondsMuted
-        log.debug("${guild.name} (${guild.id}): ${member?.user?.asTag ?: ""} (${userId}) has; spent ${TimeUtil.secondsToString(total)} in vc, spent ${TimeUtil.secondsToString(unMuted)} un-muted and ${TimeUtil.secondsToString(data.secondsMuted)}s muted in vc.")
+        log.debug("${guild.name} (${guild.id}): ${member?.user?.asTag ?: ""} (${userId}) has; spent ${TimeUtil.timeToString(total)} in vc, spent ${TimeUtil.timeToString(unMuted)} un-muted and ${TimeUtil.timeToString(data.secondsMuted)}s muted in vc.")
 
         val loop: Long = (total - data.secondsMuted) / seconds_until_eligible
         MemberDataManager.update(guild.idLong, userId) { old ->

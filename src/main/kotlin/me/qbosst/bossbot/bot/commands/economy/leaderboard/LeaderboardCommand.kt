@@ -164,7 +164,7 @@ object LeaderboardCommand : Command(
                 @Suppress("UNCHECKED_CAST")
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Long>>)
                         .sortedByDescending { it.right }
-                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.secondsToString(record.right)}"}
+                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.timeToString(record.right)}"}
             }
         },
         VOICE_CHAT(Regex("v(oice)?c(hat)?"), MemberDataTable.voice_chat_time, "voicechat")
@@ -175,7 +175,7 @@ object LeaderboardCommand : Command(
                 return ((data.filter { it.right != null }) as List<MutablePair<Long, Long>>)
                         .map { it.setRightAndReturn(it.right + VoiceListener.getCachedVoiceChatTime(guild, it.left)) }
                         .sortedByDescending { it.right }
-                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.secondsToString(record.right)}"}
+                        .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.timeToString(record.right)}"}
             }
         },
         EXPERIENCE(Regex("e?xp(erience)?"), MemberDataTable.experience, "experience")

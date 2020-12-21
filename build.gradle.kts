@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.4.20"
+    id("com.github.johnrengelman.shadow") version("6.0.0")
 }
 
 group = "me.boss"
@@ -32,8 +33,12 @@ dependencies {
     implementation("org.json:json:20201115")
 }
 
-
-
 tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+val shadowJar by tasks.getting(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class) {
+    manifest {
+        attributes["Main-Class"] = "me.qbosst.bossbot.Launcher"
+    }
 }

@@ -4,6 +4,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.ZoneId
+import java.util.*
 
 object TimeZonesCommand: Command(
         "zones",
@@ -17,10 +18,13 @@ object TimeZonesCommand: Command(
         event.channel
             .sendMessage("Here is a list of zones that you can use.")
             .addFile(
-                ZoneId.getAvailableZoneIds()
-                .sortedBy { it }
-                .joinToString("\n")
-                .toByteArray(), "zone_ids.txt")
+                    ZoneId.getAvailableZoneIds()
+                            .sorted()
+                            .joinToString("\n") { id ->
+                                val timeZone = TimeZone.getTimeZone(id)
+                                "$id | ${timeZone.getDisplayName(true, 0)} | ${timeZone.getDisplayName(false, 0)}"
+                            }
+                        .toByteArray(), "zone_ids.txt")
             .queue()
     }
 }

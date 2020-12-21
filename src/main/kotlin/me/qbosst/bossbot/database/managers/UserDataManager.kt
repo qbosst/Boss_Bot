@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.bossbot.util.zoneIdOf
+import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.entities.User
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.insert
@@ -24,7 +24,7 @@ object UserDataManager: Manager<Long, UserDataManager.UserData>()
                     .map { row ->
                         UserData(
                                 greeting = row[UserDataTable.greeting],
-                                zone_id = zoneIdOf(row[UserDataTable.zone_id])
+                                zone_id = TimeUtil.zoneIdOf(row[UserDataTable.zone_id])
                         )
                     }
                     .singleOrNull() ?: EMPTY

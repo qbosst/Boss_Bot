@@ -4,6 +4,7 @@ import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.util.*
+import me.qbosst.bossbot.util.TimeUtil.formattedName
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -53,7 +54,7 @@ object TimeCommand: Command(
                             if(selfZoneId != targetZoneId)
                             {
                                 val difference = getZoneDifference(selfZoneId, targetZoneId)
-                                val time = TimeUtil.secondsToString(difference) { unit, count -> "$count ${unit.longName}"}
+                                val time = TimeUtil.timeToString(difference) { unit, count -> "$count ${unit.formattedName}"}
                                 val isBehind = time.startsWith("-")
                                 sb.append("${target.asTag} is `${if(isBehind) time.substring(1) else time}` ")
                                         .append("`${if(isBehind) "behind" else "ahead of"}` you.")
@@ -70,7 +71,7 @@ object TimeCommand: Command(
             }
             else
             {
-                val targetZoneId = zoneIdOf(args[0])
+                val targetZoneId = TimeUtil.filterZones(args[0]).firstOrNull()
                 if(targetZoneId != null)
                 {
                     val arguments = args.drop(1).joinToString(" ")
@@ -89,7 +90,7 @@ object TimeCommand: Command(
                         if(selfZoneId != null && selfZoneId != targetZoneId)
                         {
                             val difference = getZoneDifference(selfZoneId, targetZoneId)
-                            val time = TimeUtil.secondsToString(difference) { unit, count -> "$count ${unit.longName}"}
+                            val time = TimeUtil.timeToString(difference) { unit, count -> "$count ${unit.formattedName}"}
                             val isBehind = time.startsWith("-")
                             sb.append("`${targetZoneId.id}` is `${if(isBehind) time.substring(1) else time}` ")
                                     .append("`${if(isBehind) "behind" else "ahead of"}` you.")
@@ -138,7 +139,7 @@ object TimeCommand: Command(
 
         return StringBuilder()
                 .append("The time for $who in ")
-                .append("`${TimeUtil.secondsToString(seconds) {unit, count -> "$count ${unit.longName}"}}` ")
+                .append("`${TimeUtil.timeToString(seconds) {unit, count -> "$count ${unit.formattedName}"}}` ")
                 .append("will be `${formatDate(date)}`.")
                 .toString()
     }
@@ -161,7 +162,7 @@ object TimeCommand: Command(
 
     private fun getCurrentTime(zoneId: ZoneId): String = formatDate(ZonedDateTime.now(zoneId))
 
-    private fun formatDate(date: ZonedDateTime): String = TimeUtil.DATE_TIME_FORMATTER.format(date)
+    private fun formatDate(date: ZonedDateTime): String = TimeUtil.dateTimeFormatter.format(date)
 
     /**
      *  Message sent for when a user does not have a time zone setup

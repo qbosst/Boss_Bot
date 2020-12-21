@@ -106,18 +106,6 @@ fun GenericMessageEvent.getGuildOrNull(): Guild? = if(isFromGuild) guild else nu
 fun MessageReceivedEvent.getPrefix(): String = getGuildOrNull()?.getSettings()?.prefix ?: BotConfig.default_prefix
 
 /**
- *  Better way of getting zone ids.
- *
- *  @param zoneId The zoneId string to try and get the Zone Id object from
- *
- *  @return Zone Id object. Null if no zone id corresponded to the parameter given
- */
-fun zoneIdOf(zoneId: String?): ZoneId?
-{
-    return ZoneId.of(ZoneId.getAvailableZoneIds().firstOrNull { it.equals(zoneId, true) } ?: return null)
-}
-
-/**
  *  Splits a string up every n amount of characters
  *
  *  @param partitionSize The amount of characters to split it up after

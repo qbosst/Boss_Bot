@@ -28,7 +28,7 @@ object BotStatisticsCommand : DeveloperCommand(
         val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
 
         val zoneId = event.author.getUserData().zone_id ?: event.getGuildOrNull()?.getSettings()?.zone_id ?: ZoneId.systemDefault()
-        val date = TimeUtil.DATE_TIME_FORMATTER.format(startUp.atZoneSameInstant(zoneId))
+        val date = TimeUtil.dateTimeFormatter.format(startUp.atZoneSameInstant(zoneId))
 
         val embed = EmbedBuilder()
                 .setTitle("${event.jda.selfUser.asTag} statistics")

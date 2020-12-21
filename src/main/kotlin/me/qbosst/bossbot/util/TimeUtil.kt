@@ -1,62 +1,115 @@
 package me.qbosst.bossbot.util
 
+import java.lang.IllegalArgumentException
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
+import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 
 object TimeUtil
 {
-    val TIME_REGEX = Regex("(?is)^((\\s*-?\\s*\\d+\\s*(${enumValues<TimeUnit>().map { it.regex }.joinToString("|")})\\s*,?\\s*(and)?)*).*")
-    val DATE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy")
+    private val timeRegex = "(?is)^((\\s*-?\\s*\\d+\\s*(${enumValues<TimeUnit>().joinToString("|") { it.regex }})\\s*,?\\s*(and)?)*).*".toRegex()
 
-    fun secondsToString(seconds: Int, locale: (TimeUnit, Long) -> String = { unit, count -> "${count}${unit.shortName}" }): String = secondsToString(seconds.toLong(), locale)
+    private val zoneMatcher: Map<ZoneId, Regex> = ZoneId.getAvailableZoneIds().sorted()
+            .map { id ->
+                val zoneId = ZoneId.of(id)
 
-    fun secondsToString(seconds: Long, locale: (TimeUnit, Long) -> String = { unit, count -> "${count}${unit.shortName}" }): String
-    {
-        if(seconds == 0L)
-            return "0s"
+                // split the zone id into a more user-friendly regex
+                val zoneName = StringBuilder("(")
+                        .apply {
+                            val connector = "[-_\\s/]?"
+                            val separator: Pattern = Pattern.compile("[^/]+")
 
-        val negative = seconds < 0
-        var secs = if(negative) -seconds else seconds
-        val sb = StringBuilder()
+                            val matcher = separator.matcher(id)
+                            val replaceMatching = "[_-]".toRegex()
+                            val replaceWith = "[-_\\\\s]?"
+                            while (matcher.find())
+                                append("(${matcher.group().replace(replaceMatching, replaceWith)})?${connector}")
 
-        for(unit in TimeUnit.values().sortedBy { it.value }.reversed())
-        {
-            val calc = secs / unit.value
-            if(calc > 0)
-            {
-                sb.append("${locale.invoke(unit, calc)} ")
-                secs -= (calc) * unit.value
+                            deleteRange(lastIndex-connector.length, lastIndex).append(")")
+                        }
+
+                // get the abbreviations of this time zone
+                val abbreviations = StringBuilder("(")
+                        .apply {
+                            val zone = TimeZone.getTimeZone(zoneId)
+                            append("${zone.getDisplayName(true, 0)})|(${zone.getDisplayName(false, 0)})")
+                        }
+
+                Pair(zoneId, "(${zoneName}|${abbreviations})".toLowerCase().toRegex())
             }
+            .toMap()
+
+    private val TimeUnit.value
+        get() = TimeUnit.NANOSECONDS.convert(1, this)
+
+    val TimeUnit.regex
+        get() = when(this) {
+            TimeUnit.NANOSECONDS -> "n(ano)?s(ec(ond)?s?)?"
+            TimeUnit.MICROSECONDS -> "μ(icro)?s(ec(ond)?s?)?"
+            TimeUnit.MILLISECONDS -> "m(illi)?s(ec(ond)?s?)?"
+            TimeUnit.SECONDS -> "s(ec(ond)?s?)?"
+            TimeUnit.MINUTES -> "m(in(ute)?s?)?"
+            TimeUnit.HOURS -> "h(((ou)?)rs?)?"
+            TimeUnit.DAYS -> "d(ays?)?"
         }
 
-        sb.deleteCharAt(sb.lastIndex).toString()
-        if(negative)
-            sb.insert(0, "-")
-        return sb.toString()
-    }
+    val TimeUnit.abbreviation
+        get() = when(this) {
+            TimeUnit.NANOSECONDS -> "ns"
+            TimeUnit.MICROSECONDS -> "μs"
+            TimeUnit.MILLISECONDS -> "ms"
+            TimeUnit.SECONDS -> "s"
+            TimeUnit.MINUTES -> "m"
+            TimeUnit.HOURS -> "h"
+            TimeUnit.DAYS -> "d"
+        }
 
-    fun parseTime(time: String): Long
+    val TimeUnit.formattedName
+        get() = name.toLowerCase()
+
+    val dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM/yyyy")
+
+    fun filterZones(query: String) = query.toLowerCase()
+            .let { q -> zoneMatcher.filter { zone -> q.matches(zone.value) } }
+            .map { entry -> entry.key }
+
+    /**
+     *  Gets the zone id of the [query] provided case insensitive.
+     *
+     *  @param query The zoneId string to try and get the Zone Id object from
+     *
+     *  @return Zone Id object. Null if no zone id corresponded to the parameter given
+     */
+    fun zoneIdOf(query: String?): ZoneId? = query
+            ?.let { q -> ZoneId.getAvailableZoneIds().firstOrNull() { id -> q.equals(id, true)} }
+            ?.let { id -> ZoneId.of(id) }
+
+    fun parseTime(time: String, outputUnit: TimeUnit = TimeUnit.SECONDS): Long
     {
-        var timeStr = time.replace(TIME_REGEX, "$1")
-        var seconds: Long = 0
-        if(timeStr.isNotEmpty())
+        var timeStr = time.replace(timeRegex, "$1")
+        var count: Long = 0
+        if(timeStr.isNotBlank())
         {
+            // split the string up
             timeStr = timeStr.replace("(?i)(\\s|,|and)".toRegex(), "")
                     .replace("(?is)(-?\\d+|[a-z]+)".toRegex(), "$1 ")
                     .trim { it <= ' ' }
             val values = timeStr.split("\\s+".toRegex())
+
             try
             {
                 var i = 0
-                while(i < values.size)
+                while (i < values.size)
                 {
-                    var num = values[i].toInt()
-                    when
-                    {
-                        values[i+1].toLowerCase().startsWith("m") -> num *= 60
-                        values[i+1].toLowerCase().startsWith("h") -> num *= 60 * 60
-                        values[i+1].toLowerCase().startsWith("d") -> num *= 60 * 60 * 24
-                    }
-                    seconds += num
+                    // the unit provided
+                    val unit = values[i+1].toLowerCase()
+                            .let { start -> TimeUnit.values().first { unit -> start.startsWith(unit.abbreviation) } }
+
+                    val num = values[i].toLong().let { num -> outputUnit.convert(num, unit) }
+
+                    count += num
                     i += 2
                 }
             }
@@ -64,16 +117,37 @@ object TimeUtil
             {
                 return 0
             }
-
         }
-        return seconds
+        return count
     }
 
-    enum class TimeUnit(val value: Int, val shortName: String, val longName: String, val regex: Regex)
+    fun timeToString(time: Long, unit: TimeUnit = TimeUnit.SECONDS,
+                     locale: (TimeUnit, Long) -> String = {tu, l -> "${l}${tu.abbreviation}"}): String
     {
-        SECONDS(1, "s", "seconds", Regex("s(ec(ond)?s?)?")),
-        MINUTES(60, "m", "minutes", Regex("m(in(ute)?s?)?")),
-        HOURS(60*60, "h", "hours", Regex("h((ou)?rs?)?")),
-        DAYS(60*60*24, "d", "days", Regex("d(ays?)?"))
+        if (time == 0L)
+            return "0${unit.abbreviation}"
+
+        val isNegative = time < 0
+        var amount = if(isNegative) -time else time
+        val sb = StringBuilder(if(isNegative) "-" else "")
+
+        for (index in (unit.ordinal until TimeUnit.values().count()).reversed())
+        {
+            val tempUnit = enumValues<TimeUnit>().first { it.ordinal == index }
+            val tempValue = tempUnit.value / unit.value
+
+            val calc = amount / tempValue
+            if(calc > 0)
+            {
+                sb.append("${locale.invoke(tempUnit, calc)} ")
+                amount -= (calc) * tempValue
+            }
+        }
+
+        return sb.deleteCharAt(sb.lastIndex).toString()
     }
+
+    fun timeToString(time: Int, unit: TimeUnit = TimeUnit.SECONDS,
+                     locale: (TimeUnit, Long) -> String = { tu, l -> "${l}${tu.abbreviation}"}): String =
+            timeToString(time.toLong(), unit, locale)
 }

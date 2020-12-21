@@ -5,7 +5,8 @@ import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.bossbot.util.zoneIdOf
+import me.qbosst.bossbot.util.TimeUtil
+import me.qbosst.bossbot.util.TimeUtil.zoneIdOf
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object TimeSetCommand: Command(
@@ -20,7 +21,7 @@ object TimeSetCommand: Command(
         if(args.isNotEmpty())
         {
             val name = args.joinToString(" ")
-            val zoneId = zoneIdOf(name)
+            val zoneId = TimeUtil.filterZones(name).firstOrNull()
             if(zoneId == null)
                 event.channel.sendMessage(argumentInvalid(args[0], "time zone")).queue()
             else

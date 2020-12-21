@@ -38,8 +38,8 @@ object StatsCommand : Command(
 
         return EmbedBuilder()
                 .addField("Messages Sent", (stats.message_count + MessageListener.getCachedMessageCount(member)).toString(), true)
-                .addField("Text Chat Time", TimeUtil.secondsToString(stats.text_chat_time), true)
-                .addField("Voice Chat Time", TimeUtil.secondsToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
+                .addField("Text Chat Time", TimeUtil.timeToString(stats.text_chat_time), true)
+                .addField("Voice Chat Time", TimeUtil.timeToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
                 .setColor(member.colorRaw)
     }
 }

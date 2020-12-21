@@ -33,7 +33,7 @@ object QueueCurrentCommand: MusicCommand(
             event.channel.sendMessage(EmbedBuilder()
                     .setTitle("Currently Playing")
                     .appendDescription("[${track.info.title}](${track.info.uri})\n$sb\n")
-                    .appendDescription("${TimeUtil.secondsToString(((track.duration-millisLeft).toFloat()/1000).roundToInt())} / ${TimeUtil.secondsToString(track.duration/1000)}")
+                    .appendDescription("${TimeUtil.timeToString(((track.duration-millisLeft).toFloat()/1000).roundToInt())} / ${TimeUtil.timeToString(track.duration/1000)}")
                     .setColor(event.guild.selfMember.colorRaw)
                     .build()
             ).queue()
