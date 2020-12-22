@@ -82,7 +82,8 @@ fun Member.move(vc: VoiceChannel): RestAction<Void> = guild.moveVoiceMember(this
  *
  *  @return String that is no longer than the maximum length specified.
  */
-fun String.maxLength(maxLength: Int = 32): String = if(this.length > maxLength) "${this.substring(0, maxLength - 3)}..." else this
+fun String.maxLength(maxLength: Int = 32, ending: String = "..."): String =
+        if(length > maxLength) substring(0, maxLength-ending.length)+ending else this
 
 /**
  *  Prevents Discord mentions by putting a zero width character after an '@'

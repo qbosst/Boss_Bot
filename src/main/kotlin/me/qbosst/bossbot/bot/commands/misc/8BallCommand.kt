@@ -35,7 +35,7 @@ object `8BallCommand` : Command(
             "You may rely on it."
     )
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         event.channel.sendMessage(if(args.isNotEmpty()) responses.random() else "Ask your question.").queue()
     }

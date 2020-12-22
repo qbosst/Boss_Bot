@@ -21,7 +21,7 @@ object AvatarCommand: Command(
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Gets the user
         val target: User = if(args.isNotEmpty())

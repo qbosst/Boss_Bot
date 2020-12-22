@@ -31,6 +31,7 @@ dependencies {
 
     implementation("org.reflections:reflections:0.9.12")
     implementation("org.json:json:20201115")
+    implementation("org.codehaus.groovy:groovy-jsr223:3.0.7")
 }
 
 tasks.withType<KotlinCompile>() {

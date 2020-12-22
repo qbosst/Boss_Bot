@@ -22,7 +22,7 @@ object ColourRandomCommand: Command(
 )
 {
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Checks to see if opacity of colour should be random or not.
         val hasAlpha = if(args.isNotEmpty()) when

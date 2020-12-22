@@ -32,7 +32,7 @@ object SuggestionCommand: Command(
 
     private val rateLimiter = FixedCache<Long, SuggestionPair>(BotConfig.default_cache_size)
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Gets the guild's suggestion channel
         val tc =  event.guild.getSettings().getSuggestionChannel(event.guild)

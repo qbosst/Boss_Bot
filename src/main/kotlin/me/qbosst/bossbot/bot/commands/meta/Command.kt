@@ -103,7 +103,7 @@ abstract class Command (
      *  @param event The event that the command was received from
      *  @param args The arguments from the user for the command
      */
-    abstract fun execute(event: MessageReceivedEvent, args: List<String>)
+    abstract fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
 
     final override fun addCommand(command: Command): CommandManagerImpl
     {
@@ -144,5 +144,10 @@ abstract class Command (
         result = 31 * result + botPermissions.hashCode()
         result = 31 * result + (parent?.hashCode() ?: 0)
         return result
+    }
+
+    companion object
+    {
+        val FLAG_PATTERN = "--([a-zA-Z]+)(=([^\"'\\s]+|\"((?:[^\"\\\\]|\\\\.)*)\"|'((?:[^'\\\\]|\\\\.)*)'))?"
     }
 }

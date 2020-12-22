@@ -19,7 +19,7 @@ abstract class SetterCommand<T>(
 ): Command(name, description,
         usage.plus("<${SET_DEFAULT.joinToString("|")}>"), examples.plus(SET_DEFAULT.random()), aliases, true, userPermissions, botPermissions)
 {
-    final override fun execute(event: MessageReceivedEvent, args: List<String>)
+    final override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())
         {

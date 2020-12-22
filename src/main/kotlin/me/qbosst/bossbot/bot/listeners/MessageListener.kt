@@ -28,6 +28,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
+import java.util.regex.Pattern
 
 object MessageListener: EventListener, CommandManagerImpl()
 {
@@ -107,7 +108,7 @@ object MessageListener: EventListener, CommandManagerImpl()
 
             if(content.startsWith(prefix) && content.length > prefix.length)
             {
-                val args = content.substring(prefix.length).split(Regex("\\s+"))
+                var args = content.substring(prefix.length).split(Regex("\\s+"))
                 var command = getCommand(args[0])
                 if(command != null)
                 {
@@ -119,6 +120,27 @@ object MessageListener: EventListener, CommandManagerImpl()
                         index++
                     }
                     command = command!!
+
+
+
+                    val flags = mutableMapOf<String, String?>()
+                            .apply {
+                                val toMatch = args.drop(index).joinToString(" ")
+                                val matcher = Pattern.compile(Command.FLAG_PATTERN).matcher(toMatch)
+                                val sb = StringBuilder()
+
+                                index = 0
+                                while (matcher.find())
+                                {
+                                    put(matcher.group(1), matcher.group(5) ?: matcher.group(4) ?: matcher.group(3))
+                                    sb.append(toMatch.substring(index, matcher.start()))
+                                    index = matcher.end()
+                                }
+                                if(index < toMatch.length)
+                                    sb.append(toMatch.substring(index, toMatch.length))
+
+                                args = sb.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                            }
 
                     // Check permissions
                     if(!command.hasPermission(event.getGuildOrNull(), event.author))
@@ -140,7 +162,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                     else
                         try
                         {
-                            command.execute(event, args.drop(index))
+                            command.execute(event, args, flags)
                         }
                         catch (t: Throwable)
                         {

@@ -21,7 +21,7 @@ object InviteCommand : Command(
             return permissions
         }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         event.channel.sendMessage(event.jda.getInviteUrl(allPermissions)).queue()
     }

@@ -18,7 +18,7 @@ object GreetingCommand : Command(
         addCommand(GreetingUpdateCommand)
     }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())
         {

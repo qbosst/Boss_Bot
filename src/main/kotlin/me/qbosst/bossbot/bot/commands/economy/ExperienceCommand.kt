@@ -14,7 +14,7 @@ object ExperienceCommand: Command(
         aliases_raw = listOf("xp", "exp")
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val target: Member = if(args.isNotEmpty())
         {

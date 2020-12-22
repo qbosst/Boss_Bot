@@ -32,7 +32,7 @@ object EvalCommand : DeveloperCommand(
             "net.dv8tion.jda.api.entities.Role"
     )
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(engine == null)
             event.channel.sendMessage("Engine is null.").queue()
@@ -53,9 +53,7 @@ object EvalCommand : DeveloperCommand(
             }
             catch (e: Exception)
             {
-                val sw = StringWriter()
-                e.printStackTrace(PrintWriter(sw))
-                event.channel.sendMessage("Caught Exception: ```$sw```".maxLength(Message.MAX_CONTENT_LENGTH)).queue()
+                event.channel.sendMessage("```console\n$e```".maxLength(Message.MAX_CONTENT_LENGTH, ending="...```")).queue()
             }
         }
         else

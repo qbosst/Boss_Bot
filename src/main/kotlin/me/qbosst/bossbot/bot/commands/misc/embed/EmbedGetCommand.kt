@@ -18,7 +18,7 @@ object EmbedGetCommand: Command(
         botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_HISTORY)
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val messageId = kotlin.run {
             val arg = (args.getOrNull(0) ?: kotlin.run {

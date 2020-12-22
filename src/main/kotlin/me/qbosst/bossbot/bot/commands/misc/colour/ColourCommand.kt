@@ -36,7 +36,7 @@ object ColourCommand: Command(
         addCommands(commands)
     }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Tries to get a valid colour either from name or hex code
         if(args.isNotEmpty())

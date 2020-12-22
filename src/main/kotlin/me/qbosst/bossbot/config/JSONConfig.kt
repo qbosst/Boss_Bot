@@ -35,6 +35,12 @@ open class JSONConfig(directory: String, protected var default: DataObject)
 
         else
             read()
+
+        default.toMap().forEach { (key, value) ->
+            if(!data.hasKey(key))
+                data.put(key, value)
+        }
+        write()
     }
 
     /**

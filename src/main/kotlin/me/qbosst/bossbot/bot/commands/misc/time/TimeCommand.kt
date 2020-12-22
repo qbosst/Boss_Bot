@@ -23,7 +23,7 @@ object TimeCommand: Command(
         addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
     }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())
         {

@@ -20,7 +20,7 @@ object SetCommand: Command(
         addCommands(commands)
     }
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val embed = EmbedBuilder()
                 .setColor(event.guild.selfMember.colorRaw)

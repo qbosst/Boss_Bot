@@ -27,7 +27,7 @@ object LeaderboardCommand : Command(
 {
     private const val RECORDS_PER_PAGE = 5
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())
         {

@@ -22,7 +22,7 @@ object ColoursCommand: Command(
 ) {
     private const val MAX_COLOURS_PER_PAGE = 12
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         var index = 0
 

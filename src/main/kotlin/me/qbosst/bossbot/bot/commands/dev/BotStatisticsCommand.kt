@@ -22,7 +22,7 @@ object BotStatisticsCommand : DeveloperCommand(
 {
     private val startUp = OffsetDateTime.now()
 
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
         val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)

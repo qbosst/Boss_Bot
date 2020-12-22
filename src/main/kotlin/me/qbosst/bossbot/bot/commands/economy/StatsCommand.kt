@@ -19,7 +19,7 @@ object StatsCommand : Command(
         examples_raw = listOf("", "@boss"),
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 ) {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val target: Member = if(args.isNotEmpty()) {
             val name = args.joinToString(" ")

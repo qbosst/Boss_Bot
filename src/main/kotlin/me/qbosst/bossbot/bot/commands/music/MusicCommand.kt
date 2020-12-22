@@ -23,7 +23,7 @@ abstract class MusicCommand(name: String,
 ): Command(name, description, usage, examples, aliases, true, userPermissions, if(autoConnect) botPermissions.plus(Permission.VOICE_CONNECT) else botPermissions)
 {
 
-    final override fun execute(event: MessageReceivedEvent, args: List<String>)
+    final override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val member = event.member!!
         if(event.guild.audioManager.isConnected)

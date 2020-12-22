@@ -42,6 +42,17 @@ object BotConfig: JSONConfig(
     val spotify_client_secret: String
         get() = data.getString(Values.SPOTIFY_CLIENT_SECRET.key, Values.SPOTIFY_CLIENT_SECRET.default as String)
 
+    val vote_links: List<String>
+        get() = mutableListOf<String>()
+                .apply {
+                    val key = Values.VOTE_LINKS.key
+                    if(data.hasKey(key))
+                        data.getArray(key).forEach { value ->
+                            if(value is String)
+                                add(value)
+                        }
+                }
+
     fun reload()
     {
         read()
@@ -62,6 +73,8 @@ object BotConfig: JSONConfig(
         DATABASE_PASSWORD(""),
 
         DEFAULT_CACHE_SIZE(500),
+
+        VOTE_LINKS(listOf<String>())
 
         ;
 

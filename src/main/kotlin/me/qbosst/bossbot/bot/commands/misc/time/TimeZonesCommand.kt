@@ -13,7 +13,7 @@ object TimeZonesCommand: Command(
         guildOnly = false
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         event.channel
             .sendMessage("Here is a list of zones that you can use.")

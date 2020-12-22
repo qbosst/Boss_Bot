@@ -25,7 +25,7 @@ abstract class DeepAiCommand(
         name, description, usage, examples, aliases, guildOnly, userPermissions, botPermissions
 )
 {
-    final override fun execute(event: MessageReceivedEvent, args: List<String>)
+    final override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Gets the parameters.
         val parameters = getParameters(event, args)

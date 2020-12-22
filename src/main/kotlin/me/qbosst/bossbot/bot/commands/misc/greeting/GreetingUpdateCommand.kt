@@ -16,7 +16,7 @@ object GreetingUpdateCommand : DeveloperCommand(
         usage = listOf("@user <message>"),
         guildOnly = false
 ) {
-    override fun execute(event: MessageReceivedEvent, args: List<String>) {
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>) {
         if (args.isNotEmpty())
         {
             val user = event.jda.shardManager!!.getUserByString(args[0])

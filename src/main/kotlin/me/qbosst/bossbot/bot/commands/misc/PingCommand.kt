@@ -10,7 +10,7 @@ object PingCommand : Command(
         guildOnly = false
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>)
+    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         val ping = System.currentTimeMillis()
         event.channel.sendMessage("Pinging...").queue()
