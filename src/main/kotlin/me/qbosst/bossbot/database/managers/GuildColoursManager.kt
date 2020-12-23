@@ -2,27 +2,27 @@ package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.GuildColoursTable
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.awt.Color
 
-object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
+object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>()
 {
-    override fun getDatabase(key: Long): GuildColours
-    {
-        return GuildColours(transaction {
-            GuildColoursTable
-                    .select { GuildColoursTable.guild_id.eq(key) }
-                    .map {
-                        Pair(it[GuildColoursTable.name], Color(
-                                it[GuildColoursTable.red],
-                                it[GuildColoursTable.green],
-                                it[GuildColoursTable.blue],
-                                it[GuildColoursTable.alpha]
-                        ))
-                    }
-                    .toMap()
-        })
+    override fun retrieve(key: Long): GuildColours = transaction {
+        GuildColours(
+                GuildColoursTable
+                        .select { GuildColoursTable.guild_id.eq(key) }
+                        .map { row -> Pair(
+                                row[GuildColoursTable.name],
+                                Color(
+                                        row[GuildColoursTable.red],
+                                        row[GuildColoursTable.green],
+                                        row[GuildColoursTable.blue],
+                                        row[GuildColoursTable.alpha]
+                                )) }
+                        .toMap()
+        )
     }
 
     /**
@@ -30,7 +30,7 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
      *  @param guild The guild to get the custom colours of
      *  @return The GuildColoursData object that contains all the guild's custom colour data
      */
-    fun get(guild: Guild?): GuildColours = get(guild?.idLong ?: -1)
+    fun get(guild: Guild?): GuildColours = getOrRetrieve(guild?.idLong ?: -1)
 
     /**
      *  Removes a custom colour from a guild
@@ -40,29 +40,19 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
      *
      *  @return if the colour was successfully removed
      */
-    fun remove(guild: Guild, name: String): Boolean
-    {
-        // Removes a custom colour from a guild
-        return transaction {
+    fun remove(guild: Guild, name: String): Boolean = transaction {
+        val key = guild.idLong
+        val exists = if(isCached(key)) (name in get(key)!!) else GuildColoursTable
+                .slice(GuildColoursTable.name)
+                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .map { true }.singleOrNull() ?: false
 
-            // Checks if the record exists
-            val contains: Boolean = GuildColoursTable
-                    .slice(GuildColoursTable.name)
-                    .select { GuildColoursTable.guild_id.eq(guild.idLong) and GuildColoursTable.name.eq(name) }
-                    .map { true }
-                    .firstOrNull() ?: false
+        if(exists)
+            GuildColoursTable
+                    .deleteWhere { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                    .also { pull(key) }
 
-            // If it exists, delete it and invalidate cache
-            if(contains)
-            {
-                GuildColoursTable
-                        .deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) and GuildColoursTable.name.eq(name) }
-                pull(guild.idLong)
-            }
-
-            // Return whether the record was deleted
-            return@transaction contains
-        }
+        return@transaction exists
     }
 
     /**
@@ -70,41 +60,34 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
      *
      *  @param guild The guild to update the custom colour of
      *  @param name The name of the custom colour to update
-     *  @param colour The colour to update it with
+     *  @param new The colour to update it with
      *
      *  @return The old colour that was stored in the database. Null if no record was updated.
      */
-    fun update(guild: Guild, name: String, colour: Color): Color?
-    {
-        return transaction {
+    fun update(guild: Guild, name: String, new: Color): Color? = transaction {
+        val key = guild.idLong
+        val old: Color? = if(isCached(key)) get(key)!![name] else GuildColoursTable
+                .slice(GuildColoursTable.red, GuildColoursTable.green, GuildColoursTable.blue, GuildColoursTable.alpha)
+                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .map { row -> Color(
+                        row[GuildColoursTable.red],
+                        row[GuildColoursTable.green],
+                        row[GuildColoursTable.blue],
+                        row[GuildColoursTable.alpha]
+                ) }
+                .singleOrNull()
 
-            // Get's the old custom colour
-            val old: Color? = GuildColoursTable
-                    .slice(GuildColoursTable.red, GuildColoursTable.green, GuildColoursTable.blue, GuildColoursTable.alpha)
-                    .select { GuildColoursTable.guild_id.eq(guild.idLong) and GuildColoursTable.name.eq(name) }
-                    .map { Color(
-                            it[GuildColoursTable.red],
-                            it[GuildColoursTable.green],
-                            it[GuildColoursTable.blue],
-                            it[GuildColoursTable.green]
-                    ) }
-                    .singleOrNull()
+        if(old != null && old != new)
+            GuildColoursTable
+                    .update ({ GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }) {
+                        it[red] = new.red
+                        it[green] = new.green
+                        it[blue] = new.blue
+                        it[alpha] = new.alpha
+                    }
+                    .also { pull(key) }
 
-            // If the record exists, update it in the database with the new record and invalidate cache
-            if(old != null)
-            {
-                GuildColoursTable
-                        .update ({ GuildColoursTable.guild_id.eq(guild.idLong) and GuildColoursTable.name.eq(name) })
-                        {
-                            it[red] = colour.red
-                            it[green] = colour.green
-                            it[blue] = colour.blue
-                            it[alpha] = colour.alpha
-                        }
-                pull(guild.idLong)
-            }
-            return@transaction old
-        }
+        return@transaction old
     }
 
     /**
@@ -116,78 +99,62 @@ object GuildColoursManager: Manager<Long, GuildColoursManager.GuildColours>()
      *
      *  @return returns whether the colour was added or not.
      */
-    fun add(guild: Guild, name: String, colour: Color): Boolean
-    {
-        return transaction {
-            // First checks if the current guild colours are cached, if so save the unnecessary database call,
-            // otherwise query the database for all the custom colour names that the guild currently has
-            val names = getCached(guild.idLong)?.keySet() ?: GuildColoursTable
-                    .select { GuildColoursTable.guild_id.eq(guild.idLong) }
-                    .map { it[GuildColoursTable.name].toLowerCase() }
+    fun add(guild: Guild, name: String, colour: Color): Boolean = transaction {
+        val key = guild.idLong
+        val exists: Boolean = if(isCached(key)) (name in get(key)!!) else GuildColoursTable
+                .slice(GuildColoursTable.name)
+                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .map { true }.singleOrNull() ?: false
 
-            // If a custom colour does not already exist with this colour, insert it into the database and invalidate cache
-            if(!names.contains(name.toLowerCase()))
-            {
-                GuildColoursTable
-                        .insert {
-                            it[guild_id] = guild.idLong
-                            it[GuildColoursTable.name] = name
-                            it[red] = colour.red
-                            it[green] = colour.green
-                            it[blue] = colour.blue
-                            it[alpha] = colour.alpha
-                        }
-                pull(guild.idLong)
-            }
+        if(!exists)
+            GuildColoursTable
+                    .insert {
+                        it[guild_id] = key
+                        it[GuildColoursTable.name] = name
+                        it[red] = colour.red
+                        it[green] = colour.green
+                        it[blue] = colour.blue
+                        it[alpha] = colour.alpha
+                    }
+                    .also { pull(key) }
 
-            return@transaction !names.contains(name.toLowerCase())
-        }
+        return@transaction !exists
     }
 
-    fun clear(guild: Guild)
-    {
-        // Deletes the records in the database
-        transaction {
-            GuildColoursTable.deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) }
-        }
-        // Removes any cached values of the guild
-        pull(guild.idLong)
+    fun clear(guild: Guild) = transaction {
+        GuildColoursTable
+                .deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) }
+                .also { pull(guild.idLong) }
     }
 
-    data class GuildColours(private val colours: Map<String, Color>)
+    fun Guild.getColours(): GuildColours = getOrRetrieve(idLong)
+
+    fun MessageReceivedEvent.getColours(): GuildColours = if(isFromGuild) guild.getColours() else GuildColours(mapOf())
+
+    data class GuildColours(val colours: Map<String, Color>)
     {
         /**
          *  Gets a guild custom colour
          *  @param name The name of the custom colour
          *  @return Colour. Null if no colour was found with that name
          */
-        fun get(name: String): Color? = colours[name]
+        operator fun get(name: String): Color? = colours[name]
 
         /**
          *  Checks if guild has a custom colour
          *  @param name The name of the custom colour to check
          *  @return if guild has custom colour
          */
-        fun contains(name: String): Boolean = colours.contains(name)
+        operator fun contains(name: String): Boolean = colours.containsKey(name)
 
         /**
          *  Gets all the guild's custom colours
          *  @return Collection of colours
          */
-        fun values(): Collection<Color> = colours.values
+        val values: Collection<Color>
+            get() = colours.values
 
-        /**
-         *  Returns a cloned map of the custom colours
-         *  @return map of colours
-         */
-        fun clone(): Map<String, Color> = colours.toMap()
-
-        /**
-         *  Returns all the keys
-         *  @return keys
-         */
-        fun keySet(): Set<String> = colours.keys
+        val keySet: Set<String>
+            get() = colours.keys
     }
 }
-
-fun Guild.getColours(): GuildColoursManager.GuildColours = GuildColoursManager.get(this)

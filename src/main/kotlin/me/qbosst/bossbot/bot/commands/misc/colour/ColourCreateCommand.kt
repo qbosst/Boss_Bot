@@ -39,7 +39,7 @@ object ColourCreateCommand: Command(
                 when
                 {
                     // Makes sure that the guild hasn't passed its limit
-                    data.values().size >= GuildColoursTable.MAX_COLOURS_PER_GUILD ->
+                    data.values.size >= GuildColoursTable.MAX_COLOURS_PER_GUILD ->
                         event.channel.sendMessage("This guild has reached the maximum amount of colours per guild (${GuildColoursTable.MAX_COLOURS_PER_GUILD}!)").queue()
 
                     // Makes sure that name is valid length

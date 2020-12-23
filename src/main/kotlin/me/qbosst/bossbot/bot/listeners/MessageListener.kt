@@ -94,7 +94,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                         // Update message counter for member removed
                         else if(value.right > 0)
                             MemberDataManager.update(removedKey.first, removedKey.second) { old ->
-                                return@update old.clone(message_count = old.message_count + value.right)
+                                return@update old.copy(message_count = old.message_count + value.right)
                             }
                     }
                 textCache.get(key)?.setRight((textCache.get(key)?.right ?: 0)+1)
@@ -259,7 +259,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                 record.setRight(0)
                 record.setLeft(event.message.timeCreated)
                 MemberDataManager.update(event.member!!) { old ->
-                    return@update old.clone(
+                    return@update old.copy(
                             message_count = old.message_count + counter,
                             text_chat_time = old.text_chat_time + seconds_until_eligible,
                             experience = old.experience + xp_to_give
@@ -277,7 +277,7 @@ object MessageListener: EventListener, CommandManagerImpl()
                 transaction {
                     for (record in textCache.keySet)
                         MemberDataManager.update(record.first, record.second) { old ->
-                            return@update old.clone(message_count = old.message_count + (textCache.get(record)?.right ?: 0))
+                            return@update old.copy(message_count = old.message_count + (textCache.get(record)?.right ?: 0))
                         }
                 }
         }

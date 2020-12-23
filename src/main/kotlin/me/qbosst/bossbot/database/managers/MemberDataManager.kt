@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.database.managers
 
-import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.database.tables.MemberDataTable
 import net.dv8tion.jda.api.entities.Member
 import org.jetbrains.exposed.sql.and
@@ -9,32 +8,26 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 
-object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData>()
+object MemberDataManager: TableManager<Pair<Long, Long>, MemberDataManager.MemberData>()
 {
-
-    private val EMPTY = MemberData()
-
-    override fun getDatabase(key: Pair<Long, Long>): MemberData
-    {
-        return transaction {
-            MemberDataTable
-                    .select { MemberDataTable.guild_id.eq(key.first) and MemberDataTable.user_id.eq(key.second) }
-                    .fetchSize(1)
-                    .map { row ->
-                        MemberData(
-                                experience = row[MemberDataTable.experience],
-                                message_count = row[MemberDataTable.message_count],
-                                text_chat_time = row[MemberDataTable.text_chat_time],
-                                voice_chat_time = row[MemberDataTable.voice_chat_time]
-                        )
-                    }
-                    .singleOrNull() ?: EMPTY
-        }
+    override fun retrieve(key: Pair<Long, Long>): MemberData = transaction {
+        MemberDataTable
+                .select { MemberDataTable.guild_id.eq(key.first) and MemberDataTable.user_id.eq(key.second) }
+                .fetchSize(1)
+                .map { row ->
+                    MemberData(
+                            experience = row[MemberDataTable.experience],
+                            message_count = row[MemberDataTable.message_count],
+                            text_chat_time = row[MemberDataTable.text_chat_time],
+                            voice_chat_time = row[MemberDataTable.voice_chat_time]
+                    )
+                }
+                .singleOrNull() ?: MemberData()
     }
 
-    fun get(member: Member) = get(genKey(member))
+    fun get(member: Member) = getOrRetrieve(genKey(member))
 
-    fun get(guildId: Long, userId: Long) = get(genKey(guildId, userId))
+    fun get(guildId: Long, userId: Long) = getOrRetrieve(genKey(guildId, userId))
 
     /**
      *  Updates a members stats
@@ -62,7 +55,7 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
                     .singleOrNull()
 
             // Gets the updated member data to replace with
-            val updated = update.invoke(old ?: EMPTY)
+            val updated = update.invoke(old ?: MemberData())
 
             when {
                 // If nothing changed, return
@@ -97,7 +90,7 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
             }
 
             // Runs method
-            onUpdate(guildId, userId, old ?: EMPTY, updated)
+            onUpdate(guildId, userId, old ?: MemberData(), updated)
         }
     }
 
@@ -152,45 +145,6 @@ object MemberDataManager: Manager<Pair<Long, Long>, MemberDataManager.MemberData
             val text_chat_time: Long = 0,
             val voice_chat_time: Long = 0
     )
-    {
-        /**
-         *  Clones this class and allows to change stats.
-         *
-         *  @param experience The new experience. Default is the current experience
-         *  @param message_count The new message count. Default is the current message count
-         *  @param text_chat_time The new text chat time. Default is the current text chat time.
-         *  @param voice_chat_time The new voice chat time. Default is the current voice chat time.
-         *
-         *  @return New MemberData class
-         */
-        fun clone(
-                experience: Int = this.experience, message_count: Int = this.message_count,
-                text_chat_time: Long = this.text_chat_time, voice_chat_time: Long = this.voice_chat_time): MemberData
-        {
-            return MemberData(experience, message_count, text_chat_time, voice_chat_time)
-        }
-
-        override fun equals(other: Any?): Boolean
-        {
-            if(other !is MemberData)
-                return false
-            return experience == other.experience &&
-                    message_count == other.message_count &&
-                    text_chat_time == other.text_chat_time &&
-                    voice_chat_time == other.voice_chat_time
-        }
-
-        override fun hashCode(): Int
-        {
-            var result = experience
-            result = 31 * result + message_count
-            result = 31 * result + text_chat_time.hashCode()
-            result = 31 * result + voice_chat_time.hashCode()
-            return result
-        }
-
-        fun isEmpty(): Boolean = experience == 0 && message_count == 0 && text_chat_time == 0L && voice_chat_time == 0L
-    }
 }
 
 fun Member.getMemberData(): MemberDataManager.MemberData = MemberDataManager.get(this)

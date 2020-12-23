@@ -33,7 +33,7 @@ object ColoursCommand: Command(
             args[0].toLowerCase() == "guild" ->
             {
                 index++
-                GuildColoursManager.get(event.getGuildOrNull()).clone()
+                GuildColoursManager.get(event.getGuildOrNull()).colours
             }
             // Specifies that only system colours should be shown
             args[0].toLowerCase() == "system" ->
@@ -41,7 +41,7 @@ object ColoursCommand: Command(
                 index++
                 systemColours
             }
-            args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).clone().plus(systemColours)
+            args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).colours.plus(systemColours)
             else ->
             {
                 event.channel.sendMessage(argumentInvalid(args[0], "page number")).queue()
@@ -50,7 +50,7 @@ object ColoursCommand: Command(
         }
         // If no arguments were given, both system colours and guild colours will be shown
         else
-            GuildColoursManager.get(event.getGuildOrNull()).clone().plus(systemColours)
+            GuildColoursManager.get(event.getGuildOrNull()).colours.plus(systemColours)
 
         // Gets the page number of the menu
         val page =

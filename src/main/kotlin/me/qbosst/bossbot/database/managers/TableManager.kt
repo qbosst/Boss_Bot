@@ -3,7 +3,7 @@ package me.qbosst.bossbot.database.managers
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.util.FixedCache
 
-abstract class Manager<K, V>
+abstract class TableManager<K, V>
 {
     private val cache = FixedCache<K ,V>(BotConfig.default_cache_size)
 
@@ -14,7 +14,7 @@ abstract class Manager<K, V>
      *
      *  @return The value returned from the database
      */
-    protected abstract fun getDatabase(key: K): V
+    protected abstract fun retrieve(key: K): V
 
     /**
      *  Method used to get a value from the cache
@@ -23,7 +23,7 @@ abstract class Manager<K, V>
      *
      *  @return The value in the cache. Null if the value is not cached.
      */
-    fun getCached(key: K): V? = cache.get(key)
+    fun get(key: K): V? = cache[key]
 
     /**
      *  Method used to get a value
@@ -32,15 +32,7 @@ abstract class Manager<K, V>
      *
      *  @return The value
      */
-    fun get(key: K): V
-    {
-        // Tries to get the cached value first, if not make a database call
-        return getCached(key) ?: kotlin.run {
-            val value = getDatabase(key)
-            cache.put(key, value)
-            return@run value
-        }
-    }
+    fun getOrRetrieve(key: K): V = get(key) ?: retrieve(key).also { value -> cache[key] = value }
 
     /**
      *  Removes a value from the cache

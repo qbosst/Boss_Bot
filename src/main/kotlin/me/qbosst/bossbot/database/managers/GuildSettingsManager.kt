@@ -1,7 +1,6 @@
 package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
-import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.TextChannel
@@ -9,32 +8,24 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.ZoneId
 
-object GuildSettingsManager: Manager<Long, GuildSettingsManager.GuildSettings>()
+object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettings>()
 {
-    private val EMPTY = GuildSettings()
-
-    override fun getDatabase(key: Long): GuildSettings
-    {
-        return transaction {
-            GuildSettingsTable
-                    .select { GuildSettingsTable.guild_id.eq(key) }
-                    .fetchSize(1)
-                    .map { row ->
-                        GuildSettings(
-                                suggestion_channel_id = row[GuildSettingsTable.suggestion_channel_id],
-                                message_logs_channel_id = row[GuildSettingsTable.message_logs_channel_id],
-                                voice_logs_channel_id = row[GuildSettingsTable.voice_logs_channel_id],
-                                dj_role_id = row[GuildSettingsTable.dj_role_id],
-                                zone_id = TimeUtil.zoneIdOf(row[GuildSettingsTable.zone_id]),
-                                prefix = row[GuildSettingsTable.prefix]
-                        )
-                    }
-                    .singleOrNull() ?: EMPTY
-
-        }
+    override fun retrieve(key: Long): GuildSettings = transaction {
+        GuildSettingsTable
+                .select { GuildSettingsTable.guild_id.eq(key) }
+                .fetchSize(1)
+                .map { row ->
+                    GuildSettings(
+                            suggestionChannelId = row[GuildSettingsTable.suggestion_channel_id],
+                            messageLogsChannelId = row[GuildSettingsTable.message_logs_channel_id],
+                            voiceLogsChannelId = row[GuildSettingsTable.voice_logs_channel_id],
+                            prefix = row[GuildSettingsTable.prefix]
+                    )
+                }
+                .singleOrNull() ?: GuildSettings()
     }
 
-    fun get(guild: Guild?) = get(guild?.idLong ?: -1)
+    fun get(guild: Guild?) = getOrRetrieve(guild?.idLong ?: -1)
 
     /**
      *  Updates a setting in the guild
@@ -45,56 +36,68 @@ object GuildSettingsManager: Manager<Long, GuildSettingsManager.GuildSettings>()
      *
      *  @return The old value of the setting
      */
-    fun <T> update(guild: Guild, column: Column<T>, value: T): T?
-    {
-        pull(guild.idLong)
-        return transaction {
-            val old = GuildSettingsTable
-                    .slice(column)
-                    .select { GuildSettingsTable.guild_id.eq(guild.idLong) }
-                    .fetchSize(1)
-                    .singleOrNull()
+    fun <T> update(guild: Guild, column: Column<T>, new: T): T? = transaction {
+        val key = guild.idLong
 
+        val old = if(isCached(key)) get(key)!![column] else GuildSettingsTable
+                .slice(column)
+                .select { GuildSettingsTable.guild_id.eq(key) }
+                .fetchSize(1)
+                .map { it[column] }
+                .singleOrNull()
+
+        if(old != new)
+        {
             if(old == null)
                 GuildSettingsTable.insert {
-                    it[guild_id] = guild.idLong
-                    it[column] = value
+                    it[guild_id] = key
+                    it[column] = new
                 }
             else
-                GuildSettingsTable.update({ GuildSettingsTable.guild_id.eq(guild.idLong )}) {
-                    it[column] = value
+                GuildSettingsTable.update ({ GuildSettingsTable.guild_id.eq(key) }) {
+                    it[column] = new
                 }
-
-            return@transaction old?.getOrNull(column)
+            pull(key)
         }
+        return@transaction old
     }
 
-    fun clear(guild: Guild)
-    {
-        transaction {
-            GuildSettingsTable.deleteWhere { GuildSettingsTable.guild_id.eq(guild.idLong) }
-        }
-        pull(guild.idLong)
+    fun clear(guild: Guild) = transaction {
+        GuildSettingsTable
+                .deleteWhere { GuildSettingsTable.guild_id.eq(guild.idLong) }
+                .also { pull(guild.idLong) }
     }
 
-    data class GuildSettings(
-            private val suggestion_channel_id: Long = 0L,
-            private val message_logs_channel_id: Long = 0L,
-            private val voice_logs_channel_id: Long = 0L,
+    data class GuildSettings(private val suggestionChannelId: Long = 0L,
+                             private val messageLogsChannelId: Long = 0L,
+                             private val voiceLogsChannelId: Long = 0L,
 
-            private val dj_role_id: Long = 0L,
-
-            val zone_id: ZoneId? = null,
-            val prefix: String? = null
+                             val zoneId: ZoneId? = null,
+                             val prefix: String? = null
     )
     {
-        fun getSuggestionChannel(guild: Guild): TextChannel? = guild.getTextChannelById(suggestion_channel_id)
+        fun getSuggestionChannel(guild: Guild): TextChannel? = guild.getTextChannelById(suggestionChannelId)
 
-        fun getMessageLogsChannel(guild: Guild): TextChannel? = guild.getTextChannelById(message_logs_channel_id)
+        fun getMessageLogsChannel(guild: Guild): TextChannel? = guild.getTextChannelById(messageLogsChannelId)
 
-        fun getVoiceLogsChannel(guild: Guild): TextChannel? = guild.getTextChannelById(voice_logs_channel_id)
+        fun getVoiceLogsChannel(guild: Guild): TextChannel? = guild.getTextChannelById(voiceLogsChannelId)
 
-        fun getDjRole(guild: Guild): Role? = guild.getRoleById(dj_role_id)
+        @Suppress("UNCHECKED_CAST")
+        operator fun <T> get(column: Column<T>): T = when(column)
+        {
+            GuildSettingsTable.prefix ->
+                prefix
+            GuildSettingsTable.message_logs_channel_id ->
+                messageLogsChannelId
+            GuildSettingsTable.voice_logs_channel_id ->
+                voiceLogsChannelId
+            GuildSettingsTable.suggestion_channel_id ->
+                suggestionChannelId
+            GuildSettingsTable.zone_id ->
+                zoneId
+            else ->
+                throw UnsupportedOperationException("This column does not have a corresponding attribute!")
+        } as T
     }
 }
 

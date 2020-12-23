@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.bot.commands.dev
 
-import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.database.managers.getSettings
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.util.TimeUtil
@@ -27,7 +26,7 @@ object BotStatisticsCommand : DeveloperCommand(
         val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
         val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
 
-        val zoneId = event.author.getUserData().zone_id ?: event.getGuildOrNull()?.getSettings()?.zone_id ?: ZoneId.systemDefault()
+        val zoneId = event.author.getUserData().zone_id ?: event.getGuildOrNull()?.getSettings()?.zoneId ?: ZoneId.systemDefault()
         val date = TimeUtil.dateTimeFormatter.format(startUp.atZoneSameInstant(zoneId))
 
         val embed = EmbedBuilder()

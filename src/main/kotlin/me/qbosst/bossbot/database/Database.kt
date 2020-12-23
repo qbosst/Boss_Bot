@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.database
 
-import me.qbosst.bossbot.database.managers.Manager
+import me.qbosst.bossbot.database.managers.TableManager
 import me.qbosst.bossbot.util.loadObjects
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -12,8 +12,8 @@ object Database
     private val tables: Collection<Table>
         get() = loadObjects("${this::class.java.`package`.name}.tables", Table::class.java)
 
-    private val managers: Collection<Manager<*, *>>
-        get() = loadObjects("${this::class.java.`package`.name}.managers", Manager::class.java)
+    private val managers: Collection<TableManager<*, *>>
+        get() = loadObjects("${this::class.java.`package`.name}.managers", TableManager::class.java)
 
     /**
      *  Connects to the database that the bot will be using to store data

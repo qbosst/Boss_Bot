@@ -157,7 +157,7 @@ object VoiceListener: EventListener
 
         val loop: Long = (total - data.secondsMuted) / seconds_until_eligible
         MemberDataManager.update(guild.idLong, userId) { old ->
-            return@update old.clone(
+            return@update old.copy(
                     experience = old.experience + (loop * xp_to_give).toInt(),
                     voice_chat_time = old.voice_chat_time + total
             )
