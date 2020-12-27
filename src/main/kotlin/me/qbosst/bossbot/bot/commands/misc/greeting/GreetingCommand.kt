@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.bot.commands.misc.greeting
 
-import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.commands.meta.setters.CommandStringSetter
 import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.managers.getUserData
@@ -17,7 +16,7 @@ object GreetingCommand: CommandStringSetter<User>(
         guildOnly = false,
         children = listOf(GreetingUpdateCommand),
         displayName = "Greeting Message",
-        maxLength = UserDataTable.max_greeting_length,
+        maxLength = UserDataTable.MAX_GREETING_LENGTH,
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )
 {

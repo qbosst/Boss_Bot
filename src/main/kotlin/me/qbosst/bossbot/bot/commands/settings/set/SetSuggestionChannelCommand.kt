@@ -16,7 +16,7 @@ object SetSuggestionChannelCommand: CommandTextChannelSetter(
 )
 {
     override fun set(key: Guild, value: TextChannel?): TextChannel? =
-            GuildSettingsManager.update(key, GuildSettingsTable.suggestion_channel_id, value?.idLong ?: 0)
+            GuildSettingsManager.update(key, GuildSettingsTable.suggestionChannelId, value?.idLong ?: 0)
                     ?.let { id -> key.getTextChannelById(id) }
 
     override fun get(key: Guild): TextChannel? = key.getSettings().getSuggestionChannel(key)

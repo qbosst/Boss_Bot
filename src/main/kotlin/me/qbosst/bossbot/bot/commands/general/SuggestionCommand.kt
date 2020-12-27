@@ -53,8 +53,8 @@ object SuggestionCommand: Command(
                 event.channel.sendMessage("Your suggestion is too long, please shorten it down to a maximum of $MAX_SUGGESTION_LENGTH characters.").queue()
             else
                 tc.sendMessage(suggestEmbed(event.member!!, args.joinToString(" ")).build()).queue {
-                    it.addReaction(THUMBS_UP).queue()
-                    it.addReaction(THUMBS_DOWN).queue()
+                    it.addReaction(Constants.THUMBS_UP).queue()
+                    it.addReaction(Constants.THUMBS_DOWN).queue()
 
                     event.message.delete().queue()
                     event.channel.sendMessage("Your suggestion has been posted!").queue()
@@ -80,7 +80,7 @@ object SuggestionCommand: Command(
             return
 
         // This checks if the reaction was made in the guild's suggestion channel and the reaction is a thumbs up or down
-        else if(listOf(THUMBS_UP, THUMBS_DOWN).contains(event.reactionEmote.name))
+        else if(listOf(Constants.THUMBS_UP, Constants.THUMBS_DOWN).contains(event.reactionEmote.name))
         {
             /*
             The purpose of waiting for at least a few seconds before editing the suggestion again is to prevent
@@ -107,7 +107,7 @@ object SuggestionCommand: Command(
                 //println("gotta wait another ${Duration.between(OffsetDateTime.now(), lastEdit[event.messageIdLong]!!.lastEdit.plusSeconds(seconds_until_next_edit)).seconds}")
             }
         }
-        else if(event.member?.isOwner == true && listOf(TICK, CROSS).contains(event.reactionEmote.name))
+        else if(event.member?.isOwner == true && listOf(Constants.TICK, Constants.CROSS).contains(event.reactionEmote.name))
         {
             event.channel.retrieveMessageById(event.messageIdLong).queue()
             { message ->
@@ -118,7 +118,7 @@ object SuggestionCommand: Command(
                         message.delete().queue()
                         {
                             val sb = StringBuilder("You suggestion of `${message.embeds[0].description!!}` has been ")
-                            if(event.reactionEmote.name == TICK)
+                            if(event.reactionEmote.name == Constants.TICK)
                                 sb.append("accepted.")
                             else
                                 sb.append("declined.")
@@ -134,8 +134,8 @@ object SuggestionCommand: Command(
         event.channel.retrieveMessageById(event.messageIdLong).queue { message ->
             if(isSuggestionEmbed(message))
             {
-                val up = message.reactions.firstOrNull { itt -> itt.reactionEmote.name == THUMBS_UP }?.count?.minus(1) ?: return@queue
-                val down = message.reactions.firstOrNull { itt -> itt.reactionEmote.name == THUMBS_DOWN }?.count?.minus(1) ?: return@queue
+                val up = message.reactions.firstOrNull { itt -> itt.reactionEmote.name == Constants.THUMBS_UP }?.count?.minus(1) ?: return@queue
+                val down = message.reactions.firstOrNull { itt -> itt.reactionEmote.name == Constants.THUMBS_DOWN }?.count?.minus(1) ?: return@queue
                 val total = up + down
 
                 val colour: Color = when

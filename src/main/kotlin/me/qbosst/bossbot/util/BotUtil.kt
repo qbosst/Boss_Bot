@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.util
 
-import me.qbosst.bossbot.bot.ZERO_WIDTH
+import me.qbosst.bossbot.bot.Constants
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.managers.getSettings
 import net.dv8tion.jda.api.entities.*
@@ -88,7 +88,7 @@ fun String.maxLength(maxLength: Int = 32, ending: String = "..."): String =
  *
  *  @return Safe string that cannot mention anyone
  */
-fun String.makeSafe(): String = replace("@", "@$ZERO_WIDTH")
+fun String.makeSafe(): String = replace("@", "@${Constants.ZERO_WIDTH}")
 
 /**
  *  Gets the guild from the generic message event. Null if the message was not from a guild

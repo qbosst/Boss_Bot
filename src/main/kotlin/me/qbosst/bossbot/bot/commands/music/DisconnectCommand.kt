@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.music
 
-import me.qbosst.bossbot.bot.TICK
+import me.qbosst.bossbot.bot.Constants
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object DisconnectCommand: MusicCommand(
@@ -12,6 +12,6 @@ object DisconnectCommand: MusicCommand(
     override fun run(event: MessageReceivedEvent, args: List<String>)
     {
         event.guild.audioManager.closeAudioConnection()
-        event.message.addReaction(TICK).queue()
+        event.message.addReaction(Constants.TICK).queue()
     }
 }

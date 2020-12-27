@@ -16,7 +16,7 @@ object SetMessageLogsChannelCommand: CommandTextChannelSetter(
 )
 {
     override fun set(key: Guild, value: TextChannel?): TextChannel? =
-            GuildSettingsManager.update(key, GuildSettingsTable.message_logs_channel_id, value?.idLong ?: 0)
+            GuildSettingsManager.update(key, GuildSettingsTable.messageLogsChannelId, value?.idLong ?: 0)
                     ?.let { id -> key.getTextChannelById(id) }
 
     override fun get(key: Guild): TextChannel? = key.getSettings().getMessageLogsChannel(key)

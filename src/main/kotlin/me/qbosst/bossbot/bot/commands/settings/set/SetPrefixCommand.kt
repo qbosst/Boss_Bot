@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.Guild
 object SetPrefixCommand: CommandGuildStringSetter(
         "prefix",
         displayName = "Prefix",
-        maxLength = GuildSettingsTable.max_prefix_length
+        maxLength = GuildSettingsTable.MAX_PREFIX_LENGTH
 )
 {
     override fun get(key: Guild): String? = key.getSettings().prefix

@@ -12,7 +12,7 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
     override fun retrieve(key: Long): GuildColours = transaction {
         GuildColours(
                 GuildColoursTable
-                        .select { GuildColoursTable.guild_id.eq(key) }
+                        .select { GuildColoursTable.guildId.eq(key) }
                         .map { row -> Pair(
                                 row[GuildColoursTable.name],
                                 Color(
@@ -44,12 +44,12 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
         val key = guild.idLong
         val exists = if(isCached(key)) (name in get(key)!!) else GuildColoursTable
                 .slice(GuildColoursTable.name)
-                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .select { GuildColoursTable.guildId.eq(key) and GuildColoursTable.name.eq(name) }
                 .map { true }.singleOrNull() ?: false
 
         if(exists)
             GuildColoursTable
-                    .deleteWhere { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                    .deleteWhere { GuildColoursTable.guildId.eq(key) and GuildColoursTable.name.eq(name) }
                     .also { pull(key) }
 
         return@transaction exists
@@ -68,7 +68,7 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
         val key = guild.idLong
         val old: Color? = if(isCached(key)) get(key)!![name] else GuildColoursTable
                 .slice(GuildColoursTable.red, GuildColoursTable.green, GuildColoursTable.blue, GuildColoursTable.alpha)
-                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .select { GuildColoursTable.guildId.eq(key) and GuildColoursTable.name.eq(name) }
                 .map { row -> Color(
                         row[GuildColoursTable.red],
                         row[GuildColoursTable.green],
@@ -79,7 +79,7 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
 
         if(old != null && old != new)
             GuildColoursTable
-                    .update ({ GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }) {
+                    .update ({ GuildColoursTable.guildId.eq(key) and GuildColoursTable.name.eq(name) }) {
                         it[red] = new.red
                         it[green] = new.green
                         it[blue] = new.blue
@@ -103,13 +103,13 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
         val key = guild.idLong
         val exists: Boolean = if(isCached(key)) (name in get(key)!!) else GuildColoursTable
                 .slice(GuildColoursTable.name)
-                .select { GuildColoursTable.guild_id.eq(key) and GuildColoursTable.name.eq(name) }
+                .select { GuildColoursTable.guildId.eq(key) and GuildColoursTable.name.eq(name) }
                 .map { true }.singleOrNull() ?: false
 
         if(!exists)
             GuildColoursTable
                     .insert {
-                        it[guild_id] = key
+                        it[guildId] = key
                         it[GuildColoursTable.name] = name
                         it[red] = colour.red
                         it[green] = colour.green
@@ -123,7 +123,7 @@ object GuildColoursManager: TableManager<Long, GuildColoursManager.GuildColours>
 
     fun clear(guild: Guild) = transaction {
         GuildColoursTable
-                .deleteWhere { GuildColoursTable.guild_id.eq(guild.idLong) }
+                .deleteWhere { GuildColoursTable.guildId.eq(guild.idLong) }
                 .also { pull(guild.idLong) }
     }
 

@@ -39,11 +39,11 @@ object LeaderboardCommand : Command(
                     // Gets the results of all the stats
                     val results = MemberDataTable
                             // Gets every single member from the database and gets that specific stat
-                            .slice(type.column, MemberDataTable.user_id)
-                            .select { MemberDataTable.guild_id.eq(event.guild.idLong) }
+                            .slice(type.column, MemberDataTable.userId)
+                            .select { MemberDataTable.guildId.eq(event.guild.idLong) }
 
                             // Formats the stat list
-                            .map { row -> MutablePair(row[MemberDataTable.user_id], row[type.column]) }
+                            .map { row -> MutablePair(row[MemberDataTable.userId], row[type.column]) }
                             .format(event.guild, type)
                             .map { it.plus("\n") }
 
@@ -141,7 +141,7 @@ object LeaderboardCommand : Command(
      */
     private enum class Stats(val matcher: Regex, val column: Column<*>, val example: String): IStats
     {
-        MESSAGE_COUNT(Regex("(message|msg)s?"), MemberDataTable.message_count, "message")
+        MESSAGE_COUNT(Regex("(message|msg)s?"), MemberDataTable.messageCount, "message")
         {
             override fun format(guild: Guild, data: List<MutablePair<Long, Any?>>): List<String>
             {
@@ -156,7 +156,7 @@ object LeaderboardCommand : Command(
                         .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${record.right} messages sent" }
             }
         },
-        TEXT_CHAT(Regex("t(ext)?c(hat)?"), MemberDataTable.text_chat_time, "textchat")
+        TEXT_CHAT(Regex("t(ext)?c(hat)?"), MemberDataTable.textChatTime, "textchat")
         {
             override fun format(guild: Guild, data: List<MutablePair<Long, Any?>>): List<String>
             {
@@ -166,7 +166,7 @@ object LeaderboardCommand : Command(
                         .mapIndexed { index, record -> "${index+1}. <@${record.left}> -> ${TimeUtil.timeToString(record.right)}"}
             }
         },
-        VOICE_CHAT(Regex("v(oice)?c(hat)?"), MemberDataTable.voice_chat_time, "voicechat")
+        VOICE_CHAT(Regex("v(oice)?c(hat)?"), MemberDataTable.voiceChatTime, "voicechat")
         {
             override fun format(guild: Guild, data: List<MutablePair<Long, Any?>>): List<String>
             {

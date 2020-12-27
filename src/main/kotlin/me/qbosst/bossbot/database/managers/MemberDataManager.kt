@@ -12,14 +12,14 @@ object MemberDataManager: TableManager<Pair<Long, Long>, MemberDataManager.Membe
 {
     override fun retrieve(key: Pair<Long, Long>): MemberData = transaction {
         MemberDataTable
-                .select { MemberDataTable.guild_id.eq(key.first) and MemberDataTable.user_id.eq(key.second) }
+                .select { MemberDataTable.guildId.eq(key.first) and MemberDataTable.userId.eq(key.second) }
                 .fetchSize(1)
                 .map { row ->
                     MemberData(
                             experience = row[MemberDataTable.experience],
-                            message_count = row[MemberDataTable.message_count],
-                            text_chat_time = row[MemberDataTable.text_chat_time],
-                            voice_chat_time = row[MemberDataTable.voice_chat_time]
+                            message_count = row[MemberDataTable.messageCount],
+                            text_chat_time = row[MemberDataTable.textChatTime],
+                            voice_chat_time = row[MemberDataTable.voiceChatTime]
                     )
                 }
                 .singleOrNull() ?: MemberData()
@@ -42,14 +42,14 @@ object MemberDataManager: TableManager<Pair<Long, Long>, MemberDataManager.Membe
         transaction {
             // Gets the old member data before the update. Tries to pull it from cache before querying the database for it to reduce database calls
             val old: MemberData? = pull(genKey(guildId, userId)) ?: MemberDataTable
-                    .select { MemberDataTable.guild_id.eq(guildId) and MemberDataTable.user_id.eq(userId) }
+                    .select { MemberDataTable.guildId.eq(guildId) and MemberDataTable.userId.eq(userId) }
                     .fetchSize(1)
                     .map { row ->
                         MemberData(
                                 experience = row[MemberDataTable.experience],
-                                message_count = row[MemberDataTable.message_count],
-                                text_chat_time = row[MemberDataTable.text_chat_time],
-                                voice_chat_time = row[MemberDataTable.voice_chat_time]
+                                message_count = row[MemberDataTable.messageCount],
+                                text_chat_time = row[MemberDataTable.textChatTime],
+                                voice_chat_time = row[MemberDataTable.voiceChatTime]
                         )
                     }
                     .singleOrNull()
@@ -64,28 +64,28 @@ object MemberDataManager: TableManager<Pair<Long, Long>, MemberDataManager.Membe
                 // If the member doesn't have a record, create one and set the values
                 old == null ->
                     MemberDataTable.insert {
-                        it[guild_id] = guildId
-                        it[user_id] = userId
+                        it[this.guildId] = guildId
+                        it[this.userId] = userId
                         it[experience] = updated.experience
-                        it[message_count] = updated.message_count
-                        it[text_chat_time] = updated.text_chat_time
-                        it[voice_chat_time] = updated.voice_chat_time
+                        it[messageCount] = updated.message_count
+                        it[textChatTime] = updated.text_chat_time
+                        it[voiceChatTime] = updated.voice_chat_time
                     }
 
                 // Else update the values that have changed
                 else ->
-                    MemberDataTable.update ({ MemberDataTable.guild_id.eq(guildId) and MemberDataTable.user_id.eq(userId) }) {
+                    MemberDataTable.update ({ MemberDataTable.guildId.eq(guildId) and MemberDataTable.userId.eq(userId) }) {
                         if(old.experience != updated.experience)
                             it[experience] = updated.experience
 
                         if(old.message_count != updated.message_count)
-                            it[message_count] = updated.message_count
+                            it[messageCount] = updated.message_count
 
                         if(old.text_chat_time != updated.text_chat_time)
-                            it[text_chat_time] = updated.text_chat_time
+                            it[textChatTime] = updated.text_chat_time
 
                         if(old.voice_chat_time != updated.voice_chat_time)
-                            it[voice_chat_time] = updated.voice_chat_time
+                            it[voiceChatTime] = updated.voice_chat_time
                     }
             }
 

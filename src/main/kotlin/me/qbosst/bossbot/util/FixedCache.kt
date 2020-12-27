@@ -19,7 +19,8 @@ class FixedCache<K, V>(size: Int)
     private val map: MutableMap<K ,V>
     private val keys: Array<K>
 
-    init {
+    init
+    {
         // Checks if cache size is less than 1, if so throw an error since we cannot cache 0 or less values
         if(size < 1)
             throw IllegalArgumentException("Cache size must at least be 1!")
@@ -51,13 +52,14 @@ class FixedCache<K, V>(size: Int)
      *
      * @param cache The cache to transfer all the data from
      */
-    constructor(size: Int, cache: FixedCache<K, V>): this(size) {
+    constructor(size: Int, cache: FixedCache<K, V>): this(size)
+    {
         if(cache.size >= size)
             throw IllegalArgumentException("New cache size cannot be smaller or equal to the old cache!")
 
         map.putAll(cache.map)
-        cache.keys.withIndex().forEach {
-            keys[it.index] = it.value
+        cache.keys.withIndex().forEach { (index, value) ->
+            keys[index] = value
         }
 
         currentIndex = (currentIndex + 1) % this.size

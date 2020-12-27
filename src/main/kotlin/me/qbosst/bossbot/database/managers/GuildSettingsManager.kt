@@ -3,11 +3,9 @@ package me.qbosst.bossbot.database.managers
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
 import me.qbosst.bossbot.entities.database.upsert
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.TextChannel
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.ZoneId
 
 object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettings>()
 {
@@ -17,9 +15,9 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
                 .fetchSize(1)
                 .map { row ->
                     GuildSettings(
-                            suggestionChannelId = row[GuildSettingsTable.suggestion_channel_id],
-                            messageLogsChannelId = row[GuildSettingsTable.message_logs_channel_id],
-                            voiceLogsChannelId = row[GuildSettingsTable.voice_logs_channel_id],
+                            suggestionChannelId = row[GuildSettingsTable.suggestionChannelId],
+                            messageLogsChannelId = row[GuildSettingsTable.messageLogsChannelId],
+                            voiceLogsChannelId = row[GuildSettingsTable.voiceLogsChannelId],
 
                             prefix = row[GuildSettingsTable.prefix]
                     )
@@ -83,11 +81,11 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
         {
             GuildSettingsTable.prefix ->
                 prefix
-            GuildSettingsTable.message_logs_channel_id ->
+            GuildSettingsTable.messageLogsChannelId ->
                 messageLogsChannelId
-            GuildSettingsTable.voice_logs_channel_id ->
+            GuildSettingsTable.voiceLogsChannelId ->
                 voiceLogsChannelId
-            GuildSettingsTable.suggestion_channel_id ->
+            GuildSettingsTable.suggestionChannelId ->
                 suggestionChannelId
             else ->
                 throw UnsupportedOperationException("This column does not have a corresponding attribute!")

@@ -14,7 +14,7 @@ object TimeSetCommand: CommandSetter<User, String>(
         displayName = "Zone Id"
 )
 {
-    override fun set(key: User, value: String?): String? = UserDataManager.update(key, UserDataTable.zone_id, value)
+    override fun set(key: User, value: String?): String? = UserDataManager.update(key, UserDataTable.zoneId, value)
 
     override fun get(key: User): String? = key.getUserData().zone_id?.id
 

@@ -26,7 +26,7 @@ object GreetingUpdateCommand : Command(
                 if (args.size > 1)
                 {
                     val message = args.drop(1).joinToString(" ")
-                    if (message.length < UserDataTable.max_greeting_length)
+                    if (message.length < UserDataTable.MAX_GREETING_LENGTH)
                     {
                         UserDataManager.update(user, UserDataTable.greeting, message)
                         event.channel.sendMessage("$user greeting has been updated").queue()

@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.bot.commands.music
 
-import me.qbosst.bossbot.bot.TICK
+import me.qbosst.bossbot.bot.Constants
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object SkipCommand: MusicCommand(
@@ -16,7 +16,7 @@ object SkipCommand: MusicCommand(
         else
         {
             handler.nextTrack()
-            event.message.addReaction(TICK).queue()
+            event.message.addReaction(Constants.TICK).queue()
         }
     }
 }
