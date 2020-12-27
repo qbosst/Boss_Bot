@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object PingCommand : Command(
         "ping",
         description = "Checks bots ping",
-        usage_raw = listOf(""),
+        usages = listOf(""),
         guildOnly = false
 )
 {

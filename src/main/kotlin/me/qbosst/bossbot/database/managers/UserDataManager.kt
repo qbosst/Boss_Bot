@@ -2,6 +2,7 @@ package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
 import me.qbosst.bossbot.database.tables.UserDataTable
+import me.qbosst.bossbot.entities.database.upsert
 import me.qbosst.bossbot.util.TimeUtil
 import net.dv8tion.jda.api.entities.User
 import org.jetbrains.exposed.sql.Column
@@ -39,46 +40,15 @@ object UserDataManager: TableManager<Long, UserDataManager.UserData>()
 
         if(old != new)
         {
-            if(old == null)
-                UserDataTable.insert {
-                    it[user_id] = key
-                    it[column] = new
-                }
-            else
-                UserDataTable.update ({ UserDataTable.user_id.eq(key) }) {
-                    it[column] = new
-                }
+            UserDataTable.upsert {
+                it[user_id] = key
+                it[column] = new
+            }
             pull(key)
         }
 
         return@transaction old
     }
-    /*
-    {
-        pull(user.idLong)
-        return transaction {
-            val old = UserDataTable
-                    .slice(column)
-                    .select { UserDataTable.user_id.eq(user.idLong) }
-                    .fetchSize(1)
-                    .singleOrNull()
-
-            if(old == null)
-                UserDataTable.insert {
-                    it[user_id] = user.idLong
-                    it[column] = value
-                }
-
-            else
-                UserDataTable.update({ UserDataTable.user_id.eq(user.idLong) }) {
-                    it[column] = value
-                }
-
-            return@transaction old?.getOrNull(column)
-        }
-    }
-
-     */
 
     data class UserData(
             val greeting: String? = null,
@@ -91,7 +61,7 @@ object UserDataManager: TableManager<Long, UserDataManager.UserData>()
             UserDataTable.greeting ->
                 greeting
             UserDataTable.zone_id ->
-                zone_id
+                zone_id?.id
             else ->
                 throw UnsupportedOperationException("This column does not have a corresponding attribute!")
         } as T

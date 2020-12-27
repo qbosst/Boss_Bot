@@ -14,8 +14,8 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object StatsCommand : Command(
         "stats",
         description = "Shows a member's stats",
-        usage_raw = listOf("[@user]"),
-        examples_raw = listOf("", "@boss"),
+        usages = listOf("[@user]"),
+        examples = listOf("", "@boss"),
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 ) {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

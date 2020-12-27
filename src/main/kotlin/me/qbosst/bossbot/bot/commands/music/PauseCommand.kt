@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object PauseCommand: MusicCommand(
         "pause",
         "Pauses the currently playing song",
-        usage = listOf("[true|false]")
+        usages = listOf("[true|false]")
 )
 {
     override fun run(event: MessageReceivedEvent, args: List<String>)

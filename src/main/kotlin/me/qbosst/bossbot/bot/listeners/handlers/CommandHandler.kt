@@ -42,7 +42,7 @@ class CommandHandler
         var index = 1
         while (args.size > index)
         {
-            val new = command.getCommand(args[index]) ?: break
+            val new = command[(args[index])] ?: break
             command = new
             index++
         }
@@ -89,15 +89,15 @@ class CommandHandler
         }
         catch (e: Exception)
         {
-            log.error("An error has occurred while trying to execute command `{}` with the following args `{}`" +
-                    " and the following flags `{}`", command.fullName, args, flags)
+            log.error("An error has occurred while trying to execute command '${command.fullName}'" +
+                    " with the following args '${args}' and the following flags '${flags}'", e)
             event.channel.sendMessage("An error has occurred, the developer has been notified.").queue()
         }
         return true
     }
 
     operator fun plus(command: Command) = apply {
-        _commands[command.name.toLowerCase()] = command
+        _commands[command.label.toLowerCase()] = command
 
         command.aliases.forEach { alias ->
             commandAlias[alias.toLowerCase()] = command

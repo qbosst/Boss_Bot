@@ -11,7 +11,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object PlayCommand: MusicCommand(
         "play",
         "Plays a tracks from a url or keywords provided",
-        usage = listOf("<track url>", "<track name>"),
+        usages = listOf("<track url>", "<track name>"),
         examples = listOf(
                 "https://open.spotify.com/track/3DlgDXIYtnWtJKiB8bZQMv",
                 "spotify:track:7Es2OBtD2DPHfz6gqSWH8Z",

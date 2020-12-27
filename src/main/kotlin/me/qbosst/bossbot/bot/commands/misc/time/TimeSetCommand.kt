@@ -1,37 +1,42 @@
 package me.qbosst.bossbot.bot.commands.misc.time
 
-import me.qbosst.bossbot.bot.argumentInvalid
-import me.qbosst.bossbot.bot.argumentMissing
-import me.qbosst.bossbot.bot.commands.meta.Command
+import me.qbosst.bossbot.bot.commands.meta.CommandSetter
 import me.qbosst.bossbot.database.managers.UserDataManager
+import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.TimeUtil.zoneIdOf
+import me.qbosst.bossbot.util.maxLength
+import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object TimeSetCommand: Command(
+object TimeSetCommand: CommandSetter<User, String>(
         "set",
-        description = "Sets the time zone that you are in",
-        usage_raw = listOf("<zoneId>"),
-        guildOnly = false
+        displayName = "Zone Id"
 )
 {
-    override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
+    override fun set(key: User, value: String?): String? = UserDataManager.update(key, UserDataTable.zone_id, value)
+
+    override fun get(key: User): String? = key.getUserData().zone_id?.id
+
+    override fun getValue(event: MessageReceivedEvent, args: List<String>, key: User): String?
     {
-        if(args.isNotEmpty())
+        val query = args.joinToString(" ")
+        val results = TimeUtil.filterZones(query)
+        println(results)
+        return when
         {
-            val name = args.joinToString(" ")
-            val zoneId = TimeUtil.filterZones(name).firstOrNull()
-            if(zoneId == null)
-                event.channel.sendMessage(argumentInvalid(args[0], "time zone")).queue()
-            else
+            results.isEmpty() ->
             {
-                val old = UserDataManager.update(event.author, UserDataTable.zone_id, zoneId.id)
-                val oldZoneId = zoneIdOf(old)
-                event.channel.sendMessage("Your timezone has been updated from `${if(oldZoneId == null) "none" else oldZoneId.id}` to `${zoneId.id}`").queue()
+                onUnsuccessfulSet(event.channel, "Could not find any zone id matching `${query.maxLength(32)}`")
+                null
             }
+            results.size == 1 ->
+                results[0].id
+            else ->
+                results[0].id // TODO make a role menu that shows up
         }
-        else
-            event.channel.sendMessage(argumentMissing("zone")).queue()
     }
+
+    override fun getKey(event: MessageReceivedEvent, args: List<String>): User = event.author
+
 }

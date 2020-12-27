@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.bot.userNotMentioned
 import me.qbosst.bossbot.util.getUserByString
@@ -8,13 +9,14 @@ import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object ReadDirectMessagesCommand : DeveloperCommand(
+object ReadDirectMessagesCommand : Command(
         "readdms",
         description = "Shows message history between the bot and a user in direct messages",
-        usage = listOf("@user"),
+        usages = listOf("@user"),
         examples = listOf("@boss"),
         botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES),
-        guildOnly = false
+        guildOnly = false,
+        developerOnly = true
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

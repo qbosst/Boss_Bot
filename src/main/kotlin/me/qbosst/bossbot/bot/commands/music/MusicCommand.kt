@@ -8,19 +8,23 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.VoiceChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-abstract class MusicCommand(name: String,
+abstract class MusicCommand(label: String,
                             description: String = "none",
-                            usage: List<String> = listOf(),
-                            examples: List<String> = listOf(),
-                            aliases: List<String> = listOf(),
-                            userPermissions: List<Permission> = listOf(),
-                            botPermissions: List<Permission> = listOf(),
+                            usages: Collection<String> = listOf(),
+                            examples: Collection<String> = listOf(),
+                            aliases: Collection<String> = listOf(),
+                            guildOnly: Boolean = true,
+                            developerOnly: Boolean = false,
+                            userPermissions: Collection<Permission> = listOf(),
+                            botPermissions: Collection<Permission> = listOf(),
+                            children: Collection<Command> = listOf(),
                             private val autoConnect: Boolean = false,
                             private val requiresSelfConnected: Boolean = true,
                             private val requiresMemberConnected: Boolean = true
 
 
-): Command(name, description, usage, examples, aliases, true, userPermissions, if(autoConnect) botPermissions.plus(Permission.VOICE_CONNECT) else botPermissions)
+): Command(label, description, usages, examples, aliases, guildOnly, developerOnly, userPermissions,
+        if(autoConnect) botPermissions.plus(Permission.VOICE_CONNECT) else botPermissions, children)
 {
 
     final override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

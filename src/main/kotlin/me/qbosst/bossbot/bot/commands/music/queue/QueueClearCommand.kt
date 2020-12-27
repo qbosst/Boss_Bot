@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object QueueClearCommand: MusicCommand(
         "clear",
         "Clears the whole queue",
-        usage = listOf("[clearCurrentTrack]"),
+        usages = listOf("[clearCurrentTrack]"),
         examples = listOf("true", "false")
 )
 {

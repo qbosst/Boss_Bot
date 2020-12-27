@@ -3,20 +3,22 @@ package me.qbosst.bossbot.bot.commands.dev
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.argumentMissing
+import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object ActivityCommand : DeveloperCommand(
+object ActivityCommand : Command(
         "activity",
         description = "Sets the self-user's activity",
-        usage = listOf("<activity> <description> | [url]"),
+        usages = listOf("<activity> <description> | [url]"),
         examples = listOf(
                 "${Activity.ActivityType.WATCHING.name.toLowerCase()} a sports event",
                 "${Activity.ActivityType.LISTENING.name.toLowerCase()} to music",
                 "${Activity.ActivityType.DEFAULT.name.toLowerCase()} fortnite",
                 "${Activity.ActivityType.STREAMING.name.toLowerCase()} minecraft | https://www.twitch.tv/ninja"
         ),
-        guildOnly = false
+        guildOnly = false,
+        developerOnly = true
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

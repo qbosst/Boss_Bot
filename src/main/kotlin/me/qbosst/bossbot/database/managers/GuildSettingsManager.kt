@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.database.managers
 
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
+import me.qbosst.bossbot.entities.database.upsert
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.TextChannel
@@ -19,6 +20,7 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
                             suggestionChannelId = row[GuildSettingsTable.suggestion_channel_id],
                             messageLogsChannelId = row[GuildSettingsTable.message_logs_channel_id],
                             voiceLogsChannelId = row[GuildSettingsTable.voice_logs_channel_id],
+
                             prefix = row[GuildSettingsTable.prefix]
                     )
                 }
@@ -48,15 +50,10 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
 
         if(old != new)
         {
-            if(old == null)
-                GuildSettingsTable.insert {
-                    it[guild_id] = key
-                    it[column] = new
-                }
-            else
-                GuildSettingsTable.update ({ GuildSettingsTable.guild_id.eq(key) }) {
-                    it[column] = new
-                }
+            GuildSettingsTable.upsert(GuildSettingsTable.guild_id) {
+                it[guild_id] = key
+                it[column] = new
+            }
             pull(key)
         }
         return@transaction old
@@ -72,7 +69,6 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
                              private val messageLogsChannelId: Long = 0L,
                              private val voiceLogsChannelId: Long = 0L,
 
-                             val zoneId: ZoneId? = null,
                              val prefix: String? = null
     )
     {
@@ -93,8 +89,6 @@ object GuildSettingsManager: TableManager<Long, GuildSettingsManager.GuildSettin
                 voiceLogsChannelId
             GuildSettingsTable.suggestion_channel_id ->
                 suggestionChannelId
-            GuildSettingsTable.zone_id ->
-                zoneId
             else ->
                 throw UnsupportedOperationException("This column does not have a corresponding attribute!")
         } as T

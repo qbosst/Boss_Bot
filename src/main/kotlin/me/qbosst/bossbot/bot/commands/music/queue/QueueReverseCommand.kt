@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object QueueReverseCommand: MusicCommand(
         "reverse",
         "Reverses the queue",
-        usage = listOf("[reverseCurrentTrack]"),
+        usages = listOf("[reverseCurrentTrack]"),
         examples = listOf("true", "false")
 )
 {

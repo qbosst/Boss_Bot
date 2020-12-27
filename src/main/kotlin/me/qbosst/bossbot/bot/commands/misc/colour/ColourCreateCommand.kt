@@ -16,7 +16,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object ColourCreateCommand: Command(
         "create",
         "Creates a custom colour for your guild",
-        usage_raw = listOf("<hex value> <name>"),
+        usages = listOf("<hex value> <name>"),
         userPermissions = listOf(Permission.MANAGE_EMOTES, Permission.MANAGE_SERVER),
         guildOnly = true
 )

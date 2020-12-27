@@ -11,19 +11,19 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.util.concurrent.CompletableFuture
 
-abstract class DeepAiCommand(
-        name: String,
-        description: String = "none",
-        usage: List<String> = listOf(),
-        examples: List<String> = listOf(),
-        aliases: List<String> = listOf(),
-        guildOnly: Boolean = true,
-        userPermissions: List<Permission> = listOf(),
-        botPermissions: List<Permission> = listOf(),
-        private val url: String
-): Command(
-        name, description, usage, examples, aliases, guildOnly, userPermissions, botPermissions
-)
+abstract class DeepAiCommand(label: String,
+                             description: String = "none",
+                             usages: Collection<String> = listOf(),
+                             examples: Collection<String> = listOf(),
+                             aliases: Collection<String> = listOf(),
+                             guildOnly: Boolean = true,
+                             developerOnly: Boolean = false,
+                             userPermissions: Collection<Permission> = listOf(),
+                             botPermissions: Collection<Permission> = listOf(),
+                             children: Collection<Command> = listOf(),
+                             private val url: String
+): Command(label, description, usages, examples, aliases, guildOnly, developerOnly, userPermissions, botPermissions,
+        children)
 {
     final override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {

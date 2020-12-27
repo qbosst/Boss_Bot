@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.bot.commands.dev
 
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -10,12 +11,13 @@ import javax.script.ScriptEngineManager
 /**
  *  Command used to convert execute code in real time from a string
  */
-object EvalCommand : DeveloperCommand(
+object EvalCommand: Command(
         "eval",
         description = "Converts your input into code and executes it",
-        usage = listOf("<code>"),
+        usages = listOf("<code>"),
         examples = listOf("channel.sendMessage(\"Hello!\").queue()"),
-        guildOnly = false
+        guildOnly = false,
+        developerOnly = true
 )
 {
     // The engine that is used to translate the string into code

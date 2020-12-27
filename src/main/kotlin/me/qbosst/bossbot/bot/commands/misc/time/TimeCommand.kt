@@ -13,16 +13,12 @@ import java.time.ZonedDateTime
 object TimeCommand: Command(
         "time",
         "Shows the time that users are in",
-        usage_raw = listOf("[@user|zoneId] [duration]"),
-        examples_raw = listOf("", "@boss", "@boss 3h", "europe/london -30 minutes", "us/eastern"),
-        guildOnly = false
+        usages = listOf("[@user|zoneId] [duration]"),
+        examples = listOf("", "@boss", "@boss 3h", "europe/london -30 minutes", "us/eastern"),
+        guildOnly = false,
+        children = listOf(TimeSetCommand, TimeZonesCommand)
 )
 {
-    init
-    {
-        addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
-    }
-
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())

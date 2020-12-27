@@ -1,39 +1,35 @@
 package me.qbosst.bossbot.bot.commands.settings.set
 
-import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.meta.SetterCommand
-import me.qbosst.bossbot.util.loadObjectOrClass
+import me.qbosst.bossbot.bot.commands.meta.CommandSetter
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object SetCommand: Command(
         "set",
-        userPermissions = listOf(Permission.ADMINISTRATOR)
+        userPermissions = listOf(Permission.ADMINISTRATOR),
+        children = listOf(SetPrefixCommand, SetMessageLogsChannelCommand, SetVoiceLogsChannelCommand,
+                SetSuggestionChannelCommand)
 )
 {
-    init
-    {
-        val commands = loadObjectOrClass(BossBot::class.java.`package`.name, SetterCommand::class.java)
-                .sortedBy { it.displayName }
-        addCommands(commands)
-    }
 
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
-        val embed = EmbedBuilder()
+        val builder = EmbedBuilder()
                 .setColor(event.guild.selfMember.colorRaw)
-                .setTitle(event.guild.name + (if(event.guild.name.endsWith('s')) "'" else "'s") + " Settings")
+                .setTitle("${event.guild.name} Settings")
+                .apply {
+                    children.mapNotNull { child -> child as? CommandSetter<Guild, Any> }
+                            .forEach { child ->
+                                addField(child.displayName, child.getString(child.get(event.guild)), true)
+                            }
 
-        @Suppress("UNCHECKED_CAST")
-        (getCommands() as Collection<SetterCommand<Any>>)
-                .forEach {
-                    embed.addField(it.displayName, it.getString(it.get(event.guild)), true)
+                    if(fields.size % 3 == 0)
+                        addBlankField(true)
                 }
-        if(embed.fields.size % 3 == 2)
-            embed.addBlankField(true)
 
-        event.channel.sendMessage(embed.build()).queue()
+        event.channel.sendMessage(builder.build()).queue()
     }
 }

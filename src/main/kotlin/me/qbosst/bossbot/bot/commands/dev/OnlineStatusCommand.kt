@@ -2,15 +2,17 @@ package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.argumentInvalid
+import me.qbosst.bossbot.bot.commands.meta.Command
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object OnlineStatusCommand : DeveloperCommand(
+object OnlineStatusCommand : Command(
         "onlinestatus",
         description = "Sets the self-user's online status",
-        usage = listOf("<online status>"),
+        usages = listOf("<online status>"),
         examples = enumValues<OnlineStatus>().map { it.name.toLowerCase() },
-        guildOnly = false
+        guildOnly = false,
+        developerOnly = true
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

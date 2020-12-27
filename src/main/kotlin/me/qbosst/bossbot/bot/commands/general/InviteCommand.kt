@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object InviteCommand : Command(
         "invite",
         description = "Provides the invite link used to invite boss bot",
-        usage_raw = listOf(""),
+        usages = listOf(""),
         guildOnly = false
 )
 {

@@ -14,7 +14,7 @@ import org.json.JSONArray
 object EmbedGetCommand: Command(
         "get",
         description = "Gets the embeds from a message",
-        usage_raw = listOf("<message id> [#channel]"),
+        usages = listOf("<message id> [#channel]"),
         botPermissions = listOf(Permission.MESSAGE_ATTACH_FILES, Permission.MESSAGE_HISTORY)
 )
 {

@@ -2,6 +2,7 @@ package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.CROSS
 import me.qbosst.bossbot.bot.TICK
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.listeners.BotEventWaiter
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -9,12 +10,13 @@ import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent
 import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
 
-object ShutdownCommand: DeveloperCommand(
+object ShutdownCommand: Command(
         "shutdown",
         description = "Shuts down the bot",
-        usage = listOf(""),
+        usages = listOf(""),
         botPermissions = listOf(Permission.MESSAGE_ADD_REACTION),
-        guildOnly = false
+        guildOnly = false,
+        developerOnly = true
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

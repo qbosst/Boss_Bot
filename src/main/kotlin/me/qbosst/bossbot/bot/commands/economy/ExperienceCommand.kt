@@ -9,9 +9,9 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object ExperienceCommand: Command(
         "experience",
-        usage_raw = listOf("[@user]"),
-        examples_raw = listOf("", "@boss"),
-        aliases_raw = listOf("xp", "exp")
+        usages = listOf("[@user]"),
+        examples = listOf("", "@boss"),
+        aliases = listOf("xp", "exp")
 )
 {
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)

@@ -11,13 +11,11 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object QueueCommand: MusicCommand(
         "queue",
         requiresMemberConnected = false,
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        children = listOf(QueueClearCommand, QueueCurrentCommand, QueueLoopCommand, QueueReverseCommand,
+                QueueShuffleCommand)
 )
 {
-    init {
-        addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
-    }
-
     override fun run(event: MessageReceivedEvent, args: List<String>)
     {
         val handler = event.guild.getAudioHandler()

@@ -8,7 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object QueueShuffleCommand: MusicCommand(
         "shuffle",
         "Shuffles the queue",
-        usage = listOf("[shuffleCurrentTrack]"),
+        usages = listOf("[shuffleCurrentTrack]"),
         examples = listOf("true", "false")
 )
 {

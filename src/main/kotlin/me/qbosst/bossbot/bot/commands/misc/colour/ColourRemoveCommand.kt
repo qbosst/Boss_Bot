@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object ColourRemoveCommand: Command(
         "remove",
         "Removes a custom guild colour",
-        usage_raw = listOf("<name>"),
+        usages = listOf("<name>"),
         userPermissions = listOf(Permission.MANAGE_EMOTES, Permission.MANAGE_SERVER),
         guildOnly = true
 )

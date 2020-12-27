@@ -10,15 +10,12 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object EmbedCommand: Command(
         "embed",
         description = "Creates and sends a Message Embed based on JSON input",
-        usage_raw = listOf("<json>", "(file.json)"),
+        usages = listOf("<json>", "(file.json)"),
         guildOnly = false,
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS),
+        children = listOf(EmbedGetCommand, EmbedTemplateCommand)
 )
 {
-    init {
-        addCommands(loadObjects(this::class.java.`package`.name, Command::class.java).filter { it != this })
-    }
-
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         if(args.isNotEmpty())

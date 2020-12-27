@@ -1,7 +1,6 @@
 package me.qbosst.bossbot.bot.commands.misc.greeting
 
-import me.qbosst.bossbot.bot.BossBot
-import me.qbosst.bossbot.bot.commands.dev.DeveloperCommand
+import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.bot.userNotMentioned
 import me.qbosst.bossbot.database.managers.UserDataManager
@@ -10,12 +9,14 @@ import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.getUserByString
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-object GreetingUpdateCommand : DeveloperCommand(
+object GreetingUpdateCommand : Command(
         "update",
         description = "Updates a user's greeting message",
-        usage = listOf("@user <message>"),
-        guildOnly = false
-) {
+        usages = listOf("@user <message>"),
+        guildOnly = false,
+        developerOnly = true
+)
+{
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>) {
         if (args.isNotEmpty())
         {

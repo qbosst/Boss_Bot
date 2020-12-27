@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 object QueueLoopCommand: MusicCommand(
         "loop",
         "Loops the queue",
-        usage = listOf("[true|false]")
+        usages = listOf("[true|false]")
 )
 {
     override fun run(event: MessageReceivedEvent, args: List<String>)

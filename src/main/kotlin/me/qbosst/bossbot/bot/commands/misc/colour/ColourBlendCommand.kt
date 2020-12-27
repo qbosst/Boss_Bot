@@ -18,8 +18,8 @@ object ColourBlendCommand : Command(
     "blend",
     "Mixes the provided colours equally",
     guildOnly = false,
-    usage_raw = listOf("[colours...]"),
-    examples_raw = listOf("red green ffeedd", "ff0e329a orange a2f6e3"),
+    usages = listOf("[colours...]"),
+    examples = listOf("red green ffeedd", "ff0e329a orange a2f6e3"),
     botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
 )
 {

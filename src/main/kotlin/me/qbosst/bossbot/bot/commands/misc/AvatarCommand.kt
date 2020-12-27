@@ -15,8 +15,8 @@ import kotlin.random.Random
 object AvatarCommand: Command(
         "avatar",
         "Displays a user's avatar",
-        usage_raw = listOf("[@user]"),
-        aliases_raw = listOf("av"),
+        usages = listOf("[@user]"),
+        aliases = listOf("av"),
         guildOnly = false,
         botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS)
 )

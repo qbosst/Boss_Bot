@@ -21,21 +21,14 @@ import javax.imageio.ImageIO
 object ColourCommand: Command(
         "colour",
         "Shows information about a specific colour",
-        usage_raw = listOf("<colour name | hex>"),
-        examples_raw = listOf("purple", "0feeed"),
-        aliases_raw = listOf("color"),
+        usages = listOf("<colour name | hex>"),
+        examples = listOf("purple", "0feeed"),
+        aliases = listOf("color"),
         guildOnly = false,
-        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES)
-) {
-
-    init
-    {
-        val commands = loadObjects(this::class.java.`package`.name, Command::class.java)
-                .minus(this)
-                .minus(ColoursCommand)
-        addCommands(commands)
-    }
-
+        botPermissions = listOf(Permission.MESSAGE_EMBED_LINKS, Permission.MESSAGE_ATTACH_FILES),
+        children = listOf(ColourBlendCommand, ColourCreateCommand, ColourRandomCommand, ColourRemoveCommand)
+)
+{
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
         // Tries to get a valid colour either from name or hex code

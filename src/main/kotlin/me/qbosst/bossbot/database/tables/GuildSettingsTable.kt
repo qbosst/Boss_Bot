@@ -6,7 +6,6 @@ import java.time.ZoneId
 object GuildSettingsTable : Table()
 {
     const val max_prefix_length = 8
-    private val max_zone_id_length: Int = ZoneId.getAvailableZoneIds().maxOf { it.length }
 
     val guild_id = long("GUILD_ID")
 
@@ -14,9 +13,6 @@ object GuildSettingsTable : Table()
     val message_logs_channel_id = long("MESSAGE_LOGS_CHANNEL_ID").default(0L)
     val voice_logs_channel_id = long("VOICE_LOGS_CHANNEL_ID").default(0L)
 
-    val dj_role_id = long("DJ_ROLE_ID").default(0L)
-
-    val zone_id = varchar("ZONE_ID", max_zone_id_length).nullable()
     val prefix = varchar("PREFIX", max_prefix_length).nullable()
 
     override val primaryKey
