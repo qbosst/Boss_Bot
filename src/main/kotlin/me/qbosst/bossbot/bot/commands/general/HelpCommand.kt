@@ -3,10 +3,10 @@ package me.qbosst.bossbot.bot.commands.general
 import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.MessageListener
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
 import me.qbosst.bossbot.util.getGuildOrNull
 import me.qbosst.bossbot.util.getPrefix
+import me.qbosst.bossbot.util.loadObjectOrClass
 import me.qbosst.bossbot.util.loadObjects
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -22,8 +22,11 @@ object HelpCommand: Command(
         guildOnly = false
 )
 {
-    private val allCommands: Collection<Command>
-        get() = MessageListener.allCommands
+    private val cmdHandler
+        get() = BossBot.listener.cmdHandler
+
+    private val allCommands: Collection<Command> =
+            loadObjectOrClass("${BossBot::class.java.`package`.name}.commands", Command::class.java)
 
     override fun execute(event: MessageReceivedEvent, args: List<String>, flags: Map<String, String?>)
     {
@@ -32,9 +35,9 @@ object HelpCommand: Command(
             if(args[0].toIntOrNull() != null)
                 event.channel.sendMessage(getHelpEmbed(event, args[0].toInt()).build()).queue()
 
-            else if(MessageListener.getCommand(args[0]) != null)
+            else if(cmdHandler[args[0]] != null)
             {
-                var command: Command = MessageListener.getCommand(args[0])!!
+                var command: Command = cmdHandler[args[0]]!!
                 var index = 1
                 while (index < args.size)
                 {

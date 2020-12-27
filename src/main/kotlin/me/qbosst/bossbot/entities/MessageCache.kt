@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.entities
 
 import me.qbosst.bossbot.util.FixedCache
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.*
 import net.dv8tion.jda.api.sharding.ShardManager
 import org.apache.commons.io.FileUtils
@@ -24,11 +25,14 @@ class MessageCache(val size: Int)
 
     init
     {
-        // Delete the folder and all files inside
-        FileUtils.deleteDirectory(File("./attachments"))
+        val directory = File(DIRECTORY)
 
-        // Re-create the folder
-        Files.createDirectories(Paths.get("./attachments"))
+        // Delete the directory and all files inside
+        if(!directory.deleteRecursively())
+            LOG.warn("Could not delete directory {}", directory.absolutePath)
+
+        // Recreate the directory
+        directory.mkdirs()
 
         LOG.info("Message Cache Initialized!")
     }
@@ -42,13 +46,9 @@ class MessageCache(val size: Int)
      */
     fun putMessage(m: Message): CachedMessage?
     {
-        if(!cache.containsKey(m.guild.idLong))
-            cache[m.guild.idLong] = FixedCache(size)
+        val guildCache = cache.computeIfAbsent(m.guild.idLong) { FixedCache(size) }
 
-        return cache[m.guild.idLong]!!.put(m.idLong, CachedMessage.create(m))
-        { _, value ->
-            value.deleteFiles()
-        }
+        return guildCache.put(m.idLong, CachedMessage(m)) { _, value -> value.deleteFiles() }
     }
 
     /**
@@ -69,7 +69,8 @@ class MessageCache(val size: Int)
      *
      *  @return List of cached messages that met the condition
      */
-    fun getMessages(guild: Guild, predicate: (CachedMessage) -> Boolean): List<CachedMessage> = cache[guild.idLong]?.values?.filter{ predicate.invoke(it) } ?: listOf()
+    fun getMessages(guild: Guild, predicate: (CachedMessage) -> Boolean): List<CachedMessage> =
+            cache[guild.idLong]?.values?.filter { message -> predicate.invoke(message) } ?: listOf()
 
     /**
      *  Returns a cached message
@@ -82,134 +83,65 @@ class MessageCache(val size: Int)
     fun getMessage(guild: Guild, messageId: Long): CachedMessage? = cache[guild.idLong]?.get(messageId)
 
     /**
-     *  This class is used to cache a message
+     *  Represents a Message object.
      *
      *  @param contentRaw The content of the message
-     *  @param username The username of the author of the message
-     *  @param discriminator The discriminator (tag) of the author of the message
      *  @param messageIdLong The ID of the message
-     *  @param authorIdLong The ID of the author of the message
      *  @param channelIdLong The ID of the channel that the message was sent in
      *  @param guildIdLong The ID of the guild that the message was sent in
      *  @param attachments The attachments that the cached message came with
      */
-    data class CachedMessage private constructor(
-            val contentRaw: String,
-            val username: String,
-            val discriminator: String,
-            private val messageIdLong: Long,
-            val authorIdLong: Long,
-            private val channelIdLong: Long,
-            private val guildIdLong: Long,
-            val attachments: Collection<Message.Attachment>
-    ): ISnowflake
+    data class CachedMessage private constructor(val content: String,
+                                                 val author: CachedUser,
+                                                 val messageIdLong: Long,
+                                                 val channelIdLong: Long,
+                                                 val guildIdLong: Long,
+                                                 val attachments: Collection<Message.Attachment>): ISnowflake
     {
+        constructor(m: Message): this(m.contentRaw, CachedUser(m.author), m.idLong, m.channel.idLong, m.guild.idLong,
+                m.attachments)
 
-        companion object
-        {
-            /**
-             * Creates a cached message object
-             *
-             * @param m The message to cache
-             *
-             * @return CachedMessage object
-             */
-            fun create(m: Message): CachedMessage
-            {
-                return CachedMessage(
-                        contentRaw = m.contentRaw,
-                        username = m.author.name,
-                        discriminator = m.author.discriminator,
-                        messageIdLong = m.idLong,
-                        authorIdLong = m.author.idLong,
-                        channelIdLong = m.channel.idLong,
-                        guildIdLong = if(m.isFromGuild) m.guild.idLong else 0L,
-                        attachments = m.attachments
-                )
-            }
-        }
+        val files: List<File>
+            get() = attachments.mapIndexed { index, attachment -> File(generateDirectory(attachment, index)) }
 
         init
         {
-            // If the message has attachments
-            if(attachments.isNotEmpty())
-            {
-                // Downloads them to secondary storage
-                Files.createDirectories(Paths.get("./attachments"))
-                for(attachment in attachments.withIndex())
-                    attachment.value
-                            .downloadToFile(File(generateDirectory(messageIdLong, attachment.index, attachment.value.fileExtension)))
-                            .thenAccept { LOG.debug("Downloaded attachment to ${it.absolutePath}") }
-                            .exceptionally { LOG.error("Exception caught while trying to download attachment: $it"); return@exceptionally null }
+            // downloads attachments
+            attachments.withIndex().forEach { (index, attachment) ->
+                attachment
+                        .downloadToFile(File(generateDirectory(attachment, index)))
+                        .whenComplete { file, throwable ->
+                            if(throwable != null)
+                                LOG.error("Could not download attachment", throwable)
+                            else
+                                LOG.debug("Downloaded attachment to `{}`", file.absolutePath)
+                        }
             }
-        }
-
-        /**
-         *  Gets the author of the message.
-         *
-         *  @param shards Object needed to get the user from
-         *
-         *  @return Author of the cached message. Null if the self-user does not have a copy of the user's id.
-         */
-        fun getAuthor(shards: ShardManager): User? = shards.getUserById(authorIdLong)
-
-        /**
-         *  Gets the text channel that the message was sent in
-         *
-         *  @param guild The guild to get the text channel from
-         *
-         *  @return Text Channel of the cached message. Null if the message did not come from a guild or the channel no longer exists
-         */
-        fun getTextChannel(guild: Guild): TextChannel? = guild.getTextChannelById(channelIdLong)
-
-        /**
-         *  Gets the guild that the message was sent in
-         *
-         *  @param shards Object needed to get the guild from
-         *
-         *  @return Guild that the message came from. Null if the message did not come from a guild
-         */
-        fun getGuild(shards: ShardManager): Guild? = if(guildIdLong == 0L) null else shards.getGuildById(guildIdLong)
-
-        /**
-         *  Retrieves the downloaded message attachments from secondary storage
-         *
-         *  @return Collection of attachments in files
-         */
-        fun getAttachmentFiles(): Collection<File>
-        {
-            val files = mutableListOf<File>()
-            for(attachment in attachments.withIndex())
-                files.add(File(generateDirectory(messageIdLong, attachment.index, attachment.value.fileExtension)))
-
-            return files
         }
 
         /**
          *  Deletes the downloaded attachments from secondary storage
          */
-        fun deleteFiles()
-        {
-            for(file in getAttachmentFiles())
-                if(file.delete())
-                    LOG.debug("Successfully deleted file ${file.absolutePath}")
-                else
-                    LOG.warn("Unable to delete file at ${file.absolutePath}. The file might still be open somewhere")
+        fun deleteFiles(files: Collection<File> = this.files) = files.forEach { file ->
+            if(!file.delete())
+                LOG.warn("Unable to delete file at '{}'. The file might still be open somewhere", file.absolutePath)
         }
 
         override fun getIdLong(): Long = messageIdLong
 
-        /**
-         *  Generates the name of the attachment file
-         */
-        private fun generateDirectory(messageId: Long, count: Int, extension: String?): String
+        private fun generateDirectory(attachment: Message.Attachment, count: Int): String =
+                "${DIRECTORY}/${messageIdLong}_${count}" +
+                        (attachment.fileExtension?.let { append-> ".${append}" } ?: "N/A")
+
+        data class CachedUser private constructor(val username: String, val discriminator: String, val idLong: Long)
         {
-            return "./attachments/${messageId}_${count}" + if(extension != null) ".${extension}" else ""
+            constructor(user: User): this(user.name, user.discriminator, user.idLong)
         }
     }
 
     companion object
     {
         private val LOG = LoggerFactory.getLogger(MessageCache::class.java)
+        private const val DIRECTORY = "./cached"
     }
 }

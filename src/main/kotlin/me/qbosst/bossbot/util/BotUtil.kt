@@ -8,8 +8,6 @@ import net.dv8tion.jda.api.events.message.GenericMessageEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.requests.RestAction
 import net.dv8tion.jda.api.sharding.ShardManager
-import java.time.ZoneId
-
 
 val LONG_REGEX = Regex("\\d{17,19}")
 
@@ -105,6 +103,8 @@ fun GenericMessageEvent.getGuildOrNull(): Guild? = if(isFromGuild) guild else nu
  *  @return String the prefix used to invoke commands
  */
 fun MessageReceivedEvent.getPrefix(): String = getGuildOrNull()?.getSettings()?.prefix ?: BotConfig.default_prefix
+
+fun Message.getPrefix() = (if(isFromGuild) guild.getSettings().prefix else null) ?: BotConfig.default_prefix
 
 /**
  *  Splits a string up every n amount of characters

@@ -2,6 +2,8 @@ package me.qbosst.bossbot.bot
 
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory
 import me.qbosst.bossbot.Launcher
+import me.qbosst.bossbot.bot.listeners.BotEventWaiter
+import me.qbosst.bossbot.bot.listeners.Listener
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.Database
 import me.qbosst.bossbot.util.loadObjectOrClass
@@ -27,15 +29,19 @@ object BossBot
     private val log: Logger = LoggerFactory.getLogger(BossBot::class.java)
     val api: ShardManager
     val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(6)
+    val listener: Listener
+    val config = BotConfig
 
     init
     {
         // Connects to the database
         Database.connect(
-                host = BotConfig.database_url,
-                user = BotConfig.database_user,
-                password = BotConfig.database_password
+                host = config.database_url,
+                user = config.database_user,
+                password = config.database_password
         )
+
+        listener = Listener(config.default_cache_size)
 
         // Connects to discord
         api = getApi(
@@ -55,7 +61,8 @@ object BossBot
     private fun getApi(token: String, enableIntents: Collection<GatewayIntent> = listOf()): ShardManager
     {
         log.info("Registering Event Listeners...")
-        val listeners = loadObjectOrClass(Launcher::class.java.`package`.name, EventListener::class.java)
+        val listeners = loadObjectOrClass("${this::class.java.`package`.name}.commands", EventListener::class.java)
+                .plus(listOf(BotEventWaiter, listener))
 
         val intents = listeners
                 // get events from listener

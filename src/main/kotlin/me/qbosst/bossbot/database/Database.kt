@@ -9,11 +9,11 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object Database
 {
-    private val tables: Collection<Table>
-        get() = loadObjects("${this::class.java.`package`.name}.tables", Table::class.java)
+    private val tables: Collection<Table> =
+            loadObjects("${this::class.java.`package`.name}.tables", Table::class.java)
 
-    private val managers: Collection<TableManager<*, *>>
-        get() = loadObjects("${this::class.java.`package`.name}.managers", TableManager::class.java)
+    private val managers: Collection<TableManager<*, *>> =
+            loadObjects("${this::class.java.`package`.name}.managers", TableManager::class.java)
 
     /**
      *  Connects to the database that the bot will be using to store data
@@ -31,14 +31,15 @@ object Database
             password = password
         )
 
-        transaction()
-        {
+        transaction {
             // Creates missing tables and columns
-            for(table in tables)
+            tables.forEach { table ->
                 SchemaUtils.createMissingTablesAndColumns(table)
+            }
         }
         // Signal that the database is ready
-        for(manager in managers)
+        managers.forEach { manager ->
             manager.onReady()
+        }
     }
 }

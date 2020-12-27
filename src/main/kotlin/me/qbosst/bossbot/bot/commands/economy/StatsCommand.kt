@@ -1,8 +1,7 @@
 package me.qbosst.bossbot.bot.commands.economy
 
+import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.listeners.MessageListener
-import me.qbosst.bossbot.bot.listeners.VoiceListener
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.database.managers.getMemberData
 import me.qbosst.bossbot.util.TimeUtil
@@ -35,11 +34,12 @@ object StatsCommand : Command(
     private fun statsEmbed(member: Member): EmbedBuilder
     {
         val stats = member.getMemberData()
+        val cachedStats = BossBot.listener.ecoHandler[member]
 
         return EmbedBuilder()
-                .addField("Messages Sent", (stats.message_count + MessageListener.getCachedMessageCount(member)).toString(), true)
+                .addField("Messages Sent", (stats.message_count + cachedStats.messageCount).toString(), true)
                 .addField("Text Chat Time", TimeUtil.timeToString(stats.text_chat_time), true)
-                .addField("Voice Chat Time", TimeUtil.timeToString(stats.voice_chat_time + VoiceListener.getCachedVoiceChatTime(member)), true)
+                .addField("Voice Chat Time", TimeUtil.timeToString(stats.voice_chat_time + (cachedStats.voiceChatTime?.seconds ?: 0)), true)
                 .setColor(member.colorRaw)
     }
 }
