@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.listeners.handlers
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.util.getPrefix
+import me.qbosst.bossbot.util.extensions.getPrefix
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.LoggerFactory
 import java.util.regex.Pattern

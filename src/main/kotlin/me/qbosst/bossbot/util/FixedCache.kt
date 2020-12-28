@@ -17,7 +17,7 @@ package me.qbosst.bossbot.util
 class FixedCache<K, V>(size: Int)
 {
     private val map: MutableMap<K ,V>
-    private val keys: Array<K>
+    private val _keys: Array<K>
 
     init
     {
@@ -26,7 +26,7 @@ class FixedCache<K, V>(size: Int)
             throw IllegalArgumentException("Cache size must at least be 1!")
 
         @Suppress("UNCHECKED_CAST")
-        keys = arrayOfNulls<Any>(size) as Array<K>
+        _keys = arrayOfNulls<Any>(size) as Array<K>
         map = mutableMapOf()
     }
 
@@ -35,17 +35,17 @@ class FixedCache<K, V>(size: Int)
     /**
      * Returns a read-only [Set] of all keys in this cache.
      */
-    val values
+    val values: Collection<V>
         get() = map.values
 
-    val keySet
-        get() = map.keys
+    val keys: Set<K>
+        get() = _keys.toSet()
 
     /**
      * Returns the number of key/value pairs in the map.
      */
     val size
-        get() = keys.size
+        get() = _keys.size
 
     /**
      * Creates a new cache and transfers over all the values from the old cache to the new cache.
@@ -58,8 +58,8 @@ class FixedCache<K, V>(size: Int)
             throw IllegalArgumentException("New cache size cannot be smaller or equal to the old cache!")
 
         map.putAll(cache.map)
-        cache.keys.withIndex().forEach { (index, value) ->
-            keys[index] = value
+        cache._keys.withIndex().forEach { (index, value) ->
+            _keys[index] = value
         }
 
         currentIndex = (currentIndex + 1) % this.size
@@ -75,10 +75,10 @@ class FixedCache<K, V>(size: Int)
         if(map.containsKey(key))
             return map.put(key, value)
 
-        if(keys[currentIndex] != null)
-            map.remove(keys[currentIndex])
+        if(_keys[currentIndex] != null)
+            map.remove(_keys[currentIndex])
 
-        keys[currentIndex] = key
+        _keys[currentIndex] = key
         currentIndex = (currentIndex + 1) % this.size
         return map.put(key, value)
     }
@@ -95,11 +95,11 @@ class FixedCache<K, V>(size: Int)
         if(map.containsKey(key))
             return map.put(key, value)
 
-        val current = keys[currentIndex]
+        val current = _keys[currentIndex]
         val (k, v) = Pair(current, map.remove(current))
 
-        keys[currentIndex] = key
-        currentIndex = (currentIndex + 1) % keys.size
+        _keys[currentIndex] = key
+        currentIndex = (currentIndex + 1) % _keys.size
 
         val old = map.put(key, value)
 

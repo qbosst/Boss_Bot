@@ -4,7 +4,7 @@ import me.qbosst.bossbot.bot.argumentMissing
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.json.JSONObject
+import net.dv8tion.jda.api.utils.data.DataObject
 
 object DeepDreamCommand: DeepAiCommand(
         "deepdream",
@@ -13,15 +13,15 @@ object DeepDreamCommand: DeepAiCommand(
         guildOnly = false
 )
 {
-    override fun execute(event: MessageReceivedEvent, json: JSONObject)
+    override fun execute(event: MessageReceivedEvent, json: DataObject)
     {
         // Checks if json includes an output url, if so this is the url to the processed image.
-        if(json.has("output_url"))
+        if(json.hasKey("output_url"))
             event.channel.sendMessage(EmbedBuilder()
                     .setImage(json.getString("output_url"))
                     .build()).queue()
         else
-            event.channel.sendMessage("Could not deep-dream image; I have not received the new image :(").queue()
+            event.channel.sendMessage("Could not deep-dream image; I have received something unexpected...").queue()
     }
 
     override fun getParameters(event: MessageReceivedEvent, args: List<String>): Map<String, String>?

@@ -1,10 +1,9 @@
 package me.qbosst.bossbot.bot.commands.dev
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.database.managers.getSettings
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.getGuildOrNull
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

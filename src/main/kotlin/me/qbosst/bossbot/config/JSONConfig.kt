@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.config
 
-import me.qbosst.bossbot.util.toJson
+import me.qbosst.bossbot.util.extensions.toPrettyJson
 import net.dv8tion.jda.api.utils.data.DataObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -61,7 +61,7 @@ open class JSONConfig(directory: String, protected var default: DataObject)
      */
     protected fun write(data: DataObject = this.data)
     {
-        Files.write(config.toPath(), data.toJson(4))
+        Files.write(config.toPath(), data.toPrettyJson())
     }
 
     protected fun generateDefault()

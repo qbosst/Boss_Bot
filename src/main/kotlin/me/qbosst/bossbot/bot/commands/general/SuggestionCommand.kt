@@ -2,9 +2,9 @@ package me.qbosst.bossbot.bot.commands.general
 
 import me.qbosst.bossbot.bot.*
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.misc.colour.mixColours
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.managers.getSettings
+import me.qbosst.bossbot.util.ColourUtil
 import me.qbosst.bossbot.util.FixedCache
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
@@ -144,14 +144,14 @@ object SuggestionCommand: Command(
                     up > down ->
                     {
                         val ratio = up.toFloat() / total
-                        mixColours(Pair(Color.GREEN, ratio), Pair(Color.YELLOW, 1 - ratio))
+                        ColourUtil.mixColours(Pair(Color.GREEN, ratio), Pair(Color.YELLOW, 1 - ratio))
                     }
 
                     // If there are more down-votes than up-votes, it will mix red and yellow together
                     up < down ->
                     {
                         val ratio = down.toFloat() / total
-                        mixColours(Pair(Color.RED, ratio), Pair(Color.YELLOW, 1 - ratio))
+                        ColourUtil.mixColours(Pair(Color.RED, ratio), Pair(Color.YELLOW, 1 - ratio))
                     }
 
                     // If there are the same amount of up-votes as down-votes, it will return yellow

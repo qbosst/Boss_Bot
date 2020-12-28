@@ -3,9 +3,10 @@ package me.qbosst.bossbot.bot.commands.misc.colour
 import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
+import me.qbosst.bossbot.util.ColourUtil
+import me.qbosst.bossbot.util.ColourUtil.toHex
 import me.qbosst.bossbot.util.embed.FieldMenuEmbed
-import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.toHex
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -39,9 +40,10 @@ object ColoursCommand: Command(
             args[0].toLowerCase() == "system" ->
             {
                 index++
-                systemColours
+                ColourUtil.systemColours
             }
-            args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).colours.plus(systemColours)
+            args[0].toIntOrNull() != null -> GuildColoursManager.get(event.getGuildOrNull()).colours
+                .plus(ColourUtil.systemColours)
             else ->
             {
                 event.channel.sendMessage(argumentInvalid(args[0], "page number")).queue()
@@ -50,7 +52,7 @@ object ColoursCommand: Command(
         }
         // If no arguments were given, both system colours and guild colours will be shown
         else
-            GuildColoursManager.get(event.getGuildOrNull()).colours.plus(systemColours)
+            GuildColoursManager.get(event.getGuildOrNull()).colours.plus(ColourUtil.systemColours)
 
         // Gets the page number of the menu
         val page =
@@ -75,8 +77,6 @@ object ColoursCommand: Command(
     /**
      *  Converts an entry of <string, colour> to a message embed field.
      */
-    private fun Map.Entry<String, Colour>.toField(): MessageEmbed.Field
-    {
-        return MessageEmbed.Field(key, value.red.toHex() + value.green.toHex() + value.blue.toHex(), true)
-    }
+    private fun Map.Entry<String, Colour>.toField(): MessageEmbed.Field =
+        MessageEmbed.Field(key, value.red.toHex() + value.green.toHex() + value.blue.toHex(), true)
 }

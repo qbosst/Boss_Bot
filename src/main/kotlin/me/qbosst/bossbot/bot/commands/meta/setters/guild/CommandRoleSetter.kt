@@ -1,7 +1,7 @@
 package me.qbosst.bossbot.bot.commands.meta.setters.guild
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.util.getRoleByString
+import me.qbosst.bossbot.util.extensions.getRoleByString
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild

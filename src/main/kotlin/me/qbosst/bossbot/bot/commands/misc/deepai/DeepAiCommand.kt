@@ -4,11 +4,11 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.BotConfig
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.utils.data.DataObject
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.json.JSONObject
 import java.util.concurrent.CompletableFuture
 
 abstract class DeepAiCommand(label: String,
@@ -35,10 +35,10 @@ abstract class DeepAiCommand(label: String,
             val request = getResult(event.jda.httpClient, parameters)
             request.thenAccept()
             { response ->
-                val json = JSONObject(response.body()?.string() ?: "{}")
+                val json = DataObject.fromJson(response.body()?.string() ?: "{}")
 
                 // Checks if the response is valid
-                if(json.has("status") && json.getString("status").startsWith("Out of free credits"))
+                if(json.hasKey("status") && json.getString("status").startsWith("Out of free credits"))
                     event.channel.sendMessage("I have ran out of credits for deepai services :( Try again later!").queue()
                 else if(response.code() == 401)
                     event.channel.sendMessage("I do not have access to deepai services, please fix it boss :(").queue()
@@ -54,7 +54,7 @@ abstract class DeepAiCommand(label: String,
      *  @param event The event of which the command came from
      *  @param json The json response of the request
      */
-    abstract fun execute(event: MessageReceivedEvent, json: JSONObject)
+    abstract fun execute(event: MessageReceivedEvent, json: DataObject)
 
     /**
      *  Gets the parameters that the request may need.

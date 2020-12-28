@@ -5,7 +5,7 @@ import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.database.managers.getMemberData
 import me.qbosst.bossbot.util.TimeUtil
-import me.qbosst.bossbot.util.getMemberByString
+import me.qbosst.bossbot.util.extensions.getMemberByString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Member

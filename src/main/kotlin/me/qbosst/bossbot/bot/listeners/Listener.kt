@@ -6,7 +6,7 @@ import me.qbosst.bossbot.bot.listeners.handlers.CommandHandler
 import me.qbosst.bossbot.bot.listeners.handlers.EconomyHandler
 import me.qbosst.bossbot.bot.listeners.handlers.EventLogger
 import me.qbosst.bossbot.database.managers.getSettings
-import me.qbosst.bossbot.util.getGuildOrNull
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
 import me.qbosst.bossbot.util.loadObjectOrClass
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity

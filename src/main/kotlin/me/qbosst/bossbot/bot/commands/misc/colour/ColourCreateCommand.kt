@@ -5,7 +5,8 @@ import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.database.managers.GuildColoursManager
 import me.qbosst.bossbot.database.tables.GuildColoursTable
-import me.qbosst.bossbot.util.getGuildOrNull
+import me.qbosst.bossbot.util.ColourUtil
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -26,7 +27,7 @@ object ColourCreateCommand: Command(
         if(args.isNotEmpty())
         {
             // Gets colour by hex value
-            var colour = getColourByHex(args[0]) ?: kotlin.run {
+            var colour = ColourUtil.getColourByHex(args[0]) ?: kotlin.run {
                 event.channel.sendMessage(argumentInvalid(args[0], "hex")).queue()
                 return
             }
@@ -47,7 +48,7 @@ object ColourCreateCommand: Command(
                         event.channel.sendMessage("Colour names cannot be longer than ${GuildColoursTable.MAX_COLOUR_NAME_LENGTH} characters long!").queue()
 
                     // Makes sure that the name doesn't have the same name as a system colour
-                    systemColours[name] != null ->
+                    ColourUtil.systemColours[name] != null ->
                         event.channel.sendMessage("${name.maxLength()} is a system default colour and cannot be modified.").queue()
                     else ->
                     {

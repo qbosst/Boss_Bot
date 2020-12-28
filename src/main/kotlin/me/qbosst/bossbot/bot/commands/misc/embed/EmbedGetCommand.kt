@@ -3,13 +3,13 @@ package me.qbosst.bossbot.bot.commands.misc.embed
 import me.qbosst.bossbot.bot.argumentInvalid
 import me.qbosst.bossbot.bot.argumentMissing
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.util.LONG_REGEX
-import me.qbosst.bossbot.util.getTextChannelByString
-import me.qbosst.bossbot.util.toJSONObject
+import me.qbosst.bossbot.util.extensions.LONG_REGEX
+import me.qbosst.bossbot.util.extensions.toPrettyJson
+import me.qbosst.bossbot.util.extensions.getTextChannelByString
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
-import org.json.JSONArray
+import net.dv8tion.jda.api.utils.data.DataArray
 
 object EmbedGetCommand: Command(
         "get",
@@ -46,17 +46,18 @@ object EmbedGetCommand: Command(
 
         channel.retrieveMessageById(messageId).queue(
                 {
-                    val array = JSONArray()
+                    val array = DataArray.empty()
                     for(embed in it.embeds)
-                        array.put(embed.toData().toJSONObject())
+                        array.add(embed.toData())
 
                     if(array.isEmpty)
                         event.channel.sendMessage("There are no embeds in this message").queue()
                     else
-                        event.channel.sendFile(array.toString(4).toByteArray(), "${messageId}.json").queue()
+                        event.channel.sendFile(array.toPrettyJson(), "${messageId}.json").queue()
                 },
                 {
-                    when {
+                    when
+                    {
                         // Message was not found
                         it is ErrorResponseException && it.errorCode == 10008 ->
                             event.channel.sendMessage("I could not find any message with the id of `${messageId}` in this channel.").queue()

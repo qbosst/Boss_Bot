@@ -1,10 +1,9 @@
 package me.qbosst.bossbot.bot.commands.dev
 
-import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.bot.userNotFound
 import me.qbosst.bossbot.bot.userNotMentioned
-import me.qbosst.bossbot.util.getUserByString
+import me.qbosst.bossbot.util.extensions.getUserByString
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent

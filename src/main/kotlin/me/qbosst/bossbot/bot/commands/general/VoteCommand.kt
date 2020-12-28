@@ -2,7 +2,7 @@ package me.qbosst.bossbot.bot.commands.general
 
 import me.qbosst.bossbot.bot.commands.meta.Command
 import me.qbosst.bossbot.config.BotConfig
-import me.qbosst.bossbot.util.getGuildOrNull
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 

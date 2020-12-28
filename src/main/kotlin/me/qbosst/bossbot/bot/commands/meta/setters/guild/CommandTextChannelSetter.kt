@@ -1,11 +1,10 @@
 package me.qbosst.bossbot.bot.commands.meta.setters.guild
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.util.getTextChannelByString
+import me.qbosst.bossbot.util.extensions.getTextChannelByString
 import me.qbosst.bossbot.util.maxLength
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 

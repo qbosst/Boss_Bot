@@ -6,7 +6,7 @@ import me.qbosst.bossbot.bot.userNotMentioned
 import me.qbosst.bossbot.database.managers.UserDataManager
 import me.qbosst.bossbot.database.managers.getUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.bossbot.util.getUserByString
+import me.qbosst.bossbot.util.extensions.getUserByString
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
 object GreetingUpdateCommand : Command(

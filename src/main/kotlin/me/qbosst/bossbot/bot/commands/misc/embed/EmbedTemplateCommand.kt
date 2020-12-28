@@ -1,8 +1,8 @@
 package me.qbosst.bossbot.bot.commands.misc.embed
 
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
-import me.qbosst.bossbot.util.toJson
+import me.qbosst.bossbot.util.ColourUtil.nextColour
+import me.qbosst.bossbot.util.extensions.toPrettyJson
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.MessageEmbed
@@ -22,7 +22,7 @@ object EmbedTemplateCommand: Command(
         val embed = createTemplate(event)
         event.channel
                 .sendMessage(embed)
-                .addFile(embed.toData().toJson(4), "template.json")
+                .addFile(embed.toData().toPrettyJson(), "template.json")
                 .queue()
     }
 

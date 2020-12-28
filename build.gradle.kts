@@ -14,23 +14,24 @@ repositories {
 }
 
 dependencies {
+    // jda
     implementation("net.dv8tion:JDA:4.2.0_223")
+    implementation("com.jagrosh:jda-utilities-commons:3.0.5")
+    implementation("ch.qos.logback:logback-classic:1.2.3")
 
+    // music
     implementation("com.sedmelluq:lavaplayer:1.3.65")
     implementation("com.sedmelluq:jda-nas:1.1.0")
     implementation("se.michaelthelin.spotify:spotify-web-api-java:6.5.1")
 
-
+    // database
     implementation("org.jetbrains.exposed:exposed-core:0.28.1")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.28.1")
     implementation("org.jetbrains.exposed:exposed-dao:0.28.1")
     implementation("mysql:mysql-connector-java:8.0.22")
 
-    implementation("com.jagrosh:jda-utilities-commons:3.0.5")
-    implementation("ch.qos.logback:logback-classic:1.2.3")
-
+    // misc
     implementation("org.reflections:reflections:0.9.12")
-    implementation("org.json:json:20201115")
     implementation("org.codehaus.groovy:groovy-jsr223:3.0.7")
 }
 

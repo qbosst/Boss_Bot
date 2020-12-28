@@ -1,6 +1,5 @@
-package me.qbosst.bossbot.util
+package me.qbosst.bossbot.util.extensions
 
-import me.qbosst.bossbot.bot.Constants
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.managers.getSettings
 import net.dv8tion.jda.api.entities.*
@@ -74,23 +73,6 @@ fun Guild.getTextChannelByString(query: String): TextChannel? = getTextChannelBy
 fun Member.move(vc: VoiceChannel): RestAction<Void> = guild.moveVoiceMember(this, vc)
 
 /**
- *  Cuts off a string if it reaches the max length allowed
- *
- *  @param maxLength The maximum allowed of length that the string is allowed to be. Default is 32
- *
- *  @return String that is no longer than the maximum length specified.
- */
-fun String.maxLength(maxLength: Int = 32, ending: String = "..."): String =
-        if(length > maxLength) substring(0, maxLength-ending.length)+ending else this
-
-/**
- *  Prevents Discord mentions by putting a zero width character after an '@'
- *
- *  @return Safe string that cannot mention anyone
- */
-fun String.makeSafe(): String = replace("@", "@${Constants.ZERO_WIDTH}")
-
-/**
  *  Gets the guild from the generic message event. Null if the message was not from a guild
  *
  *  @return Guild that the message came from. Null if it did not come from a guild
@@ -105,23 +87,3 @@ fun GenericMessageEvent.getGuildOrNull(): Guild? = if(isFromGuild) guild else nu
 fun MessageReceivedEvent.getPrefix(): String = getGuildOrNull()?.getSettings()?.prefix ?: BotConfig.default_prefix
 
 fun Message.getPrefix() = (if(isFromGuild) guild.getSettings().prefix else null) ?: BotConfig.default_prefix
-
-/**
- *  Splits a string up every n amount of characters
- *
- *  @param partitionSize The amount of characters to split it up after
- *
- *  @return List of strings
- */
-fun String.split(partitionSize: Int): List<String>
-{
-    val parts = mutableListOf<String>()
-    val len = length
-    var i = 0
-    while (i < len)
-    {
-        parts.add(this.substring(i, Math.min(len, i+partitionSize)))
-        i+= partitionSize
-    }
-    return parts
-}

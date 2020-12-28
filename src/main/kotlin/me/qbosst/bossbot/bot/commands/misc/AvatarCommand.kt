@@ -1,11 +1,10 @@
 package me.qbosst.bossbot.bot.commands.misc
 
-import me.qbosst.bossbot.bot.BossBot
 import me.qbosst.bossbot.bot.commands.meta.Command
-import me.qbosst.bossbot.bot.commands.misc.colour.nextColour
 import me.qbosst.bossbot.bot.userNotFound
-import me.qbosst.bossbot.util.getGuildOrNull
-import me.qbosst.bossbot.util.getUserByString
+import me.qbosst.bossbot.util.ColourUtil.nextColour
+import me.qbosst.bossbot.util.extensions.getGuildOrNull
+import me.qbosst.bossbot.util.extensions.getUserByString
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.User
