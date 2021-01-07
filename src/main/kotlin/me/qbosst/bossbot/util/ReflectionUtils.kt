@@ -2,6 +2,7 @@ package me.qbosst.bossbot.util
 
 import org.reflections.Reflections
 import java.lang.reflect.Modifier
+import kotlin.reflect.full.companionObject
 
 /**
  *  @author Din0s
@@ -14,11 +15,12 @@ import java.lang.reflect.Modifier
  *  @return List of classes found
  */
 @Suppress("UNCHECKED_CAST")
-fun <T> loadObjects(path: String, clazz: Class<out T>, log: Boolean = false): List<T> = Reflections(path)
-        .getSubTypesOf(clazz)
-        .filter { !Modifier.isAbstract(it.modifiers) }
-        .mapNotNull { it.getDeclaredField("INSTANCE").get(null) }
-        .toList() as List<T>
+fun <T> loadObjects(path: String, clazz: Class<out T>): List<T> = Reflections(path)
+    .getSubTypesOf(clazz)
+    .asSequence()
+    .filter { !Modifier.isAbstract(it.modifiers) }
+    .mapNotNull { it.getDeclaredField("INSTANCE").get(null) }
+    .toList() as List<T>
 
 /**
  *  Loads singleton class or regular class from the given path
@@ -30,12 +32,8 @@ fun <T> loadObjects(path: String, clazz: Class<out T>, log: Boolean = false): Li
  */
 @Suppress("UNCHECKED_CAST")
 fun <T> loadObjectOrClass(path: String, clazz: Class<out T>): List<T> = Reflections(path)
-        .getSubTypesOf(clazz)
-        .filter { !Modifier.isAbstract(it.modifiers) }
-        .mapNotNull {
-            if(it.declaredFields.map { field -> field.name }.contains("INSTANCE"))
-                it.getDeclaredField("INSTANCE").get(null)
-            else
-                it.getDeclaredConstructor().newInstance()
-        }
-        .toList() as List<T>
+    .getSubTypesOf(clazz)
+    .asSequence()
+    .filter { !Modifier.isAbstract(it.modifiers) }
+    .mapNotNull { it.kotlin.objectInstance ?: it.getDeclaredConstructor().newInstance() }
+    .toList() as List<T>
