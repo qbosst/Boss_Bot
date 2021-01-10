@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.commands.settings.guild
 
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 
 abstract class CommandGuildStringSetter: CommandGuildSetter<String>() {
     abstract val maxLength: Int

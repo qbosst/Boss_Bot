@@ -1,9 +1,8 @@
 package me.qbosst.bossbot.commands.dev
 
-import me.qbosst.bossbot.BossBot
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.util.maxLength
 import net.dv8tion.jda.api.entities.Message
 
@@ -14,14 +13,12 @@ class CommandStatisticsCommand: Command() {
 
     @CommandFunction
     fun execute(ctx: Context) {
-        ctx.messageChannel.sendMessage(stats.toString().maxLength(Message.MAX_CONTENT_LENGTH)).queue()
-    }
+        val stats = ctx.client.stats.asSequence()
+            .sortedByDescending { (_, value) -> value }
+            .map { (key, value) -> Pair(key, value) }
+            .toMap()
 
-    companion object {
-        private val stats: Map<String, Int>
-            get() = BossBot.listener.commandClient.stats.asSequence()
-                .sortedByDescending { (_, value) -> value }
-                .map { (key, value) -> Pair(key.label, value) }
-                .toMap()
+
+        ctx.messageChannel.sendMessage(stats.toString().maxLength(Message.MAX_CONTENT_LENGTH)).queue()
     }
 }

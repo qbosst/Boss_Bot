@@ -6,7 +6,7 @@ import me.qbosst.bossbot.database.manager.UserData
 import me.qbosst.bossbot.database.manager.UserDataManager
 import me.qbosst.bossbot.database.manager.userData
 import me.qbosst.bossbot.database.tables.UserDataTable
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.util.TimeUtil
 import net.dv8tion.jda.api.entities.User
 import java.time.ZoneId

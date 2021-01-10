@@ -28,5 +28,12 @@ object UserSpaceMessagesManager: TableManager<Long, List<Long>>() {
         pull(userId)
     }
 
+    fun getUserIdByMessageId(messageId: Long): Long? = transaction {
+        UserSpaceMessagesTable
+            .select { UserSpaceMessagesTable.messageId.eq(messageId) }
+            .map { row -> row[UserSpaceMessagesTable.userId] }
+            .singleOrNull()
+    }
+
 
 }

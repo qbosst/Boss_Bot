@@ -2,7 +2,7 @@ package me.qbosst.bossbot.commands.dev
 
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 
 class ShutdownCommand: Command() {
 

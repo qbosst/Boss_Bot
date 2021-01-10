@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.listeners
 
-import dev.minn.jda.ktx.CoroutineEventListener
 import me.qbosst.bossbot.BossBot
 import me.qbosst.bossbot.commands.colour.ColourCommand
 import me.qbosst.bossbot.commands.dev.*
@@ -13,13 +12,12 @@ import me.qbosst.bossbot.database.manager.GuildColoursManager
 import me.qbosst.bossbot.database.manager.GuildSettingsManager
 import me.qbosst.bossbot.database.manager.settings
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
-import me.qbosst.bossbot.entities.parsers.ColourParser
-import me.qbosst.bossbot.entities.parsers.UnitParser
-import me.qbosst.bossbot.entities.parsers.ZoneIdParser
+import me.qbosst.bossbot.entities.parsers.*
 import me.qbosst.bossbot.listeners.handlers.CommandClient
 import me.qbosst.bossbot.listeners.handlers.EconomyHandler
 import me.qbosst.bossbot.listeners.handlers.EventLogger
 import me.qbosst.bossbot.listeners.handlers.commandClient
+import me.qbosst.jda.ext.async.CoroutineEventListener
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.TextChannel
@@ -54,6 +52,7 @@ class Listener(cacheSize: Int): CoroutineEventListener {
             add(EightBallCommand())
             add(PingCommand())
             add(AvatarCommand())
+            add(HelpCommand())
 
             // time
             add(TimeCommand())
@@ -72,6 +71,8 @@ class Listener(cacheSize: Int): CoroutineEventListener {
         registerParser(UnitParser())
         registerParser(ColourParser())
         registerParser(ZoneIdParser())
+        registerParser(OnlineStatusParser())
+        registerParser(ActivityParser())
     }
 
     private val eventLogger = object: EventLogger(cacheSize) {
@@ -107,6 +108,8 @@ class Listener(cacheSize: Int): CoroutineEventListener {
             is ReadyEvent -> onReadyEvent(event)
             is ShutdownEvent -> onShutdownEvent(event)
         }
+
+        commandClient.handleEventListeners(event)
     }
 
     private suspend fun onMessageReceivedEvent(event: MessageReceivedEvent) {

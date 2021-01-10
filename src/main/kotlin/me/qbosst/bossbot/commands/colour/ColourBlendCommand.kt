@@ -9,7 +9,7 @@ import me.qbosst.bossbot.util.ColourUtil.sendColourEmbed
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import java.util.regex.Pattern
 import kotlin.random.Random
 

@@ -3,9 +3,9 @@ package me.qbosst.bossbot.commands.dev
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.util.maxLength
-import me.qbosst.jda.ext.util.withMultilineCode
+import me.qbosst.jda.ext.util.multilineCode
 import net.dv8tion.jda.api.entities.Message
 import javax.script.ScriptEngineManager
 
@@ -23,7 +23,6 @@ class EvaluateCommand: Command()
             ctx.messageChannel.sendMessage("Engine is null.").queue()
         }
         else {
-            ctx.jda.retrieveUserById(123123)
             engine.put("ctx", ctx)
             engine.put("event", ctx.event)
             engine.put("jda", ctx.jda)
@@ -36,8 +35,8 @@ class EvaluateCommand: Command()
 
             ctx.messageChannel.sendMessage(
                 result.toString()
-                    .withMultilineCode("console")
-                    .maxLength(Message.MAX_CONTENT_LENGTH)
+                    .multilineCode("console")
+                    .maxLength(Message.MAX_CONTENT_LENGTH, "...```")
             ).queue()
         }
     }

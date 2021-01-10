@@ -5,7 +5,7 @@ import me.qbosst.bossbot.database.manager.colours
 import me.qbosst.bossbot.database.manager.settings
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 
 class ColourRemoveCommand: Command() {
     override val label: String = "remove"

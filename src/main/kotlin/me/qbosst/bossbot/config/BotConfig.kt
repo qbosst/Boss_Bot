@@ -14,7 +14,9 @@ class BotConfig(
     val deepaiToken: String = "",
     val spotifyClientId: String = "",
     val spotifyClientSecret: String = "",
-    val voteLinks: List<String> = listOf()
+    val voteLinks: List<String> = listOf(),
+    val spaceSpeakToken: String = "",
+    val spaceSpeakEmailAddress: String = ""
 ) {
     companion object {
         const val DIRECTORY = "./config.json"

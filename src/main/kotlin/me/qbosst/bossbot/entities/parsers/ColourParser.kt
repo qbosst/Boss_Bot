@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.entities.parsers
 
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.jda.ext.commands.entities.IContext
 import me.qbosst.jda.ext.commands.parsers.Parser
 import java.util.*
 import java.util.regex.Pattern
@@ -8,9 +8,9 @@ import java.awt.Color as Colour
 
 class ColourParser: Parser<Colour>
 {
-    override suspend fun parse(ctx: Context, param: String): Optional<Colour> = parse(param)
+    override suspend fun parse(ctx: IContext, param: String): Optional<Colour> = parse(param)
 
-    override suspend fun parse(ctx: Context, params: List<String>): Pair<Array<Colour>, List<String>> =
+    override suspend fun parse(ctx: IContext, params: List<String>): Pair<Array<Colour>, List<String>> =
         Parser.defaultParse(this, ctx, params)
 
     fun parse(param: String): Optional<Colour>

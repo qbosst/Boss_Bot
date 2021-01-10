@@ -3,7 +3,7 @@ package me.qbosst.bossbot.commands.settings
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 
 abstract class CommandSetter<K, V>: Command()
 {

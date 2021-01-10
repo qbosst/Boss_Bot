@@ -4,7 +4,7 @@ import me.qbosst.bossbot.database.manager.colours
 import me.qbosst.bossbot.util.ColourUtil
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.util.maxLength
 
 class ColourViewCommand: Command() {

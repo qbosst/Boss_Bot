@@ -1,8 +1,9 @@
 package me.qbosst.bossbot.commands.dev
 
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
+import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import net.dv8tion.jda.api.entities.Activity
 
 class ActivityCommand: Command() {
@@ -11,7 +12,7 @@ class ActivityCommand: Command() {
     override val developerOnly: Boolean = true
 
     @CommandFunction
-    fun execute(ctx: Context, activity: Activity) {
+    fun execute(ctx: Context, @Greedy activity: Activity) {
         ctx.jda.shardManager!!.setActivity(activity)
         ctx.messageChannel.sendMessage("set activity").queue()
     }

@@ -1,9 +1,9 @@
 package me.qbosst.bossbot.commands.misc
 
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.User
 

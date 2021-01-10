@@ -3,7 +3,7 @@ package me.qbosst.bossbot.commands.colour
 import me.qbosst.bossbot.database.manager.GuildColoursManager
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import net.dv8tion.jda.api.entities.User
 import java.awt.Color as Colour
 

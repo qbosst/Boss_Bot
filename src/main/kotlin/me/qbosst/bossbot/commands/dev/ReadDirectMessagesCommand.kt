@@ -2,8 +2,8 @@ package me.qbosst.bossbot.commands.dev
 
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
-import me.qbosst.jda.ext.util.withSingleLineCode
+import me.qbosst.bossbot.entities.Context
+import me.qbosst.jda.ext.util.singleLineCode
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.User
@@ -29,7 +29,7 @@ class ReadDirectMessagesCommand: Command() {
                     // if we received an error
                     if(error != null) {
                         ctx.messageChannel.sendMessage("Something has went wrong... ${error.localizedMessage
-                                .withSingleLineCode()}").queue()
+                                .singleLineCode()}").queue()
                     }
                 }
         } else {

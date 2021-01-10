@@ -2,7 +2,6 @@ package me.qbosst.bossbot.listeners.handlers
 
 import me.qbosst.bossbot.database.manager.MemberData
 import me.qbosst.bossbot.database.manager.MemberDataManager
-import me.qbosst.jda.ext.async.getOrRetrieveMemberById
 import me.qbosst.jda.ext.util.FixedCache
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Member
@@ -10,7 +9,6 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMuteEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -97,19 +95,18 @@ class EconomyHandler(cacheSize: Int) {
     }
 
     fun save(jda: JDA) {
-        jda.guildCache.asSequence()
-            .mapNotNull { guild -> Pair(guild, voiceCache.remove(guild.idLong)!!) }
-            .forEach { (guild, state) ->
-                val guildId = guild.idLong
-                state.asSequence().forEach { (userId, state) ->
+        // update voice stats
+        jda.guildCache.forEach { guild ->
+            val guildId = guild.idLong
+            if(voiceCache.containsKey(guild.idLong)) {
+                voiceCache.remove(guild.idLong)!!.forEach { (userId, state) ->
                     MemberDataManager.update(guildId, userId) { old ->
-                        // all members who are in voice channels should be cached, so no retrieve
                         val isMuted = guild.getMemberById(userId)?.voiceState?.isMuted ?: false
-
                         return@update process(state, old, isMuted)
                     }
                 }
             }
+        }
     }
 
     private fun process(state: VoiceMemberInfo, data: MemberData, isMutedNow: Boolean): MemberData {
@@ -157,6 +154,7 @@ private class VoiceMemberInfo(val join: OffsetDateTime, isMuted: Boolean) {
     val voiceChatTime: Duration
         get() = Duration.between(join, OffsetDateTime.now())
 }
+
 private fun genKey(guildId: Long, userId: Long) = Pair(guildId, userId)
 
 private fun Member.key() = genKey(guild.idLong, idLong)

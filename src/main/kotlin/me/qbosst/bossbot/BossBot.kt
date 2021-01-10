@@ -1,14 +1,14 @@
 package me.qbosst.bossbot
 
 import com.sedmelluq.discord.lavaplayer.jdaudp.NativeAudioSendFactory
-import dev.minn.jda.ktx.CoroutineEventManager
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
-import me.qbosst.bossbot.database.manager.UserData
 import me.qbosst.bossbot.database.tables.*
 import me.qbosst.bossbot.listeners.Listener
+import me.qbosst.jda.ext.async.CoroutineEventManager
+import me.qbosst.spacespeak.SpaceSpeakAPI
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.events.GenericEvent
@@ -46,12 +46,17 @@ object BossBot
     lateinit var listener: Listener
         private set
 
+    lateinit var spaceSpeakApi: SpaceSpeakAPI
+        private set
+
     fun init(config: BotConfig) {
         require(!this::api.isInitialized) { "Boss Bot has already been initialised!" }
 
         this.config = config
 
         this.listener = Listener(config.cacheSize)
+
+        this.spaceSpeakApi = SpaceSpeakAPI(config.spaceSpeakToken)
 
         this.database = connectDb(config.databaseUrl, config.databaseUser, config.databasePassword)
 

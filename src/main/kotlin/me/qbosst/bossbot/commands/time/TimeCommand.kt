@@ -4,9 +4,9 @@ import me.qbosst.bossbot.database.manager.userData
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.annotations.Greedy
 import me.qbosst.jda.ext.commands.entities.Command
-import me.qbosst.jda.ext.commands.entities.Context
+import me.qbosst.bossbot.entities.Context
 import me.qbosst.jda.ext.util.TimeUtil
-import me.qbosst.jda.ext.util.withSingleLineCode
+import me.qbosst.jda.ext.util.singleLineCode
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.User
 import java.time.Duration
@@ -94,7 +94,7 @@ class TimeCommand: Command()
         val sb = buildString {
             append("The time for ${getTarget(zoneId, user, isSelf)}")
             val now = ZonedDateTime.now(zoneId)
-            append(" is ").append(now.format(TimeUtil.dateTimeFormatter).withSingleLineCode())
+            append(" is ").append(now.format(TimeUtil.dateTimeFormatter).singleLineCode())
         }
         channel.sendMessage(sb).queue()
     }
@@ -105,8 +105,8 @@ class TimeCommand: Command()
             append("The time for ${getTarget(zoneId, user, isSelf)} in ")
             val seconds = duration.seconds
             val date = ZonedDateTime.now(zoneId).plusSeconds(seconds)
-            append(TimeUtil.timeToString(seconds, TimeUnit.SECONDS).withSingleLineCode()).append(" will be ")
-            append(date.format(TimeUtil.dateTimeFormatter).withSingleLineCode())
+            append(TimeUtil.timeToString(seconds, TimeUnit.SECONDS).singleLineCode()).append(" will be ")
+            append(date.format(TimeUtil.dateTimeFormatter).singleLineCode())
         }
 
         channel.sendMessage(sb).queue()
@@ -116,6 +116,6 @@ class TimeCommand: Command()
     {
         isSelf -> "you `(${zoneId.id})`"
         user != null -> "${user.asTag} `(${zoneId.id})`"
-        else -> zoneId.id.withSingleLineCode()
+        else -> zoneId.id.singleLineCode()
     }
 }

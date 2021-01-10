@@ -4,18 +4,21 @@ package me.qbosst.bossbot.listeners.handlers
 
 import me.qbosst.bossbot.BossBot
 import me.qbosst.bossbot.database.manager.settings
+import me.qbosst.bossbot.entities.Context
+import me.qbosst.jda.ext.async.CoroutineEventListener
 import me.qbosst.jda.ext.commands.annotations.CommandFunction
 import me.qbosst.jda.ext.commands.argument.ArgumentParser
 import me.qbosst.jda.ext.commands.entities.*
 import me.qbosst.jda.ext.commands.exceptions.BadArgument
 import me.qbosst.jda.ext.commands.impl.DefaultCommandClientBuilder
 import me.qbosst.jda.ext.commands.parsers.Parser
+import me.qbosst.jda.ext.util.singleLineCode
 import net.dv8tion.jda.api.entities.Message
+import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.reflect.KParameter
-import me.qbosst.jda.ext.commands.entities.CommandClient as ICommandClient
 
 /**
  * Handles [Command] related functions
@@ -28,8 +31,35 @@ class CommandClient(
     commands: Collection<Command>,
     override val developerIds: Collection<Long>
 ): ICommandClient, CommandEventListener {
-    private val _commands: MutableMap<String, Command> = mutableMapOf()
-    private val commandAliases: MutableMap<String, Command> = mutableMapOf()
+
+    private val commandAliases: Map<String, Command> = buildMap {
+        commands.forEach { command ->
+            command.aliases.forEach { alias ->
+                put(alias.toLowerCase(), command)
+            }
+        }
+    }
+    override val commands: Map<String, Command> = buildMap {
+        commands.forEach { command ->
+            put(command.label.toLowerCase(), command)
+        }
+    }
+
+    val allCommands: Collection<Command> = buildList {
+        for (command in commands) {
+            add(command)
+            command.allChildren.forEach { child ->
+                add(child)
+            }
+        }
+    }
+
+    private val commandEventListeners: Collection<CoroutineEventListener> = allCommands
+        .filterIsInstance<CoroutineEventListener>()
+
+    override val listeners: Collection<CommandEventListener> = listOf(this)
+
+    override val prefixProvider: PrefixProvider = PrefixProviderImpl()
 
     private val _stats: MutableMap<Command, Int> = mutableMapOf()
 
@@ -39,22 +69,18 @@ class CommandClient(
     val stats: Map<Command, Int>
         get() = _stats
 
-    init {
-        // register commands
-        commands.forEach { command ->
-            _commands[command.label.toLowerCase()] = command
-            command.aliases.forEach { alias ->
-                commandAliases[alias.toLowerCase()] = command
+    suspend fun handleEventListeners(event: GenericEvent) {
+        commandEventListeners.forEach { listener ->
+            try {
+                listener.onEvent(event)
+            }
+            catch (t: Throwable) {
+                LOG.error("An uncaught exception has occurred with one of the event listeners", t)
+                if(t is Error)
+                    throw t
             }
         }
     }
-
-    override val commands: Map<String, Command>
-        get() = _commands
-
-    override val listeners: Collection<CommandEventListener> = listOf(this)
-
-    override val prefixProvider: PrefixProvider = PrefixProviderImpl()
 
     /**
      * @return Whether the event was a command event or not, if this is a command event but fails a check,
@@ -258,13 +284,13 @@ class CommandClient(
     private class PrefixProviderImpl: PrefixProvider {
 
         override fun provide(message: Message): Collection<String> = buildList {
-            // bot mention
-            add("<@${message.jda.selfUser.id}>")
-            add("<@!${message.jda.selfUser.id}>")
-
             val guild = if(message.isFromGuild) message.guild else null
             val prefix = guild?.settings?.prefix ?: BossBot.config.defaultPrefix
             add(prefix)
+
+            // bot mention
+            add("<@${message.jda.selfUser.id}>")
+            add("<@!${message.jda.selfUser.id}>")
         }
     }
 
@@ -272,14 +298,40 @@ class CommandClient(
         private val LOG: Logger = LoggerFactory.getLogger(CommandClient::class.java)
     }
 
-    override fun onBadArgument(ctx: Context, executable: CommandExecutable, error: BadArgument) {
-        val isEmpty = error.provided.isEmpty() || error.provided.none { it.isNotBlank() || it.isNotEmpty() }
+    override fun onBadArgument(ctx: IContext, executable: CommandExecutable, error: BadArgument) {
 
-        if(isEmpty) {
-            ctx.messageChannel.sendMessage("Please provider ${error.expected.name}").queue()
-        } else {
-            ctx.messageChannel.sendMessage("Bad Argument...").queue()
+        val cause = error.cause
+        when {
+            // checks if there is an underlying cause for this exception
+            cause != null ->
+                ctx.messageChannel.sendMessage("Could not parse argument: ${error.localizedMessage.singleLineCode()}").queue()
+
+            // checks if no argument was given
+            error.provided.isEmpty() || error.provided.none { it.isNotBlank() || it.isNotEmpty() } ->
+                ctx.messageChannel.sendMessage("Please provide the ${error.expected.name.singleLineCode()} argument").queue()
+
+            // only one invalid argument
+            error.provided.size == 1 -> {
+                ctx.messageChannel.sendMessage("${error.provided.first().singleLineCode()} is not a valid argument for ${error.expected.name.singleLineCode()}").queue()
+            }
+
+            // multiple invalid arguments, only run when an Array<T> argument failed
+            else -> {
+                ctx.messageChannel.sendMessage("The following were not valid arguments: ${error.provided}").queue()
+            }
         }
+    }
+
+    override fun onMultipleBadArguments(ctx: IContext, errors: Map<CommandExecutable, BadArgument>) {
+        ctx.messageChannel.sendMessage("Please provide a valid ${errors.map { (key, value) -> value.expected.type.simpleName}}").queue()
+    }
+
+    override fun onMultipleParsingErrors(ctx: IContext, errors: Map<CommandExecutable, Throwable>) {
+        println(errors)
+    }
+
+    override fun onCommandError(ctx: IContext, executable: CommandExecutable, error: Throwable) {
+        println("Caught exception: $error")
     }
 
     class Builder {

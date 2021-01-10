@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.listeners.handlers
 
-import dev.minn.jda.ktx.Embed
 import me.qbosst.bossbot.entities.MessageCache
 import me.qbosst.jda.ext.util.maxLength
 import net.dv8tion.jda.api.EmbedBuilder
