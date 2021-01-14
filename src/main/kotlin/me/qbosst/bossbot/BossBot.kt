@@ -1,11 +1,15 @@
 package me.qbosst.bossbot
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.builders.StartBuilder
+import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.event.gateway.ReadyEvent
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
+import me.qbosst.bossbot.extensions.ColourExtension
 import mu.KotlinLogging
 import org.koin.core.logger.Level
 import java.io.File
@@ -14,8 +18,7 @@ import java.util.Scanner
 private val botLogger = KotlinLogging.logger {  }
 
 class BossBot(
-    token: String,
-    defaultPrefix: String,
+    val config: BotConfig,
     addHelpExtension: Boolean = true,
     addSentryExtension: Boolean = true,
     invokeCommandOnMention: Boolean = true,
@@ -26,8 +29,8 @@ class BossBot(
     koinLogLevel: Level = Level.ERROR,
     val json: Json = Json {},
 ): ExtensibleBot(
-    token,
-    defaultPrefix,
+    config.discordToken,
+    config.defaultPrefix,
     addHelpExtension,
     addSentryExtension,
     invokeCommandOnMention,
@@ -36,7 +39,11 @@ class BossBot(
     guildsToFill,
     fillPresences,
     koinLogLevel
-)
+) {
+    fun init() {
+        addExtension(::ColourExtension)
+    }
+}
 
 suspend fun main() {
     try {
@@ -59,12 +66,18 @@ suspend fun main() {
         val config = json.decodeFromString<BotConfig>(file.readText())
 
         val bot = BossBot(
-            token = config.discordToken,
-            defaultPrefix = config.defaultPrefix,
+            config = config,
             json = json
         )
 
-        bot.start()
+        bot
+            .apply { init() }
+            .start {
+                presence {
+                    status = PresenceStatus.DoNotDisturb
+                    playing("Loading...")
+                }
+            }
 
     } catch (t: Throwable) {
         botLogger.error(t) { "Could not initialize Boss Bot "}

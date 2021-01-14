@@ -30,6 +30,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.3")
 
+    // reflection
+    implementation(kotlin("reflect"))
+
     // local dependency of SpaceSpeak API. Cannot be published open source (yet).
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.0.jar"))
 }
