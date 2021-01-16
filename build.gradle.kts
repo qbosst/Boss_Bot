@@ -21,6 +21,7 @@ repositories {
 }
 
 dependencies {
+    val exposedVer = "0.24.1"
 
     // kord
     implementation("dev.kord:kord-core:0.7.0-SNAPSHOT")
@@ -29,6 +30,12 @@ dependencies {
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.3")
+
+    // database
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVer")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposedVer")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVer")
+    implementation("mysql:mysql-connector-java:8.0.22")
 
     // reflection
     implementation(kotlin("reflect"))

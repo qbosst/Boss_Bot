@@ -13,7 +13,7 @@ private val hexMatcher8 = Pattern.compile("(#)?(?<hex>[0-9A-Fa-f]{8})")
 private val rgbaMatcher = Pattern.compile("((?<r>[0-9]{1,3})\\s(?<g>[0-9]{1,3})\\s(?<b>[0-9]{1,3})((\\s)(?<a>[0-9]{1,3}))?)")
 
 class ColourConverter(
-    private val colourProvider: (CommandContext) -> Map<String, Colour> = { mapOf() }
+    private val colourProvider: suspend (CommandContext) -> Map<String, Colour> = { mapOf() }
 ): SingleConverter<Colour>() {
     override val signatureTypeString: String = "colour"
 
@@ -26,7 +26,7 @@ class ColourConverter(
 }
 
 class ColourCoalescingConverter(
-    private val colourProvider: (CommandContext) -> Map<String, Colour> = { mapOf() }
+    private val colourProvider: suspend (CommandContext) -> Map<String, Colour> = { mapOf() }
 ): CoalescingConverter<Colour>() {
     override val signatureTypeString: String = "colour"
 
@@ -43,10 +43,10 @@ class ColourCoalescingConverter(
 private fun throwException(arg: String): Nothing =
     throw ParseException("'$arg' must be a hex value, a colour name or rgba value")
 
-private fun parseColour(
+private suspend fun parseColour(
     arg: String,
     context: CommandContext,
-    colourProvider: (CommandContext) -> Map<String, Colour> = { mapOf() }
+    colourProvider: suspend (CommandContext) -> Map<String, Colour> = { mapOf() }
 ): Colour? {
     val hex6 = hexMatcher6.matcher(arg)
     if(hex6.matches()) {

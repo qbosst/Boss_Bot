@@ -4,13 +4,14 @@ import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.builders.StartBuilder
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.event.gateway.ReadyEvent
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
+import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.extensions.ColourExtension
 import mu.KotlinLogging
+import org.jetbrains.exposed.sql.Database
 import org.koin.core.logger.Level
 import java.io.File
 import java.util.Scanner
@@ -19,29 +20,30 @@ private val botLogger = KotlinLogging.logger {  }
 
 class BossBot(
     val config: BotConfig,
-    addHelpExtension: Boolean = true,
-    addSentryExtension: Boolean = true,
-    invokeCommandOnMention: Boolean = true,
-    messageCacheSize: Int = 10_000,
-    commandThreads: Int = Runtime.getRuntime().availableProcessors() * 2,
-    guildsToFill: List<Snowflake>? = listOf(),
-    fillPresences: Boolean? = null,
-    koinLogLevel: Level = Level.ERROR,
     val json: Json = Json {},
 ): ExtensibleBot(
-    config.discordToken,
-    config.defaultPrefix,
-    addHelpExtension,
-    addSentryExtension,
-    invokeCommandOnMention,
-    messageCacheSize,
-    commandThreads,
-    guildsToFill,
-    fillPresences,
-    koinLogLevel
+    token = config.discordToken,
+    prefix = config.defaultPrefix,
+    messageCacheSize = config.messageCacheSize
 ) {
-    fun init() {
-        addExtension(::ColourExtension)
+    lateinit var dbManager: DatabaseManager
+
+    init {
+        addExtension { ColourExtension(this, config.defaultCacheSize) }
+    }
+
+    override suspend fun start(builder: suspend StartBuilder.() -> Unit) {
+
+        // connect to database
+        dbManager = DatabaseManager(
+            host = config.databaseHost,
+            username = config.databaseUsername,
+            password = config.databasePassword
+        ).apply {
+            connect()
+        }
+
+        super.start(builder)
     }
 }
 
@@ -65,19 +67,18 @@ suspend fun main() {
         // otherwise load config file
         val config = json.decodeFromString<BotConfig>(file.readText())
 
+        // create instance of bot and start it
         val bot = BossBot(
             config = config,
             json = json
-        )
-
-        bot
-            .apply { init() }
-            .start {
+        ).apply {
+            start {
                 presence {
                     status = PresenceStatus.DoNotDisturb
                     playing("Loading...")
                 }
             }
+        }
 
     } catch (t: Throwable) {
         botLogger.error(t) { "Could not initialize Boss Bot "}
