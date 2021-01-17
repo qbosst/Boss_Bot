@@ -10,7 +10,8 @@ class BotConfig(
     val databaseUsername: String = "",
     val databasePassword: String = "",
     val messageCacheSize: Int = 10_000,
-    val defaultCacheSize: Int = 500
+    val defaultCacheSize: Int = 500,
+    val developerId: Long = 332947254602235914,
 ) {
 
     companion object {

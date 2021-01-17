@@ -3,16 +3,14 @@ package me.qbosst.bossbot
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.builders.StartBuilder
 import dev.kord.common.entity.PresenceStatus
-import dev.kord.common.entity.Snowflake
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.extensions.ColourExtension
+import me.qbosst.bossbot.extensions.DeveloperExtension
 import mu.KotlinLogging
-import org.jetbrains.exposed.sql.Database
-import org.koin.core.logger.Level
 import java.io.File
 import java.util.Scanner
 
@@ -20,7 +18,6 @@ private val botLogger = KotlinLogging.logger {  }
 
 class BossBot(
     val config: BotConfig,
-    val json: Json = Json {},
 ): ExtensibleBot(
     token = config.discordToken,
     prefix = config.defaultPrefix,
@@ -30,6 +27,7 @@ class BossBot(
 
     init {
         addExtension { ColourExtension(this, config.defaultCacheSize) }
+        addExtension { DeveloperExtension(this, listOf(config.developerId)) }
     }
 
     override suspend fun start(builder: suspend StartBuilder.() -> Unit) {
@@ -70,7 +68,6 @@ suspend fun main() {
         // create instance of bot and start it
         val bot = BossBot(
             config = config,
-            json = json
         ).apply {
             start {
                 presence {

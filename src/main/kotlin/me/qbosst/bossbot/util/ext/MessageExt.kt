@@ -28,6 +28,8 @@ suspend inline fun MessageBehavior.reply(
     return channel.createMessage {
         builder()
         messageReference = this@reply.id
-        allowedMentions?.repliedUser = mentionUser
+        allowedMentions {
+            repliedUser = mentionUser
+        }
     }
 }
