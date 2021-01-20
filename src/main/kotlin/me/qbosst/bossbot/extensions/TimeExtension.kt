@@ -1,19 +1,23 @@
 package me.qbosst.bossbot.extensions
 
-import com.gitlab.kordlib.cache.api.put
-import com.gitlab.kordlib.cache.api.query
-import com.gitlab.kordlib.cache.api.remove
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.commands.Command
 import com.kotlindiscord.kord.extensions.commands.GroupCommand
+import com.kotlindiscord.kord.extensions.commands.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.UserConverter
+import com.kotlindiscord.kord.extensions.commands.converters.optionalCoalescedDuration
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorId
+import dev.kord.cache.api.put
+import dev.kord.cache.api.query
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.User
-import me.qbosst.bossbot.converters.*
+import me.qbosst.bossbot.converters.coalescedZoneId
+import me.qbosst.bossbot.converters.impl.DurationConverter
+import me.qbosst.bossbot.converters.impl.ZoneIdConverter
+import me.qbosst.bossbot.converters.optionalUnion
+import me.qbosst.bossbot.converters.toCoalescing
 import me.qbosst.bossbot.database.models.UserData
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.TimeUtil
@@ -28,7 +32,6 @@ import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 class TimeExtension(bot: ExtensibleBot): Extension(bot) {
-
     override val name: String = "time"
 
     override suspend fun setup() {
@@ -37,8 +40,8 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
 
     private val timeGroup: suspend GroupCommand.() -> Unit = {
         class Args: Arguments() {
-            val arg by optionalUnionOf("zone id | user", ZoneIdConverter(), UserConverter())
-            val duration by optionalCoalescingDuration("duration")
+            val arg by optionalUnion("zone id | user", "", true, ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing())
+            val duration by optionalCoalescedDuration("duration", "", false)
         }
 
         name = "time"
@@ -46,16 +49,16 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
         action {
             with(parse(::Args)) {
                 when(arg) {
-                    null -> {
-                        handleUser(message.channel, message.author!!, true, duration)
-                    }
+                    null -> handleUser(message.channel, message.author!!, true, null)
                     is ZoneId -> {
+                        val zoneId = arg as ZoneId
                         if(duration != null) {
-                            displayTimeIn(message.channel, arg as ZoneId, null, false, duration!!)
+                            displayTimeIn(message.channel, zoneId, null, false, duration!!)
                         } else {
-                            displayCurrentTime(message.channel, arg as ZoneId, null, false)
+                            displayCurrentTime(message.channel, zoneId, null, false)
                         }
                     }
+                    is Duration -> handleUser(message.channel, message.author!!, true, arg as Duration)
                     is User -> {
                         val user = arg as User
                         val isSelf = user.id == message.data.authorId
@@ -65,25 +68,22 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
             }
         }
 
+        command(nowCommand)
         command(setCommand)
         command(zonesCommand)
-        command(nowCommand)
     }
 
-    private val nowCommand: suspend Command.() -> Unit = {
+    private val nowCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val arg by optionalUnionOf("zone id | user", ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing())
+            val arg by optionalUnion("zon", "", true, ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing())
         }
 
         name = "now"
-
         action {
             with(parse(::Args)) {
                 when(arg) {
                     null -> handleUser(message.channel, message.author!!, true, null)
-
                     is ZoneId -> displayCurrentTime(message.channel, arg as ZoneId, null, false)
-
                     is User -> {
                         val user = arg as User
                         val isSelf = user.id == message.data.authorId
@@ -94,9 +94,20 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
         }
     }
 
-    private val setCommand: suspend Command.() -> Unit = {
+    private val zonesCommand: suspend MessageCommand.() -> Unit = {
+        name = "zones"
+
+        action {
+            val zones = ZoneId.getAvailableZoneIds().sorted().joinToString("\n").byteInputStream()
+            message.reply(false) {
+                addFile("zones.txt", zones)
+            }
+        }
+    }
+
+    private val setCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val newZoneId by arg("zone id", ZoneIdConverter())
+            val newZoneId by coalescedZoneId("zone id", "")
         }
 
         name = "set"
@@ -140,17 +151,6 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
                             .update { data -> data.copy(zoneId = newZoneId) }
                     }
                 }
-            }
-        }
-    }
-
-    private val zonesCommand: suspend Command.() -> Unit = {
-        name = "zones"
-
-        action {
-            val zones = ZoneId.getAvailableZoneIds().sorted().joinToString("\n").byteInputStream()
-            message.reply(false) {
-                addFile("zones.txt", zones)
             }
         }
     }

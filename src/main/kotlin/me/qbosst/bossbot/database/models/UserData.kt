@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.database.models
 
-import com.gitlab.kordlib.cache.api.data.description
+import dev.kord.cache.api.data.description
 import java.time.ZoneId
 
 data class UserData(

@@ -1,8 +1,8 @@
 package me.qbosst.bossbot
 
-import com.gitlab.kordlib.cache.api.DataCache
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.builders.StartBuilder
+import dev.kord.cache.api.DataCache
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.core.event.gateway.ReadyEvent
 import kotlinx.serialization.decodeFromString
@@ -11,9 +11,7 @@ import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.database.models.UserData
-import me.qbosst.bossbot.extensions.ColourExtension
-import me.qbosst.bossbot.extensions.DeveloperExtension
-import me.qbosst.bossbot.extensions.TimeExtension
+import me.qbosst.bossbot.extensions.*
 import mu.KotlinLogging
 import java.io.File
 import java.util.Scanner

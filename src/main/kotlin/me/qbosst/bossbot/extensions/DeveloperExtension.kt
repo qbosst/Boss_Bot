@@ -1,8 +1,8 @@
 package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.commands.Command
-import com.kotlindiscord.kord.extensions.commands.converters.defaultingNumber
+import com.kotlindiscord.kord.extensions.commands.MessageCommand
+import com.kotlindiscord.kord.extensions.commands.converters.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.user
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -10,34 +10,27 @@ import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.getTopRole
 import com.kotlindiscord.kord.extensions.utils.users
 import dev.kord.core.behavior.channel.withTyping
-import dev.kord.rest.json.request.AllowedMentionType
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import me.qbosst.bossbot.util.ext.reply
 
-class DeveloperExtension(
-    bot: ExtensibleBot,
-    val developers: Collection<Long>,
-): Extension(bot) {
-
+class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): Extension(bot) {
     private val json = Json {
         prettyPrint = true
     }
 
-    override val name: String = "dev"
+    override val name: String = "developer"
 
     override suspend fun setup() {
-        command(readDirectMessagesCommand)
         command(botStatisticsCommand)
-        command(testCommand)
+        command(readDirectMessagesCommand)
     }
 
-    private val botStatisticsCommand: suspend Command.() -> Unit = {
+    private val botStatisticsCommand: suspend MessageCommand.() -> Unit = {
         name = "botstatistics"
         aliases = arrayOf("botstats")
 
@@ -45,28 +38,21 @@ class DeveloperExtension(
             message.reply(false) {
                 embed {
                     color = message.getGuildOrNull()?.getMember(message.kord.selfId)?.getTopRole()?.color
-                    field {
-                        name = "Guilds"
-                        value = message.kord.guilds.count().toString()
-                        inline = true
-                    }
-
-                    field {
-                        name = "Cached Users"
-                        value = message.kord.users.count().toString()
-                        inline = true
-                    }
+                    field("Guilds", inline = true) { message.kord.guilds.count().toString() }
+                    field("Cached Users", inline = true) { message.kord.users.count().toString() }
                 }
             }
         }
     }
 
-    private val readDirectMessagesCommand: suspend Command.() -> Unit = {
+    private val readDirectMessagesCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val target by user("target")
-            val amount by defaultingNumber("amount", 100)
+            val target by user("target", "The user to read the DM history with")
+            val amount by defaultingInt("amount", "The amount of messages to read", defaultValue = 100)
         }
+
         name = "readdms"
+
 
         signature(::Args)
         action {
@@ -91,8 +77,8 @@ class DeveloperExtension(
                             message.channel.withTyping {
                                 val messages = buildJsonArray {
                                     add(json.encodeToJsonElement(lastMessage.data))
-                                    channel.getMessagesBefore(lastMessage.id, amount.toInt())
-                                        .collect { message -> add(json.encodeToJsonElement(message.data)) }
+                                    channel.getMessagesBefore(lastMessage.id, amount)
+                                        .collect { message -> add(json.encodeToJsonElement(message)) }
                                 }
 
                                 message.reply(false) {
@@ -109,25 +95,14 @@ class DeveloperExtension(
         }
     }
 
-    private val testCommand: suspend Command.() -> Unit = {
-        name = "test"
-
-        action {
-            message.reply(false) {
-                content = "@everyone"
-            }
+    override suspend fun command(body: suspend MessageCommand.() -> Unit) = super.command(body)
+        .apply {
+            check { event -> event.message.data.authorId.value in developers }
         }
-    }
 
-    override suspend fun command(body: suspend Command.() -> Unit): Command =
-        super.command(body)
-            .apply {
-                check { event -> event.message.data.authorId.value in developers }
-            }
+    override suspend fun command(commandObj: MessageCommand) = super.command(commandObj)
+        .apply {
+            check { event -> event.message.data.authorId.value in developers }
+        }
 
-    override suspend fun command(commandObj: Command): Command =
-        super.command(commandObj)
-            .apply {
-                check { event -> event.message.data.authorId.value in developers }
-            }
 }

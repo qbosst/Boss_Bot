@@ -1,36 +1,38 @@
 package me.qbosst.bossbot.extensions
 
-import com.gitlab.kordlib.cache.map.MapLikeCollection
-import com.gitlab.kordlib.cache.map.lruLinkedHashMap
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.commands.Command
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.GroupCommand
+import com.kotlindiscord.kord.extensions.commands.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.converters.defaultingBoolean
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.hasPermission
+import dev.kord.cache.map.MapLikeCollection
+import dev.kord.cache.map.lruLinkedHashMap
 import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Snowflake
-import me.qbosst.bossbot.converters.ColourCoalescingConverter
-import me.qbosst.bossbot.converters.ColourConverter
-import me.qbosst.bossbot.converters.lengthyString
+import dev.kord.core.behavior.MessageBehavior
+import me.qbosst.bossbot.converters.coalescedColour
+import me.qbosst.bossbot.converters.colourList
+import me.qbosst.bossbot.converters.maxLengthString
 import me.qbosst.bossbot.database.tables.GuildColoursTable
 import me.qbosst.bossbot.util.ColourUtil
 import me.qbosst.bossbot.util.ColourUtil.blend
 import me.qbosst.bossbot.util.ColourUtil.nextColour
 import me.qbosst.bossbot.util.ext.insertOrIgnore
 import me.qbosst.bossbot.util.ext.reply
-import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import kotlin.random.Random
 import java.awt.Color as Colour
 
 class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
+    private val cache = MapLikeCollection.lruLinkedHashMap<Long, Map<String, Colour>>(cacheSize)
 
-    private val cache = MapLikeCollection.lruLinkedHashMap<Snowflake, Map<String, Colour>>(cacheSize)
-
-    override val name: String = "colours"
+    override val name: String = "colour"
 
     override suspend fun setup() {
         group(colourGroup)
@@ -38,69 +40,70 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
 
     private val colourGroup: suspend GroupCommand.() -> Unit = {
         class Args: Arguments() {
-            val colour by coalescingColour("colour", includeDefault = true, includeGuild = true)
+            val colour by coalescedColour(
+                displayName = "colour",
+                description = "The colour to display",
+                colourProvider = buildConverter(includeDefault = true, includeGuild = true),
+                shouldThrow = true
+            )
         }
-
         name = "colour"
 
         signature(::Args)
         action {
             with(parse(::Args)) {
-                message.reply(false) {
-                    ColourUtil.buildColourEmbed(this, colour, "colour.png")
-                }
+                message.replyColourEmbed(colour)
             }
         }
 
         command(randomCommand)
         command(blendCommand)
         command(createCommand)
-        command(removeCommand)
         command(updateCommand)
+        command(removeCommand)
     }
 
-    private val randomCommand: suspend Command.() -> Unit = {
+    private val randomCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val isAlpha by defaultingBoolean("isAlpha", false)
+            val isAlpha by defaultingBoolean("isAlpha", "Whether a colour should have a random opacity", false)
         }
 
         name = "random"
-        description = "Generates and displays a random colour"
 
         signature(::Args)
         action {
             with(parse(::Args)) {
-                message.reply(false) {
-                    val colour = Random.nextColour(isAlpha)
-                    ColourUtil.buildColourEmbed(this, colour, "colour.png")
-                }
+                val colour = Random.nextColour(isAlpha)
+                message.replyColourEmbed(colour)
             }
         }
     }
 
-    private val blendCommand: suspend Command.() -> Unit = {
+    private val blendCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val colours by colour("colours", includeDefault = true, includeGuild = true).toMulti()
+            val colours by colourList(
+                displayName = "colours",
+                description = "The colours to blend together",
+                colourProvider = buildConverter(includeDefault = true, includeGuild = true),
+                required = true
+            )
         }
 
         name = "blend"
-        description = "Blends colours together, and displays the result"
 
         signature(::Args)
         action {
             with(parse(::Args)) {
-                val blended = colours.blend()
-                message.reply(false) {
-                    ColourUtil.buildColourEmbed(this, blended, "colour.png")
-                }
+                val colour = colours.blend()
+                message.replyColourEmbed(colour)
             }
         }
     }
 
-    private val createCommand: suspend Command.() -> Unit = {
+    private val createCommand: suspend MessageCommand.() -> Unit = {
         class Args: Arguments() {
-            val name by lengthyString("name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-            val colour by coalescingColour("colour", includeDefault = false, includeGuild = false)
+            val name by maxLengthString("name", "The name of the colour", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+            val colour by coalescedColour("colour", "The colour to create", shouldThrow = true)
         }
 
         name = "create"
@@ -112,13 +115,13 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         signature(::Args)
         action {
             with(parse(::Args)) {
-                val guildId = message.data.guildId.value!!
+                val guildId = guild!!.id.value
 
                 val isInserted = transaction {
                     GuildColoursTable.insertOrIgnore {
-                        it[GuildColoursTable.guildId] = guildId.value
+                        it[GuildColoursTable.guildId] = guildId
                         it[GuildColoursTable.name] = this@with.name
-                        it[GuildColoursTable.value] = colour.rgb
+                        it[GuildColoursTable.value] = this@with.colour.rgb
                     }
                 }
 
@@ -127,34 +130,34 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
                         content = "inserted"
                         cache.remove(guildId)
                     } else {
-                        content = "record already exists"
+                        content = "colour with this name already exists"
                     }
                 }
             }
         }
     }
 
-    private val removeCommand: suspend Command.() -> Unit = {
-        class Args: Arguments() {
-            val name by lengthyString("colour name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-        }
-
+    private val removeCommand: suspend MessageCommand.() -> Unit = {
         name = "remove"
         description = "Removes a guild-colour"
         aliases = arrayOf("delete")
 
+        val parser = object: Arguments() {
+            val name by maxLengthString("colour name", "The name of the colour to remove", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+        }
+
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature(::Args)
+        signature { parser }
         action {
-            with(parse(::Args)) {
-                val guildId = message.data.guildId.value!!
+            with(parse { parser }) {
+                val guildId = guild!!.id.value
 
                 // deletes records & gives the amount of records deleted
                 val deleted = transaction {
                     GuildColoursTable.deleteWhere {
-                        GuildColoursTable.guildId.eq(guildId.value) and GuildColoursTable.name.eq(name)
+                        GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(name)
                     }
                 }
 
@@ -170,26 +173,26 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         }
     }
 
-    private val updateCommand: suspend Command.() -> Unit = {
-        class Args: Arguments() {
-            val name by lengthyString("name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-            val colour by coalescingColour("new colour", includeDefault = false, includeGuild = false)
-        }
-
+    private val updateCommand: suspend MessageCommand.() -> Unit = {
         name = "update"
 
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature(::Args)
+        val parser = object: Arguments() {
+            val name by maxLengthString("name", "The name of the colour to update", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+            val colour by coalescedColour("new colour", "The colour to update the name with", shouldThrow = true)
+        }
+
+        signature { parser }
         action {
-            with(parse(::Args)) {
-                val guildId = message.data.guildId.value!!
+            with(parse { parser }) {
+                val guildId = guild!!.id.value
 
                 // updates records & gives the amount of records updated
                 val updated = transaction {
                     GuildColoursTable.update(
-                        { GuildColoursTable.guildId.eq(guildId.value) and GuildColoursTable.name.eq(name) }
+                        { GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(name) }
                     ) {
                         it[GuildColoursTable.value] = colour.rgb
                     }
@@ -207,7 +210,27 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         }
     }
 
-    private suspend fun getColoursById(id: Snowflake): Map<String, Colour> {
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun buildConverter(
+        includeDefault: Boolean,
+        includeGuild: Boolean
+    ): suspend (CommandContext) -> Map<String, Colour> = { ctx ->
+        buildMap {
+            if(includeDefault) {
+                putAll(ColourUtil.systemColours)
+            }
+
+            if(includeGuild) {
+                val guildId = ctx.getGuild()?.id?.value
+                if(guildId != null) {
+                    val guildColours = getColoursById(guildId)
+                    putAll(guildColours)
+                }
+            }
+        }
+    }
+
+    private suspend fun getColoursById(id: Long): Map<String, Colour> {
         // return if colours in cache
         if(cache.contains(id)) {
             return cache.get(id)!!
@@ -216,7 +239,7 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         // make database call
         val colours = transaction {
             GuildColoursTable
-                .select { GuildColoursTable.guildId.eq(id.value) }.asSequence()
+                .select { GuildColoursTable.guildId.eq(id) }.asSequence()
                 .map { row -> row[GuildColoursTable.name] to Colour(row[GuildColoursTable.value], true) }
                 .toMap()
         }
@@ -226,34 +249,8 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         return colours
     }
 
-    private fun Arguments.colour(displayName: String, includeDefault: Boolean = true, includeGuild: Boolean = true) =
-        arg(displayName, ColourConverter(buildConverter(includeDefault, includeGuild)))
-
-    private fun Arguments.coalescingColour(
-        displayName: String,
-        includeDefault: Boolean = true,
-        includeGuild: Boolean = true
-    ) = arg(displayName, ColourCoalescingConverter(buildConverter(includeDefault, includeGuild)))
-
-    @OptIn(ExperimentalStdlibApi::class)
-    private fun buildConverter(
-        includeDefault: Boolean,
-        includeGuild: Boolean,
-    ): suspend (CommandContext) -> Map<String, Colour> = { ctx ->
-        buildMap {
-            if(includeDefault) {
-                // put system colours
-                putAll(ColourUtil.systemColours)
-            }
-
-            if(includeGuild) {
-                // put guild colours
-                val guildId = ctx.message.data.guildId.value
-                if(guildId != null) {
-                    val guildColours = getColoursById(guildId)
-                    putAll(guildColours)
-                }
-            }
+    private suspend fun MessageBehavior.replyColourEmbed(colour: Colour) =
+        reply(false) {
+            ColourUtil.buildColourEmbed(this, colour, "colour.png")
         }
-    }
 }
