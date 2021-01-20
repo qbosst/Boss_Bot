@@ -47,6 +47,7 @@ class BossBot(
         addExtension { ColourExtension(this, config.defaultCacheSize) }
         addExtension { DeveloperExtension(this, listOf(config.developerId)) }
         addExtension(::TimeExtension)
+        addExtension(::MessageExtension)
     }
 
     override suspend fun registerListeners() {
