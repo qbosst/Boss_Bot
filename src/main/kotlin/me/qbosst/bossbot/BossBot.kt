@@ -1,15 +1,19 @@
 package me.qbosst.bossbot
 
+import com.gitlab.kordlib.cache.api.DataCache
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.builders.StartBuilder
 import dev.kord.common.entity.PresenceStatus
+import dev.kord.core.event.gateway.ReadyEvent
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.DatabaseManager
+import me.qbosst.bossbot.database.models.UserData
 import me.qbosst.bossbot.extensions.ColourExtension
 import me.qbosst.bossbot.extensions.DeveloperExtension
+import me.qbosst.bossbot.extensions.TimeExtension
 import mu.KotlinLogging
 import java.io.File
 import java.util.Scanner
@@ -24,15 +28,12 @@ class BossBot(
     messageCacheSize = config.messageCacheSize
 ) {
     lateinit var dbManager: DatabaseManager
+        private set
 
-    init {
-        addExtension { ColourExtension(this, config.defaultCacheSize) }
-        addExtension { DeveloperExtension(this, listOf(config.developerId)) }
-    }
-
-    override suspend fun start(builder: suspend StartBuilder.() -> Unit) {
-
-        // connect to database
+    /**
+     * Assigns [dbManager] and connects to the database
+     */
+    fun connectDatabase() {
         dbManager = DatabaseManager(
             host = config.databaseHost,
             username = config.databaseUsername,
@@ -40,8 +41,37 @@ class BossBot(
         ).apply {
             connect()
         }
+    }
+
+    override fun addDefaultExtensions() {
+        super.addDefaultExtensions()
+
+        addExtension { ColourExtension(this, config.defaultCacheSize) }
+        addExtension { DeveloperExtension(this, listOf(config.developerId)) }
+        addExtension(::TimeExtension)
+    }
+
+    override suspend fun registerListeners() {
+        super.registerListeners()
+
+        on<ReadyEvent> {
+            kord.editPresence {
+                status = PresenceStatus.Online
+                playing("Loading :)")
+            }
+        }
+    }
+
+    suspend fun registerCache(cache: DataCache) {
+        cache.register(UserData.description)
+    }
+
+    override suspend fun start(builder: suspend StartBuilder.() -> Unit) {
+        connectDatabase()
 
         super.start(builder)
+
+        registerCache(kord.cache)
     }
 }
 

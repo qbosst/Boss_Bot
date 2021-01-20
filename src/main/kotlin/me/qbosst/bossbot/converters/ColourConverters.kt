@@ -41,7 +41,7 @@ class ColourCoalescingConverter(
 }
 
 private fun throwException(arg: String): Nothing =
-    throw ParseException("'$arg' must be a hex value, a colour name or rgba value")
+    throw ParseException("'$arg' must be a hex value, colour name or rgba value")
 
 private suspend fun parseColour(
     arg: String,
