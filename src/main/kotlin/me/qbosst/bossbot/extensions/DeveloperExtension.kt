@@ -62,16 +62,15 @@ class DeveloperExtension(
     }
 
     private val readDirectMessagesCommand: suspend Command.() -> Unit = {
-        name = "readdms"
-
-        val parser = object: Arguments() {
+        class Args: Arguments() {
             val target by user("target")
             val amount by defaultingNumber("amount", 100)
         }
+        name = "readdms"
 
-        signature { parser }
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 when {
                     target.id == message.kord.selfId ->
                         message.reply(false) {

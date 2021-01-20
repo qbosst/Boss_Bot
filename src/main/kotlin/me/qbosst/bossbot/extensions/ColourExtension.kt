@@ -37,14 +37,15 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val colourGroup: suspend GroupCommand.() -> Unit = {
-        name = "colour"
-
-        val parser = object: Arguments() {
+        class Args: Arguments() {
             val colour by coalescingColour("colour", includeDefault = true, includeGuild = true)
         }
 
+        name = "colour"
+
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 message.reply(false) {
                     ColourUtil.buildColourEmbed(this, colour, "colour.png")
                 }
@@ -59,16 +60,16 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val randomCommand: suspend Command.() -> Unit = {
-        name = "random"
-        description = "Generates and displays a random colour"
-
-        val parser = object: Arguments() {
+        class Args: Arguments() {
             val isAlpha by defaultingBoolean("isAlpha", false)
         }
 
-        signature { parser }
+        name = "random"
+        description = "Generates and displays a random colour"
+
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 message.reply(false) {
                     val colour = Random.nextColour(isAlpha)
                     ColourUtil.buildColourEmbed(this, colour, "colour.png")
@@ -78,16 +79,16 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val blendCommand: suspend Command.() -> Unit = {
-        name = "blend"
-        description = "Blends colours together, and displays the result"
-
-        val parser = object: Arguments() {
+        class Args: Arguments() {
             val colours by colour("colours", includeDefault = true, includeGuild = true).toMulti()
         }
 
-        signature { parser }
+        name = "blend"
+        description = "Blends colours together, and displays the result"
+
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 val blended = colours.blend()
                 message.reply(false) {
                     ColourUtil.buildColourEmbed(this, blended, "colour.png")
@@ -97,20 +98,20 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val createCommand: suspend Command.() -> Unit = {
-        name = "create"
-        description = "Creates a guild-colour"
-
-        val parser = object: Arguments() {
+        class Args: Arguments() {
             val name by lengthyString("name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
             val colour by coalescingColour("colour", includeDefault = false, includeGuild = false)
         }
 
+        name = "create"
+        description = "Creates a guild-colour"
+
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature { parser }
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 val guildId = message.data.guildId.value!!
 
                 val isInserted = transaction {
@@ -134,20 +135,20 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val removeCommand: suspend Command.() -> Unit = {
+        class Args: Arguments() {
+            val name by lengthyString("colour name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+        }
+
         name = "remove"
         description = "Removes a guild-colour"
         aliases = arrayOf("delete")
 
-        val parser = object: Arguments() {
-            val name by lengthyString("colour name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-        }
-
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature { parser }
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 val guildId = message.data.guildId.value!!
 
                 // deletes records & gives the amount of records deleted
@@ -170,19 +171,19 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
     }
 
     private val updateCommand: suspend Command.() -> Unit = {
+        class Args: Arguments() {
+            val name by lengthyString("name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+            val colour by coalescingColour("new colour", includeDefault = false, includeGuild = false)
+        }
+
         name = "update"
 
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        val parser = object: Arguments() {
-            val name by lengthyString("name", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-            val colour by coalescingColour("new colour", includeDefault = false, includeGuild = false)
-        }
-
-        signature { parser }
+        signature(::Args)
         action {
-            with(parse { parser }) {
+            with(parse(::Args)) {
                 val guildId = message.data.guildId.value!!
 
                 // updates records & gives the amount of records updated
