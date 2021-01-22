@@ -100,8 +100,8 @@ fun Arguments.defaultingZoneId(displayName: String, description: String, default
 fun Arguments.colourList(
     displayName: String,
     description: String,
+    required: Boolean = true,
     colourProvider: suspend (CommandContext) -> Map<String, Colour> = { mapOf() },
-    required: Boolean = true
 ) = arg(displayName, description, ColourConverter(colourProvider).toMulti(required = required))
 
 // region: Coalescing Converters

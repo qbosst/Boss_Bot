@@ -18,7 +18,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import me.qbosst.bossbot.util.ext.reply
 
-class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): Extension(bot) {
+class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): BaseExtension(bot) {
     private val json = Json {
         prettyPrint = true
     }
@@ -26,11 +26,15 @@ class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): 
     override val name: String = "developer"
 
     override suspend fun setup() {
-        command(botStatisticsCommand)
-        command(readDirectMessagesCommand)
+        command(botStatisticsCommand())
+        command(readDirectMessagesCommand())
+
+        commands.forEach { command ->
+            command.check { event -> event.message.data.authorId.value in developers }
+        }
     }
 
-    private val botStatisticsCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun botStatisticsCommand() = createCommand() {
         name = "botstatistics"
         aliases = arrayOf("botstats")
 
@@ -45,64 +49,51 @@ class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): 
         }
     }
 
-    private val readDirectMessagesCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun readDirectMessagesCommand() = createCommand({
         class Args: Arguments() {
             val target by user("target", "The user to read the DM history with")
             val amount by defaultingInt("amount", "The amount of messages to read", defaultValue = 100)
         }
+        return@createCommand Args()
+    }) {
+       name = "readdms"
 
-        name = "readdms"
+       action {
+           val target = arguments.target
+           when {
+               target.id == message.kord.selfId ->
+                   message.reply(false) {
+                       content = "I cannot check DM history with myself."
+                   }
+               target.isBot ->
+                   message.reply(false) {
+                       content = "I cannot check DM history with other bots."
+                   }
+               else -> {
+                   val channel = target.getDmChannel()
+                   val lastMessage = channel.getLastMessage()
+                   if(lastMessage == null) {
+                       message.reply(false) {
+                           content = "I do not have any DMs with ${target.tag}"
+                       }
+                   } else {
+                       message.channel.withTyping {
+                           val messages = buildJsonArray {
+                               add(json.encodeToJsonElement(lastMessage.data))
+                               channel.getMessagesBefore(lastMessage.id, arguments.amount)
+                                   .collect { message -> add(json.encodeToJsonElement(message)) }
+                           }
 
-
-        signature(::Args)
-        action {
-            with(parse(::Args)) {
-                when {
-                    target.id == message.kord.selfId ->
-                        message.reply(false) {
-                            content = "I cannot check DM history with myself."
-                        }
-                    target.isBot ->
-                        message.reply(false) {
-                            content = "I cannot check DM history with other bots."
-                        }
-                    else -> {
-                        val channel = target.getDmChannel()
-                        val lastMessage = channel.getLastMessage()
-                        if(lastMessage == null) {
-                            message.reply(false) {
-                                content = "I do not have any DMs with ${target.tag}"
-                            }
-                        } else {
-                            message.channel.withTyping {
-                                val messages = buildJsonArray {
-                                    add(json.encodeToJsonElement(lastMessage.data))
-                                    channel.getMessagesBefore(lastMessage.id, amount)
-                                        .collect { message -> add(json.encodeToJsonElement(message)) }
-                                }
-
-                                message.reply(false) {
-                                    addFile(
-                                        "${target.tag}_dms.json",
-                                        json.encodeToString(messages).byteInputStream()
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                           message.reply(false) {
+                               addFile(
+                                   "${target.tag}_dms.json",
+                                   json.encodeToString(messages).byteInputStream()
+                               )
+                           }
+                       }
+                   }
+               }
+           }
+       }
     }
-
-    override suspend fun command(body: suspend MessageCommand.() -> Unit) = super.command(body)
-        .apply {
-            check { event -> event.message.data.authorId.value in developers }
-        }
-
-    override suspend fun command(commandObj: MessageCommand) = super.command(commandObj)
-        .apply {
-            check { event -> event.message.data.authorId.value in developers }
-        }
-
 }

@@ -19,7 +19,7 @@ import me.qbosst.bossbot.util.ext.toEmbedBuilder
 import java.time.Instant
 import kotlin.random.Random
 
-class MessageExtension(bot: ExtensibleBot): Extension(bot) {
+class MessageExtension(bot: ExtensibleBot): BaseExtension(bot) {
     private val json = Json {
         isLenient = true
         prettyPrint = true
@@ -29,16 +29,15 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "message"
 
     override suspend fun setup() {
-        group(embedGroup)
+        group(embedGroup())
     }
 
-    private val embedGroup: suspend GroupCommand.() -> Unit = {
+    private suspend fun embedGroup() = createGroup {
         name = "embed"
 
         action {
             val content = when {
                 args.isNotEmpty() -> args.joinToString(" ")
-
                 else -> throw ParseException("Please provide JSON")
             }
 
@@ -50,15 +49,16 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
                 }
                 return@action
             }
+
             channel!!.createMessage {
                 this.embed = embed.toEmbedBuilder()
             }
         }
 
-        command(embedExampleCommand)
+        command(embedExampleCommand())
     }
 
-    private val embedExampleCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun embedExampleCommand() = createCommand {
         name = "example"
         aliases = arrayOf("template")
 

@@ -1,12 +1,10 @@
 package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.commands.GroupCommand
 import com.kotlindiscord.kord.extensions.commands.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.UserConverter
 import com.kotlindiscord.kord.extensions.commands.converters.optionalCoalescedDuration
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorId
 import dev.kord.cache.api.put
 import dev.kord.cache.api.query
@@ -31,70 +29,67 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
-class TimeExtension(bot: ExtensibleBot): Extension(bot) {
+class TimeExtension(bot: ExtensibleBot): BaseExtension(bot) {
     override val name: String = "time"
 
     override suspend fun setup() {
-        group(timeGroup)
+        group(timeGroup())
     }
 
-    private val timeGroup: suspend GroupCommand.() -> Unit = {
+    private suspend fun timeGroup() = createGroup({
         class Args: Arguments() {
             val arg by optionalUnion("zone id | user", "", true, ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing())
             val duration by optionalCoalescedDuration("duration", "", false)
         }
-
+        return@createGroup Args()
+    }) {
         name = "time"
 
         action {
-            with(parse(::Args)) {
-                when(arg) {
-                    null -> handleUser(message.channel, message.author!!, true, null)
-                    is ZoneId -> {
-                        val zoneId = arg as ZoneId
-                        if(duration != null) {
-                            displayTimeIn(message.channel, zoneId, null, false, duration!!)
-                        } else {
-                            displayCurrentTime(message.channel, zoneId, null, false)
-                        }
+            val duration = arguments.duration
+            when(val arg = arguments.arg) {
+                null -> handleUser(message.channel, message.author!!, true, null)
+                is ZoneId -> {
+                    if(duration != null) {
+                        displayTimeIn(message.channel, arg, null, false, duration)
+                    } else {
+                        displayCurrentTime(message.channel, arg, null, false)
                     }
-                    is Duration -> handleUser(message.channel, message.author!!, true, arg as Duration)
-                    is User -> {
-                        val user = arg as User
-                        val isSelf = user.id == message.data.authorId
-                        handleUser(message.channel, user, isSelf, duration)
-                    }
+                }
+                is Duration -> handleUser(message.channel, message.author!!, true, arg)
+                is User -> {
+                    val isSelf = arg.id == message.data.authorId
+                    handleUser(message.channel, arg, isSelf, duration)
                 }
             }
         }
 
-        command(nowCommand)
-        command(setCommand)
-        command(zonesCommand)
+        command(nowCommand())
+        command(zonesCommand())
+        command(setCommand())
     }
 
-    private val nowCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun nowCommand() = createCommand({
         class Args: Arguments() {
             val arg by optionalUnion("zon", "", true, ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing())
         }
-
+        return@createCommand Args()
+    }) {
         name = "now"
+
         action {
-            with(parse(::Args)) {
-                when(arg) {
-                    null -> handleUser(message.channel, message.author!!, true, null)
-                    is ZoneId -> displayCurrentTime(message.channel, arg as ZoneId, null, false)
-                    is User -> {
-                        val user = arg as User
-                        val isSelf = user.id == message.data.authorId
-                        handleUser(message.channel, user, isSelf, null)
-                    }
+            when(val arg = arguments.arg) {
+                null -> handleUser(message.channel, message.author!!, true, null)
+                is ZoneId -> displayCurrentTime(message.channel, arg, null, false)
+                is User -> {
+                    val isSelf = arg.id == message.data.authorId
+                    handleUser(message.channel, arg, isSelf, null)
                 }
             }
         }
     }
 
-    private val zonesCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun zonesCommand() = createCommand {
         name = "zones"
 
         action {
@@ -105,51 +100,51 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
         }
     }
 
-    private val setCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun setCommand() = createCommand({
         class Args: Arguments() {
             val newZoneId by coalescedZoneId("zone id", "")
         }
-
+        return@createCommand Args()
+    }) {
         name = "set"
 
         action {
-            with(parse(::Args)) {
-                val idLong = message.data.authorId.value
+            val idLong = message.data.authorId.value
 
-                val oldZoneId = transaction {
-                    val record = UserDataTable
-                        .select { UserDataTable.userId.eq(idLong) }
-                        .singleOrNull()
+            val newZoneId = arguments.newZoneId
+            val oldZoneId = transaction {
+                val record = UserDataTable
+                    .select { UserDataTable.userId.eq(idLong) }
+                    .singleOrNull()
 
-                    val oldZoneId = record?.get(UserDataTable.zoneId)
+                val oldZoneId = record?.get(UserDataTable.zoneId)
 
-                    when {
-                        record == null -> {
-                            UserDataTable.insert {
-                                it[UserDataTable.userId] = idLong
-                                it[UserDataTable.zoneId] = newZoneId?.id
-                            }
+                when {
+                    record == null -> {
+                        UserDataTable.insert {
+                            it[UserDataTable.userId] = idLong
+                            it[UserDataTable.zoneId] = newZoneId?.id
                         }
-                        newZoneId?.id != oldZoneId -> {
-                            UserDataTable.update({ UserDataTable.userId.eq(idLong) }) {
-                                it[UserDataTable.zoneId] = newZoneId?.id
-                            }
-                        }
-                        else -> {}
                     }
-                    return@transaction oldZoneId
+                    newZoneId.id != oldZoneId -> {
+                        UserDataTable.update({ UserDataTable.userId.eq(idLong) }) {
+                            it[UserDataTable.zoneId] = newZoneId?.id
+                        }
+                    }
+                    else -> {}
                 }
+                return@transaction oldZoneId
+            }
 
-                message.reply(false) {
-                    if(oldZoneId == newZoneId?.id) {
-                        content = "Your zone id is already set to `${oldZoneId}`"
-                    } else {
-                        content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId?.id}`"
+            message.reply(false) {
+                if(oldZoneId == newZoneId.id) {
+                    content = "Your zone id is already set to `${oldZoneId}`"
+                } else {
+                    content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId?.id}`"
 
-                        message.kord.cache
-                            .query<UserData> { UserData::userId.eq(idLong) }
-                            .update { data -> data.copy(zoneId = newZoneId) }
-                    }
+                    message.kord.cache
+                        .query<UserData> { UserData::userId.eq(idLong) }
+                        .update { data -> data.copy(zoneId = newZoneId) }
                 }
             }
         }

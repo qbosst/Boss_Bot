@@ -29,182 +29,160 @@ import org.jetbrains.exposed.sql.update
 import kotlin.random.Random
 import java.awt.Color as Colour
 
-class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
+class ColourExtension(bot: ExtensibleBot, cacheSize: Int): BaseExtension(bot) {
     private val cache = MapLikeCollection.lruLinkedHashMap<Long, Map<String, Colour>>(cacheSize)
 
     override val name: String = "colour"
 
     override suspend fun setup() {
-        group(colourGroup)
+        group(colourGroup())
     }
 
-    private val colourGroup: suspend GroupCommand.() -> Unit = {
+    private suspend fun colourGroup() = createGroup({
         class Args: Arguments() {
-            val colour by coalescedColour(
-                displayName = "colour",
-                description = "The colour to display",
-                colourProvider = buildConverter(includeDefault = true, includeGuild = true),
-                shouldThrow = true
-            )
+            val colour by coalescedColour("colour", "The colour to display", true, buildConverter(true, true))
         }
+        return@createGroup Args()
+    }) {
         name = "colour"
 
-        signature(::Args)
         action {
-            with(parse(::Args)) {
-                message.replyColourEmbed(colour)
-            }
+            message.replyColourEmbed(arguments.colour)
         }
 
-        command(randomCommand)
-        command(blendCommand)
-        command(createCommand)
-        command(updateCommand)
-        command(removeCommand)
+        command(randomCommand())
+        command(blendCommand())
+        command(createColourCommand())
+        command(updateColourCommand())
+        command(removeColourCommand())
     }
 
-    private val randomCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun randomCommand() = createCommand({
         class Args: Arguments() {
             val isAlpha by defaultingBoolean("isAlpha", "Whether a colour should have a random opacity", false)
         }
-
+        return@createCommand Args()
+    }) {
         name = "random"
 
-        signature(::Args)
         action {
-            with(parse(::Args)) {
-                val colour = Random.nextColour(isAlpha)
-                message.replyColourEmbed(colour)
-            }
+            val colour = Random.nextColour(arguments.isAlpha)
+            message.replyColourEmbed(colour)
         }
     }
 
-    private val blendCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun blendCommand() = createCommand({
         class Args: Arguments() {
-            val colours by colourList(
-                displayName = "colours",
-                description = "The colours to blend together",
-                colourProvider = buildConverter(includeDefault = true, includeGuild = true),
-                required = true
-            )
+            val colours by colourList("colours", "The colours to blend together", true, buildConverter(true, true))
         }
-
+        return@createCommand Args()
+    }) {
         name = "blend"
 
-        signature(::Args)
         action {
-            with(parse(::Args)) {
-                val colour = colours.blend()
-                message.replyColourEmbed(colour)
-            }
+            val colour = arguments.colours.blend()
+            message.replyColourEmbed(colour)
         }
     }
 
-    private val createCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun createColourCommand() = createCommand({
         class Args: Arguments() {
             val name by maxLengthString("name", "The name of the colour", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
             val colour by coalescedColour("colour", "The colour to create", shouldThrow = true)
         }
-
+        return@createCommand Args()
+    }) {
         name = "create"
-        description = "Creates a guild-colour"
 
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature(::Args)
         action {
-            with(parse(::Args)) {
-                val guildId = guild!!.id.value
+            val guildId = guild!!.id.value
 
-                val isInserted = transaction {
-                    GuildColoursTable.insertOrIgnore {
-                        it[GuildColoursTable.guildId] = guildId
-                        it[GuildColoursTable.name] = this@with.name
-                        it[GuildColoursTable.value] = this@with.colour.rgb
-                    }
-                }
-
-                message.reply(false) {
-                    if(isInserted) {
-                        content = "inserted"
-                        cache.remove(guildId)
-                    } else {
-                        content = "colour with this name already exists"
-                    }
+            val isInserted = transaction {
+                GuildColoursTable.insertOrIgnore {
+                    it[GuildColoursTable.guildId] = guildId
+                    it[GuildColoursTable.name] = arguments.name
+                    it[GuildColoursTable.value] = arguments.colour.rgb
                 }
             }
+
+            message.reply(false) {
+                if(isInserted) {
+                    content = "inserted"
+                    cache.remove(guildId)
+                } else {
+                    content = "colour with this name already exists"
+                }
+            }
+
         }
     }
 
-    private val removeCommand: suspend MessageCommand.() -> Unit = {
-        name = "remove"
-        description = "Removes a guild-colour"
-        aliases = arrayOf("delete")
-
-        val parser = object: Arguments() {
+    private suspend fun removeColourCommand() = createCommand({
+        class Args: Arguments() {
             val name by maxLengthString("colour name", "The name of the colour to remove", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
         }
+        return@createCommand Args()
+    }) {
+        name = "remove"
+        aliases = arrayOf("delete")
 
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        signature { parser }
         action {
-            with(parse { parser }) {
-                val guildId = guild!!.id.value
+            val guildId = guild!!.id.value
 
-                // deletes records & gives the amount of records deleted
-                val deleted = transaction {
-                    GuildColoursTable.deleteWhere {
-                        GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(name)
-                    }
+            // deletes records & gives the amount of records deleted
+            val deleted = transaction {
+                GuildColoursTable.deleteWhere {
+                    GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(arguments.name)
                 }
+            }
 
-                message.reply(false) {
-                    if(deleted == 0) {
-                        content = "Could not delete"
-                    } else {
-                        content = "Successfully deleted"
-                        cache.remove(guildId)
-                    }
+            message.reply(false) {
+                if(deleted == 0) {
+                    content = "Could not delete"
+                } else {
+                    content = "Successfully deleted"
+                    cache.remove(guildId)
                 }
             }
         }
     }
 
-    private val updateCommand: suspend MessageCommand.() -> Unit = {
+    private suspend fun updateColourCommand() = createCommand({
+        class Args: Arguments() {
+            val name by maxLengthString("name", "The name of the colour to update", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+            val colour by coalescedColour("new colour", "The colour to update the name with", shouldThrow = true)
+        }
+        return@createCommand Args()
+    }) {
         name = "update"
 
         check { event -> event.guildId != null }
         check { event -> event.member!!.hasPermission(Permission.ManageEmojis) }
 
-        val parser = object: Arguments() {
-            val name by maxLengthString("name", "The name of the colour to update", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
-            val colour by coalescedColour("new colour", "The colour to update the name with", shouldThrow = true)
-        }
-
-        signature { parser }
         action {
-            with(parse { parser }) {
-                val guildId = guild!!.id.value
+            val guildId = guild!!.id.value
 
-                // updates records & gives the amount of records updated
-                val updated = transaction {
-                    GuildColoursTable.update(
-                        { GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(name) }
-                    ) {
-                        it[GuildColoursTable.value] = colour.rgb
-                    }
+            // updates records & gives the amount of records updated
+            val updated = transaction {
+                GuildColoursTable.update(
+                    { GuildColoursTable.guildId.eq(guildId) and GuildColoursTable.name.eq(arguments.name) }
+                ) {
+                    it[GuildColoursTable.value] = arguments.colour.rgb
                 }
+            }
 
-                message.reply(false) {
-                    if(updated == 0) {
-                        content = "Could not update"
-                    } else {
-                        content = "Updated colour"
-                        cache.remove(guildId)
-                    }
+            message.reply(false) {
+                if(updated == 0) {
+                    content = "Could not update"
+                } else {
+                    content = "Updated colour"
+                    cache.remove(guildId)
                 }
             }
         }
@@ -249,8 +227,7 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         return colours
     }
 
-    private suspend fun MessageBehavior.replyColourEmbed(colour: Colour) =
-        reply(false) {
-            ColourUtil.buildColourEmbed(this, colour, "colour.png")
-        }
+    private suspend fun MessageBehavior.replyColourEmbed(colour: Colour) = reply(false) {
+        ColourUtil.buildColourEmbed(this, colour, "colour.png")
+    }
 }
