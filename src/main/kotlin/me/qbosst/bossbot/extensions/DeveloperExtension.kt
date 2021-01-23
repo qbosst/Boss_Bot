@@ -81,7 +81,7 @@ class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): 
                            val messages = buildJsonArray {
                                add(json.encodeToJsonElement(lastMessage.data))
                                channel.getMessagesBefore(lastMessage.id, arguments.amount)
-                                   .collect { message -> add(json.encodeToJsonElement(message)) }
+                                   .collect { message -> add(json.encodeToJsonElement(message.data)) }
                            }
 
                            message.reply(false) {

@@ -112,7 +112,7 @@ object TimeUtil {
                 }
             }
 
-            deleteRange(this.length-delimiter.length, delimiter.length)
+            deleteRange(this.lastIndex-delimiter.length, delimiter.length)
         }
     }
 
