@@ -20,20 +20,6 @@ fun <T: Any> SingleConverter<T>.toCoalescing(
     shouldThrow: Boolean = false
 ) = SingleToCoalescingConverter(this, signatureTypeString, showTypeInSignature, errorTypeString, shouldThrow)
 
-fun Arguments.union(
-    displayName: String,
-    description: String,
-    shouldThrow: Boolean = false,
-    vararg converters: Converter<*>,
-) = arg(displayName, description, UnionConverter(converters.toList(), shouldThrow))
-
-fun Arguments.optionalUnion(
-    displayName: String,
-    description: String,
-    outputError: Boolean = false,
-    vararg converters: Converter<*>,
-) = arg(displayName, description, UnionConverter(converters.toList(), shouldThrow = outputError).toOptional(outputError = outputError))
-
 // region: Single Converters
 
 fun Arguments.colour(

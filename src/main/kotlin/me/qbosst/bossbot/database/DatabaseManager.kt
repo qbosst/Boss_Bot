@@ -18,7 +18,7 @@ class DatabaseManager(
     val tables = listOf(GuildColoursTable, UserDataTable)
 
     fun connect() {
-        require(this::database.isInitialized.not()) { "Database is already initialized!" }
+        require(!this::database.isInitialized) { "Database is already initialized!" }
 
         database = Database.connect(
             url = "jdbc:mysql://$host",
@@ -31,5 +31,13 @@ class DatabaseManager(
                 SchemaUtils.createMissingTablesAndColumns(table)
             }
         }
+    }
+
+    class Builder {
+        lateinit var host: String
+        lateinit var username: String
+        lateinit var password: String
+
+        fun build(): DatabaseManager = DatabaseManager(host, username, password)
     }
 }

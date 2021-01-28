@@ -1,9 +1,14 @@
 package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.commands.MessageCommand
+import com.kotlindiscord.kord.extensions.commands.converters.Converter
+import com.kotlindiscord.kord.extensions.commands.converters.impl.IntConverter
+import com.kotlindiscord.kord.extensions.commands.converters.impl.StringConverter
+import com.kotlindiscord.kord.extensions.commands.converters.impl.UnionConverter
 import com.kotlindiscord.kord.extensions.commands.converters.impl.UserConverter
 import com.kotlindiscord.kord.extensions.commands.converters.optionalCoalescedDuration
+import com.kotlindiscord.kord.extensions.commands.converters.optionalUnion
+import com.kotlindiscord.kord.extensions.commands.converters.union
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.utils.authorId
 import dev.kord.cache.api.put
@@ -14,7 +19,6 @@ import dev.kord.core.entity.User
 import me.qbosst.bossbot.converters.coalescedZoneId
 import me.qbosst.bossbot.converters.impl.DurationConverter
 import me.qbosst.bossbot.converters.impl.ZoneIdConverter
-import me.qbosst.bossbot.converters.optionalUnion
 import me.qbosst.bossbot.converters.toCoalescing
 import me.qbosst.bossbot.database.models.UserData
 import me.qbosst.bossbot.database.tables.UserDataTable
@@ -38,7 +42,11 @@ class TimeExtension(bot: ExtensibleBot): BaseExtension(bot) {
 
     private suspend fun timeGroup() = createGroup({
         class Args: Arguments() {
-            val arg by optionalUnion("zone id | user", "", true, ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing())
+            val arg by optionalUnion(
+                "arg name", "arg desc", "arg type",
+                shouldThrow = false,
+                ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing()
+            )
             val duration by optionalCoalescedDuration("duration", "", false)
         }
         return@createGroup Args()
@@ -71,7 +79,11 @@ class TimeExtension(bot: ExtensibleBot): BaseExtension(bot) {
 
     private suspend fun nowCommand() = createCommand({
         class Args: Arguments() {
-            val arg by optionalUnion("zon", "", true, ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing())
+            val arg by optionalUnion(
+                "arg name", "arg desc", "arg type",
+                shouldThrow = false,
+                ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing()
+            )
         }
         return@createCommand Args()
     }) {

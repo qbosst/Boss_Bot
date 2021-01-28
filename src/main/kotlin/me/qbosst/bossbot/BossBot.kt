@@ -1,10 +1,7 @@
 package me.qbosst.bossbot
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
-import com.kotlindiscord.kord.extensions.builders.StartBuilder
-import dev.kord.cache.api.DataCache
-import dev.kord.common.entity.PresenceStatus
-import dev.kord.core.event.gateway.ReadyEvent
+import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -18,59 +15,48 @@ import java.util.Scanner
 
 private val botLogger = KotlinLogging.logger {  }
 
+
 class BossBot(
     val config: BotConfig,
-): ExtensibleBot(
-    token = config.discordToken,
-    prefix = config.defaultPrefix,
-    messageCacheSize = config.messageCacheSize
-) {
-    lateinit var dbManager: DatabaseManager
-        private set
+    val database: DatabaseManager,
+    settings: ExtensibleBotBuilder,
+): ExtensibleBot(settings, config.discordToken) {
 
-    /**
-     * Assigns [dbManager] and connects to the database
-     */
-    fun connectDatabase() {
-        dbManager = DatabaseManager(
-            host = config.databaseHost,
-            username = config.databaseUsername,
-            password = config.databasePassword
-        ).apply {
-            connect()
+    override suspend fun setup() {
+        database.connect()
+
+        super.setup()
+    }
+
+    class Builder: ExtensibleBotBuilder() {
+        lateinit var databaseBuilder: DatabaseManager.Builder
+
+        lateinit var config: BotConfig
+
+        fun database(builder: DatabaseManager.Builder.() -> Unit) {
+            this.databaseBuilder = DatabaseManager.Builder().apply(builder)
+        }
+
+        override suspend fun build(token: String): BossBot {
+            val database = databaseBuilder.build()
+
+            val bot = BossBot(config, database, this)
+
+            bot.setup()
+            extensionsBuilder.extensions.forEach { bot.addExtension(it) }
+            return bot
         }
     }
 
-    override fun addDefaultExtensions() {
-        super.addDefaultExtensions()
-
-        addExtension { ColourExtension(this, config.defaultCacheSize) }
-        addExtension { DeveloperExtension(this, listOf(config.developerId)) }
-        addExtension(::TimeExtension)
-        addExtension(::MessageExtension)
-    }
-
-    override suspend fun registerListeners() {
-        super.registerListeners()
-
-        on<ReadyEvent> {
-            kord.editPresence {
-                status = PresenceStatus.Online
-                playing("Loading :)")
-            }
+    companion object {
+        /**
+         * DSL Method for creating an instance of [BossBot]
+         */
+        suspend operator fun invoke(init: BossBot.Builder.() -> Unit): BossBot {
+            val builder = BossBot.Builder().apply(init)
+            val token = builder.config.discordToken
+            return builder.build(token)
         }
-    }
-
-    suspend fun registerCache(cache: DataCache) {
-        cache.register(UserData.description)
-    }
-
-    override suspend fun start(builder: suspend StartBuilder.() -> Unit) {
-        connectDatabase()
-
-        super.start(builder)
-
-        registerCache(kord.cache)
     }
 }
 
@@ -94,17 +80,38 @@ suspend fun main() {
         // otherwise load config file
         val config = json.decodeFromString<BotConfig>(file.readText())
 
-        // create instance of bot and start it
-        val bot = BossBot(
-            config = config,
-        ).apply {
-            start {
-                presence {
-                    status = PresenceStatus.DoNotDisturb
-                    playing("Loading...")
+        // create boss bot
+        val bot = BossBot {
+            this.config = config
+
+            database {
+                this.host = config.databaseHost
+                this.username = config.databaseUsername
+                this.password = config.databasePassword
+            }
+
+            extensions {
+                add { bot -> ColourExtension(bot, config.defaultCacheSize) }
+                add { bot -> DeveloperExtension(bot, listOf(config.developerId)) }
+                add(::TimeExtension)
+                add(::MessageExtension)
+            }
+
+            cache {
+                kord {
+                    forDescription(UserData.description, lruCache(config.defaultCacheSize))
                 }
             }
+
+            commands {
+                this.prefix = config.defaultPrefix
+                this.invokeOnMention = true
+                this.slashCommands = false
+            }
+
         }
+
+        bot.start()
 
     } catch (t: Throwable) {
         botLogger.error(t) { "Could not initialize Boss Bot "}

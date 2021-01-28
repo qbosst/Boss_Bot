@@ -37,7 +37,7 @@ class MessageExtension(bot: ExtensibleBot): BaseExtension(bot) {
 
         action {
             val content = when {
-                args.isNotEmpty() -> args.joinToString(" ")
+                argsList.isNotEmpty() -> argsList.joinToString(" ")
                 else -> throw ParseException("Please provide JSON")
             }
 
@@ -50,7 +50,7 @@ class MessageExtension(bot: ExtensibleBot): BaseExtension(bot) {
                 return@action
             }
 
-            channel!!.createMessage {
+            channel.createMessage {
                 this.embed = embed.toEmbedBuilder()
             }
         }
