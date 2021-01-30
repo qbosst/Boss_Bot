@@ -1,15 +1,22 @@
 package me.qbosst.bossbot
 
+import dev.kord.cache.map.MapLikeCollection
+import dev.kord.cache.map.internal.MapEntryCache
 import dev.kord.common.entity.PresenceStatus
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.cache.data.GuildData
+import dev.kord.core.cache.data.MessageData
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
+import me.qbosst.bossbot.database.models.GuildSettings
 import me.qbosst.bossbot.database.models.UserData
 import me.qbosst.bossbot.extensions.*
 import mu.KotlinLogging
 import java.io.File
 import java.util.*
+import me.qbosst.bossbot.util.cache.MessageCache
 
 private val logger = KotlinLogging.logger("Launcher.main")
 
@@ -44,6 +51,15 @@ suspend fun main(): Unit = try {
 
             kord {
                 forDescription(UserData.description, lruCache(config.defaultCacheSize))
+                forDescription(GuildSettings.description, lruCache(config.defaultCacheSize))
+
+                messages { cache, description ->
+                    MapEntryCache(cache, description, MessageCache(cachedMessages!!) as MapLikeCollection<MessageData, Snowflake>)
+                }
+
+                emojis(none())
+                presences(none())
+                webhooks(none())
             }
         }
 
@@ -66,6 +82,7 @@ suspend fun main(): Unit = try {
         extensions {
             add(::TimeExtension)
             add(::MessageExtension)
+            add(::LoggerExtension)
             add { bot -> ColourExtension(bot, config.defaultCacheSize) }
             add { bot -> DeveloperExtension(bot, listOf(config.developerId)) }
         }
