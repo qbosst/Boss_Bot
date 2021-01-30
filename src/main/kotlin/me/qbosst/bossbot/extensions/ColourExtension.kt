@@ -70,6 +70,8 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
         group(::ColourArgs) {
             name = "colour"
 
+            check(::defaultCheck)
+
             action {
                 message.reply(arguments.colour)
             }
@@ -99,8 +101,7 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
             command(::CreateColourArgs) {
                 name = "create"
 
-                check(::defaultCheck)
-                check(::anyGuild)
+                check(::defaultCheck, ::anyGuild)
 
                 action {
                     val id = guild!!.id.value
@@ -113,6 +114,10 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
                         }
                     }
 
+                    if(inserted) {
+                        cache.remove(id)
+                    }
+
                     message.reply(false) {
                         content = inserted.toString()
                     }
@@ -122,8 +127,7 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
             command(::RemoveColourArgs) {
                 name = "remove"
 
-                check(::defaultCheck)
-                check(::anyGuild)
+                check(::defaultCheck, ::anyGuild)
 
                 action {
                     val id = guild!!.id.value
@@ -132,6 +136,10 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
                         GuildColoursTable.deleteWhere {
                             GuildColoursTable.guildId.eq(id) and GuildColoursTable.name.eq(arguments.name)
                         }
+                    }
+
+                    if(deleted > 0) {
+                        cache.remove(id)
                     }
 
                     message.reply(false) {
@@ -143,8 +151,7 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
             command(::UpdateColourArgs) {
                 name = "update"
 
-                check(::defaultCheck)
-                check(::anyGuild)
+                check(::defaultCheck, ::anyGuild)
 
                 action {
                     val id = guild!!.id.value
@@ -160,8 +167,24 @@ class ColourExtension(bot: ExtensibleBot, cacheSize: Int): Extension(bot) {
                         )
                     }
 
+                    if(updated > 0) {
+                        cache.remove(id)
+                    }
+
                     message.reply(false) {
                         content = updated.toString()
+                    }
+                }
+            }
+
+            command {
+                name = "list"
+
+                check(::defaultCheck)
+
+                action {
+                    message.reply(false) {
+                        content = systemColours.map { (key, _) -> key }.joinToString(", ")
                     }
                 }
             }
