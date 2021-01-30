@@ -37,8 +37,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVer")
     implementation("mysql:mysql-connector-java:8.0.22")
 
-    // reflection
+    // kotlin
     implementation(kotlin("reflect"))
+    implementation(kotlin("scripting-jsr223"))
 
     // local dependency of SpaceSpeak API. Cannot be published open source (yet).
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.0.jar"))

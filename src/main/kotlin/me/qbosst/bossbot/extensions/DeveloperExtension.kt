@@ -1,6 +1,7 @@
 package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.commands.converters.coalescedString
 import com.kotlindiscord.kord.extensions.commands.converters.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.user
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
@@ -19,6 +20,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import me.qbosst.bossbot.util.defaultCheck
 import me.qbosst.bossbot.util.ext.reply
+import javax.script.ScriptEngineManager
 
 @OptIn(KordPreview::class)
 class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): Extension(bot) {
@@ -26,11 +28,17 @@ class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): 
         prettyPrint = true
     }
 
+    private val engine by lazy { ScriptEngineManager().getEngineByExtension("kts") }
+
     override val name: String = "developer"
 
     class ReadDirectMessagesArgs: Arguments() {
         val target by user("target", "")
         val amount by defaultingInt("amount", "", 100)
+    }
+
+    class EvalArgs: Arguments() {
+        val code by coalescedString("code", "")
     }
 
     override suspend fun setup() {
@@ -91,6 +99,17 @@ class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): 
                             }
                         }
                     }
+                }
+            }
+        }
+
+        command(::EvalArgs) {
+            name = "eval"
+
+            action {
+                channel.withTyping {
+                    val response = try { engine.eval(arguments.code) } catch (e: Exception) { e }
+                    channel.createMessage(response.toString())
                 }
             }
         }
