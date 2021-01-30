@@ -10,6 +10,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.optionalCoalescedDu
 import com.kotlindiscord.kord.extensions.commands.converters.optionalUnion
 import com.kotlindiscord.kord.extensions.commands.converters.union
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorId
 import dev.kord.cache.api.put
 import dev.kord.cache.api.query
@@ -19,6 +20,7 @@ import dev.kord.core.entity.User
 import me.qbosst.bossbot.converters.coalescedZoneId
 import me.qbosst.bossbot.converters.impl.DurationConverter
 import me.qbosst.bossbot.converters.impl.ZoneIdConverter
+import me.qbosst.bossbot.converters.optionalCoalescedDuration
 import me.qbosst.bossbot.converters.toCoalescing
 import me.qbosst.bossbot.database.models.UserData
 import me.qbosst.bossbot.database.tables.UserDataTable
@@ -33,130 +35,96 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
-class TimeExtension(bot: ExtensibleBot): BaseExtension(bot) {
+class TimeExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "time"
 
+    class TimeArgs: Arguments() {
+        val arg by optionalUnion("arg name", "arg desc", "arg type", true, ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing())
+        val duration by optionalCoalescedDuration("duration", "", true)
+    }
+
+    class SetTimeArgs: Arguments() {
+        val zoneId by coalescedZoneId("zone id", "", shouldThrow = true)
+    }
+
     override suspend fun setup() {
-        group(timeGroup())
-    }
+        group(::TimeArgs) {
+            name = "time"
 
-    private suspend fun timeGroup() = createGroup({
-        class Args: Arguments() {
-            val arg by optionalUnion(
-                "arg name", "arg desc", "arg type",
-                shouldThrow = false,
-                ZoneIdConverter(), UserConverter(), DurationConverter().toCoalescing()
-            )
-            val duration by optionalCoalescedDuration("duration", "", false)
-        }
-        return@createGroup Args()
-    }) {
-        name = "time"
-
-        action {
-            val duration = arguments.duration
-            when(val arg = arguments.arg) {
-                null -> handleUser(message.channel, message.author!!, true, null)
-                is ZoneId -> {
-                    if(duration != null) {
-                        displayTimeIn(message.channel, arg, null, false, duration)
-                    } else {
-                        displayCurrentTime(message.channel, arg, null, false)
-                    }
-                }
-                is Duration -> handleUser(message.channel, message.author!!, true, arg)
-                is User -> {
-                    val isSelf = arg.id == message.data.authorId
-                    handleUser(message.channel, arg, isSelf, duration)
-                }
-            }
-        }
-
-        command(nowCommand())
-        command(zonesCommand())
-        command(setCommand())
-    }
-
-    private suspend fun nowCommand() = createCommand({
-        class Args: Arguments() {
-            val arg by optionalUnion(
-                "arg name", "arg desc", "arg type",
-                shouldThrow = false,
-                ZoneIdConverter().toCoalescing(), UserConverter().toCoalescing()
-            )
-        }
-        return@createCommand Args()
-    }) {
-        name = "now"
-
-        action {
-            when(val arg = arguments.arg) {
-                null -> handleUser(message.channel, message.author!!, true, null)
-                is ZoneId -> displayCurrentTime(message.channel, arg, null, false)
-                is User -> {
-                    val isSelf = arg.id == message.data.authorId
-                    handleUser(message.channel, arg, isSelf, null)
-                }
-            }
-        }
-    }
-
-    private suspend fun zonesCommand() = createCommand {
-        name = "zones"
-
-        action {
-            val zones = ZoneId.getAvailableZoneIds().sorted().joinToString("\n").byteInputStream()
-            message.reply(false) {
-                addFile("zones.txt", zones)
-            }
-        }
-    }
-
-    private suspend fun setCommand() = createCommand({
-        class Args: Arguments() {
-            val newZoneId by coalescedZoneId("zone id", "")
-        }
-        return@createCommand Args()
-    }) {
-        name = "set"
-
-        action {
-            val idLong = message.data.authorId.value
-
-            val newZoneId = arguments.newZoneId
-            val oldZoneId = transaction {
-                val record = UserDataTable
-                    .select { UserDataTable.userId.eq(idLong) }
-                    .singleOrNull()
-
-                val oldZoneId = record?.get(UserDataTable.zoneId)
-
-                when {
-                    record == null -> {
-                        UserDataTable.insert {
-                            it[UserDataTable.userId] = idLong
-                            it[UserDataTable.zoneId] = newZoneId?.id
+            action {
+                val duration = arguments.duration
+                when(val arg = arguments.arg) {
+                    null -> handleUser(message.channel, message.author!!, true, null)
+                    is ZoneId -> {
+                        if(duration != null) {
+                            displayTimeIn(message.channel, arg, null, false, duration)
+                        } else {
+                            displayCurrentTime(message.channel, arg, null, false)
                         }
                     }
-                    newZoneId.id != oldZoneId -> {
-                        UserDataTable.update({ UserDataTable.userId.eq(idLong) }) {
-                            it[UserDataTable.zoneId] = newZoneId?.id
-                        }
+                    is Duration -> handleUser(message.channel, message.author!!, true, arg)
+                    is User -> {
+                        val isSelf = arg.id == message.data.authorId
+                        handleUser(message.channel, arg, isSelf, duration)
                     }
-                    else -> {}
                 }
-                return@transaction oldZoneId
             }
 
-            message.reply(false) {
-                if(oldZoneId == newZoneId.id) {
-                    content = "Your zone id is already set to `${oldZoneId}`"
-                } else {
-                    content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId?.id}`"
+            command(::SetTimeArgs) {
+                name = "set"
 
-                    message.kord.cache
-                        .query<UserData> { UserData::userId.eq(idLong) }
-                        .update { data -> data.copy(zoneId = newZoneId) }
+                action {
+                    val id = message.data.authorId.value
+
+                    val newZoneId = arguments.zoneId
+                    val oldZoneId = transaction {
+                        val record = UserDataTable
+                            .select { UserDataTable.userId.eq(id) }
+                            .singleOrNull()
+                        val oldZoneId = record?.getOrNull(UserDataTable.zoneId)
+
+                        when {
+                            record == null -> {
+                                UserDataTable.insert {
+                                    it[UserDataTable.userId] = id
+                                    it[UserDataTable.zoneId] = newZoneId?.id
+                                }
+                            }
+                            newZoneId.id != oldZoneId -> {
+                                UserDataTable.update(
+                                    where = { UserDataTable.userId.eq(id) },
+                                    body = {
+                                        it[UserDataTable.zoneId] = newZoneId?.id
+                                    }
+                                )
+                            }
+                            else -> {}
+                        }
+                        return@transaction oldZoneId
+                    }
+
+                    message.reply(false) {
+                        if(oldZoneId == newZoneId.id) {
+                            content = "Your zone id is already set to `${oldZoneId}`"
+                        } else {
+                            content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId?.id}`"
+
+                            message.kord.cache
+                                .query<UserData> { UserData::userId.eq(id) }
+                                .update { data -> data.copy(zoneId = newZoneId) }
+                        }
+                    }
+                }
+            }
+
+            command {
+                name = "zones"
+
+                action {
+                    val zones = ZoneId.getAvailableZoneIds().sorted().joinToString("\n").byteInputStream()
+                    message.reply(false) {
+                        addFile("zones.txt", zones)
+                    }
                 }
             }
         }

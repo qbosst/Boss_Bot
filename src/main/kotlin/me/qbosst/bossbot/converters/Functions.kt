@@ -1,10 +1,11 @@
-@file:OptIn(ConverterToOptional::class, ConverterToDefaulting::class, ConverterToMulti::class)
+@file:OptIn(ConverterToOptional::class, ConverterToDefaulting::class, ConverterToMulti::class, KordPreview::class)
 
 package me.qbosst.bossbot.converters
 
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.converters.*
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import dev.kord.common.annotation.KordPreview
 import me.qbosst.bossbot.converters.impl.*
 import java.awt.Color as Colour
 import java.time.Duration

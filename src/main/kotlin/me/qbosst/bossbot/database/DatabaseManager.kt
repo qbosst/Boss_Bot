@@ -11,7 +11,6 @@ class DatabaseManager(
     private val username: String,
     private val password: String
 ) {
-
     lateinit var database: Database
         private set
 
@@ -33,11 +32,15 @@ class DatabaseManager(
         }
     }
 
-    class Builder {
-        lateinit var host: String
-        lateinit var username: String
-        lateinit var password: String
-
-        fun build(): DatabaseManager = DatabaseManager(host, username, password)
+    companion object {
+        operator fun invoke(init: DatabaseManagerBuilder.() -> Unit) = DatabaseManagerBuilder().apply(init).build()
     }
+}
+
+class DatabaseManagerBuilder {
+    lateinit var host: String
+    lateinit var username: String
+    lateinit var password: String
+
+    fun build(): DatabaseManager = DatabaseManager(host, username, password)
 }
