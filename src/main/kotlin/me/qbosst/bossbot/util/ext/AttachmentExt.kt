@@ -6,6 +6,8 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -25,7 +27,9 @@ val Attachment.fileExtension: String? get() = data.fileExtension
 
 suspend fun HttpClient.downloadToFile(file: File, url: String) {
     if(!file.exists()) {
-        file.createNewFile()
+        withContext(Dispatchers.IO) {
+            file.createNewFile()
+        }
     }
     require(file.canWrite()) { "Cannot write to file ${file.name}" }
 
@@ -33,16 +37,18 @@ suspend fun HttpClient.downloadToFile(file: File, url: String) {
     val bufferSize = 1024 * 100
     val buffer = ByteArray(bufferSize)
 
-    FileOutputStream(file).use {
-        do {
-            val currentRead = bytes.readAvailable(buffer)
+    withContext(Dispatchers.IO) {
+        FileOutputStream(file).use {
+            do {
+                val currentRead = bytes.readAvailable(buffer)
 
-            // channel has closed
-            if(currentRead == -1) {
-                break
-            }
+                // channel has closed
+                if(currentRead == -1) {
+                    break
+                }
 
-            it.write(buffer, 0, currentRead)
-        } while (currentRead >= 0)
+                it.write(buffer, 0, currentRead)
+            } while (currentRead >= 0)
+        }
     }
 }
