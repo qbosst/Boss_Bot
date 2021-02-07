@@ -1,6 +1,6 @@
 package me.qbosst.bossbot.util.ext
 
-import dev.kord.common.Color
+import dev.kord.common.entity.DiscordPartialMessage
 import dev.kord.common.entity.optional.value
 import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.channel.createMessage
@@ -38,6 +38,12 @@ suspend inline fun MessageBehavior.reply(
         }
     }
 }
+
+val Message.jumpUrl: String
+    get() = "https://discord.com/channels/${data.guildId.value ?: "@me"}/${data.channelId.value}/${data.id.value}"
+
+val DiscordPartialMessage.jumpUrl: String
+    get() = "https://discord.com/channels/${guildId.value ?: "@me"}/${channelId.value}/${id.value}"
 
 fun EmbedRequest.toEmbedBuilder(): EmbedBuilder {
     fun EmbedFooterRequest.toFooterBuilder(): EmbedBuilder.Footer = EmbedBuilder.Footer().apply {

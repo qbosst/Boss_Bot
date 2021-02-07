@@ -8,7 +8,7 @@ object GuildSettingsTable: Table() {
 
     val guildId = long("guild_id")
 
-    val messageLogsChannelId = long("message_logs_channel_id").default(0L)
+    val messageLogsChannelId = long("message_logs_channel_id").nullable()
 
     val prefix = varchar("prefix", MAX_PREFIX_LENGTH).nullable()
 

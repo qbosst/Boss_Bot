@@ -9,6 +9,12 @@ import kotlin.random.Random
 fun rgba(r: Int, g: Int, b: Int, a: Int) =
     ColourAWT(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
 
+fun rgba(value: Int) = ColourAWT(value, true)
+
+fun rgb(r: Int, g: Int, b: Int) = rgba(r, g, b, 255)
+
+fun rgb(value: Int) = ColourAWT(value, false)
+
 fun Random.nextColour() = ColourKord(nextInt(0xffffff))
 
 fun ColourFX.toAWT(): ColourAWT =

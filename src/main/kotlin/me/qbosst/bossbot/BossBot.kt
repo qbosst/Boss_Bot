@@ -2,10 +2,21 @@ package me.qbosst.bossbot
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
+import dev.kord.cache.map.MapLikeCollection
+import dev.kord.cache.map.internal.MapEntryCache
 import dev.kord.common.entity.DiscordShard
+import dev.kord.core.cache.Generator
+import dev.kord.core.cache.KordCacheBuilder
+import dev.kord.core.cache.data.MessageData
+import dev.kord.core.enableEvent
 import dev.kord.core.enableEvents
 import dev.kord.core.event.Event
+import dev.kord.core.event.channel.ChannelCreateEvent
+import dev.kord.core.event.guild.GuildCreateEvent
+import dev.kord.core.event.guild.GuildUpdateEvent
+import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.user.VoiceStateUpdateEvent
 import dev.kord.gateway.Intents
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.DatabaseManager
@@ -22,45 +33,55 @@ class BossBot(
     val config: BotConfig
 ): ExtensibleBot(settings, settings.config.discordToken) {
 
-    @OptIn(ExperimentalStdlibApi::class)
     override suspend fun start() {
+        // connect to database
         database.connect()
 
+        // connect to discord
         kord.apply {
             gateway.start(resources.token) {
                 shard = DiscordShard(0, resources.shardCount)
                 presence(settings.presenceBuilder)
-                intents = Intents(settings.intentsBuilder ?: {
-                    // get events used and calculate intents
-                    @Suppress("UNCHECKED_CAST")
-                    val events: Iterable<KClass<out Event>> = extensions.asSequence()
-                        .map { (_, extension) -> extension.eventHandlers }.flatten()
-                        .map { handlers -> handlers.type }
-                        .filter { clazz -> clazz.isSubclassOf(Event::class) }
-                        .map { clazz -> clazz as KClass<out Event> }
-                        .plus(
-                            buildSet {
-                                val bot = this@BossBot
 
-                                // check if bot uses commands, if so add event used to receive command events
-                                if(bot.commands.isNotEmpty()) {
-                                    add(MessageCreateEvent::class)
-                                }
-                            }
-                        )
-                        .asIterable()
+                // use intents builder from bot builder as additional intents we want to use
+                val enable = Intents.IntentsBuilder().apply(settings.intentsBuilder ?: {}).flags()
 
-                    enableEvents(events)
-
-                    val intents = flags().values.map { intent -> intent::class.simpleName }
+                intents = calculateIntents().plus(enable).also {
+                    val intents = it.values
                     if(intents.isEmpty()) {
-                        botLogger.warn { "You do not have any intents registered! You will not receive any events" }
+                        logger.warn { "You do not have any intents registered! You will not receive any events" }
                     } else {
-                        botLogger.info { "You are connecting to Discord with the following intents $intents" }
+                        logger.info { "You are connecting to Discord with the following intents ${intents.map { intent -> intent::class.simpleName }}" }
                     }
-                })
+                }
                 name = "kord"
             }
+        }
+    }
+
+    /**
+     * Calculates the intents that the bot needs from the extensions
+     */
+    private fun calculateIntents() = Intents {
+        val bot = this@BossBot
+
+        @Suppress("UNCHECKED_CAST")
+        val events: Iterable<KClass<out Event>> = extensions.asSequence()
+            // get events used by extensions
+            .map { (_, extension) -> extension.eventHandlers }.flatten()
+            .map { handler -> handler.type }
+            .filter { clazz -> clazz.isSubclassOf(Event::class) }
+            .map { clazz -> clazz as KClass<out Event> }
+            .asIterable()
+
+        enableEvents(events)
+
+        if(bot.commands.isNotEmpty()) {
+            enableEvent(MessageCreateEvent::class)
+        }
+
+        if(bot.slashCommands.commands.isNotEmpty()) {
+            enableEvent(InteractionCreateEvent::class)
         }
     }
 
@@ -84,6 +105,15 @@ class BossBotBuilder: ExtensibleBotBuilder() {
 
     fun database(builder: DatabaseManagerBuilder.() -> Unit) {
         this.databaseBuilder = DatabaseManagerBuilder().apply(builder)
+    }
+
+    fun <K, V : Any> KordCacheBuilder.map(map: MutableMap<K, V>): Generator<K ,V> = { cache, description ->
+        MapEntryCache(cache, description, MapLikeCollection.from(map))
+    }
+
+    fun <K, V : Any> KordCacheBuilder.mapLikeCollection(map: MapLikeCollection<K, V>): Generator<K, V> = {
+            cache, description ->
+        MapEntryCache(cache, description, map)
     }
 
     override suspend fun build(token: String): BossBot {

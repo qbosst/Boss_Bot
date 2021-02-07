@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.4.20"
+    kotlin("jvm") version "1.4.30"
     kotlin("plugin.serialization") version "1.4.20"
     id("com.github.johnrengelman.shadow") version("6.0.0")
 }
@@ -24,8 +24,8 @@ dependencies {
     val exposedVer = "0.24.1"
 
     // kord
-    implementation("dev.kord:kord-core:0.7.0-SNAPSHOT")
-    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-SNAPSHOT")
+    //implementation("dev.kord:kord-core:0.7.0-SNAPSHOT")
+    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-20210207.144753-54")
 
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")
@@ -53,4 +53,10 @@ val shadowJar by tasks.getting(com.github.jengelman.gradle.plugins.shadow.tasks.
     manifest {
         attributes["Main-Class"] = "me.qbosst.bossbot.Launcher"
     }
+}
+
+val compileKotlin: KotlinCompile by tasks
+
+compileKotlin.kotlinOptions {
+    freeCompilerArgs = listOf("-Xinline-classes")
 }
