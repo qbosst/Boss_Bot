@@ -14,6 +14,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorId
 import dev.kord.cache.api.put
 import dev.kord.cache.api.query
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.User
@@ -23,6 +24,7 @@ import me.qbosst.bossbot.converters.impl.ZoneIdConverter
 import me.qbosst.bossbot.converters.optionalCoalescedDuration
 import me.qbosst.bossbot.converters.toCoalescing
 import me.qbosst.bossbot.database.models.UserData
+import me.qbosst.bossbot.database.models.getOrRetrieveData
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.ext.reply
@@ -77,37 +79,13 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
                     val id = message.data.authorId.value
 
                     val newZoneId = arguments.zoneId
-                    val oldZoneId = transaction {
-                        val record = UserDataTable
-                            .select { UserDataTable.userId.eq(id) }
-                            .singleOrNull()
-                        val oldZoneId = record?.getOrNull(UserDataTable.zoneId)
-
-                        when {
-                            record == null -> {
-                                UserDataTable.insert {
-                                    it[UserDataTable.userId] = id
-                                    it[UserDataTable.zoneId] = newZoneId?.id
-                                }
-                            }
-                            newZoneId.id != oldZoneId -> {
-                                UserDataTable.update(
-                                    where = { UserDataTable.userId.eq(id) },
-                                    body = {
-                                        it[UserDataTable.zoneId] = newZoneId?.id
-                                    }
-                                )
-                            }
-                            else -> {}
-                        }
-                        return@transaction oldZoneId
-                    }
+                    val oldZoneId = user?.getOrRetrieveData()?.zoneId
 
                     message.reply(false) {
-                        if(oldZoneId == newZoneId.id) {
+                        if(oldZoneId == newZoneId) {
                             content = "Your zone id is already set to `${oldZoneId}`"
                         } else {
-                            content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId?.id}`"
+                            content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId.id}`"
 
                             message.kord.cache
                                 .query<UserData> { UserData::userId.eq(id) }
@@ -144,33 +122,7 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
         }
     }
 
-    private suspend fun User.getZoneId(): ZoneId? {
-        val idLong = this.id.value
-
-        // try to get zone id from cache fist
-        val cache = this.kord.cache
-        val cachedData = cache.query<UserData> { UserData::userId.eq(idLong) }.singleOrNull()
-        if(cachedData != null) {
-            return cachedData.zoneId
-        }
-
-        // get user data from database
-        val retrievedData = transaction {
-            UserDataTable
-                .select { UserDataTable.userId.eq(idLong) }
-                .singleOrNull()
-                ?.let { row ->
-                    UserData(
-                        userId = row[UserDataTable.userId],
-                        zoneId = row[UserDataTable.zoneId]?.let { id -> ZoneId.of(id) }
-                    )
-                }
-        }
-
-        val data = retrievedData ?: UserData(userId = idLong)
-        cache.put(data)
-        return data.zoneId
-    }
+    private suspend fun UserBehavior.getZoneId(): ZoneId? = getOrRetrieveData().zoneId
 
     private suspend fun displayNoTimeZone(channel: MessageChannelBehavior, user: User?) {
         channel.createMessage {

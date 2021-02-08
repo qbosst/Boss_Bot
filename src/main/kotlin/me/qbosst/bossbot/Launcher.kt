@@ -1,5 +1,6 @@
 package me.qbosst.bossbot
 
+import com.kotlindiscord.kord.extensions.utils.authorIsBot
 import dev.kord.cache.map.MapLikeCollection
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
@@ -78,7 +79,7 @@ suspend fun main(): Unit = try {
 
                 // configure the kord objects we want to cache
                 @Suppress("UNCHECKED_CAST")
-                messages(mapLikeCollection(MessageCache(cachedMessages!!) as MapLikeCollection<MessageData, Snowflake>))
+                messages(mapLikeCollection(MessageCache(cachedMessages!!) { message -> !message.authorIsBot } as MapLikeCollection<MessageData, Snowflake>))
 
                 emojis(none())
                 presences(none())

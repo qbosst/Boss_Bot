@@ -1,26 +1,26 @@
 package me.qbosst.bossbot.util
 
-import dev.kord.common.Color as ColourKord
-import javafx.scene.paint.Color as ColourFX
-import java.awt.Color as ColourAWT
+import dev.kord.common.Color as KordColour
+import javafx.scene.paint.Color as FXColour
+import java.awt.Color as AWTColour
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
 fun rgba(r: Int, g: Int, b: Int, a: Int) =
-    ColourAWT(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
+    AWTColour(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
 
-fun rgba(value: Int) = ColourAWT(value, true)
+fun rgba(value: Int) = AWTColour(value, true)
 
 fun rgb(r: Int, g: Int, b: Int) = rgba(r, g, b, 255)
 
-fun rgb(value: Int) = ColourAWT(value, false)
+fun rgb(value: Int) = AWTColour(value, false)
 
-fun Random.nextColour() = ColourKord(nextInt(0xffffff))
+fun Random.nextColour() = KordColour(nextInt(0xffffff))
 
-fun ColourFX.toAWT(): ColourAWT =
-    ColourAWT(red.toFloat(), green.toFloat(), blue.toFloat(), opacity.toFloat())
+fun FXColour.toAWT(): AWTColour =
+    AWTColour(red.toFloat(), green.toFloat(), blue.toFloat(), opacity.toFloat())
 
-fun Collection<ColourAWT>.blend(): ColourAWT {
+fun Collection<AWTColour>.blend(): AWTColour {
     val ratio = 1f / size
     var (r, g, b, a) = listOf(0, 0, 0, 0)
 
