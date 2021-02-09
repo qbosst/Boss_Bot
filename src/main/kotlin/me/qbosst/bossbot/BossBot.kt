@@ -37,6 +37,9 @@ class BossBot(
         // connect to database
         database.connect()
 
+        // add extensions, do this so that extensions can make database calls in setup methods.
+        settings.extensionsBuilder.extensions.forEach { this.addExtension(it) }
+
         // connect to discord
         kord.apply {
             gateway.start(resources.token) {
@@ -76,7 +79,7 @@ class BossBot(
 
         enableEvents(events)
 
-        if(bot.commands.isNotEmpty()) {
+        if(bot.messageCommands.commands.isNotEmpty()) {
             enableEvent(MessageCreateEvent::class)
         }
 
@@ -124,8 +127,6 @@ class BossBotBuilder: ExtensibleBotBuilder() {
         val bot = BossBot(this, database, config)
 
         bot.setup()
-
-        extensionsBuilder.extensions.forEach { bot.addExtension(it) }
 
         return bot
     }

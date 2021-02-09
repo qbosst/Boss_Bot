@@ -20,8 +20,10 @@ import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.models.GuildColours
 import me.qbosst.bossbot.database.models.GuildSettings
 import me.qbosst.bossbot.database.models.UserData
+import me.qbosst.bossbot.database.models.getOrRetrieveSettings
 import me.qbosst.bossbot.database.tables.GuildColoursTable
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
+import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.extensions.*
 import mu.KotlinLogging
@@ -64,6 +66,7 @@ suspend fun main(): Unit = try {
                 add(GuildColoursTable)
                 add(GuildSettingsTable)
                 add(UserDataTable)
+                add(SpaceSpeakTable)
             }
         }
 
@@ -95,9 +98,16 @@ suspend fun main(): Unit = try {
         }
 
         commands {
-            this.prefix = config.defaultPrefix
             this.invokeOnMention = true
             this.slashCommands = false
+            this.messageCommands = true
+            this.defaultPrefix = config.defaultPrefix
+
+            prefix { default ->
+                val settings = message.getGuildOrNull()?.getOrRetrieveSettings()
+
+                return@prefix settings?.prefix ?: default
+            }
         }
 
         presence {
@@ -121,6 +131,7 @@ suspend fun main(): Unit = try {
             add(::LoggerExtension)
             add(::ColourExtension)
             add { bot -> DeveloperExtension(bot, listOf(config.developerId)) }
+            add { bot -> SpaceSpeakExtension(bot, config.spaceSpeakToken, config.spaceSpeakEmailAddress, config.spaceSpeakUsername) }
         }
     }
 

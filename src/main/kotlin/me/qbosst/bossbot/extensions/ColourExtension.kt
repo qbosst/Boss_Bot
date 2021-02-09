@@ -51,16 +51,16 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
     }
 
     class CreateColourArgs: Arguments() {
-        val name by maxLengthString("name", "", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+        val name by maxLengthString("name", "", maxLength = GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
         val colour by coalescedColour("colour", "", shouldThrow = true)
     }
 
     class RemoveColourArgs: Arguments() {
-        val name by maxLengthString("name", "", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+        val name by maxLengthString("name", "", maxLength = GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
     }
 
     class UpdateColourArgs: Arguments() {
-        val name by maxLengthString("name", "", GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
+        val name by maxLengthString("name", "", maxLength = GuildColoursTable.MAX_COLOUR_NAME_LENGTH)
         val colour by coalescedColour("colour", "", shouldThrow = true)
     }
 

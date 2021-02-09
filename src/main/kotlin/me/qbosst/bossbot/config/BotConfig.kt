@@ -12,6 +12,9 @@ class BotConfig(
     val messageCacheSize: Int = 10_000,
     val defaultCacheSize: Int = 500,
     val developerId: Long = 332947254602235914,
+    val spaceSpeakToken: String = "token-here",
+    val spaceSpeakEmailAddress: String = "",
+    val spaceSpeakUsername: String = "Boss Bot"
 ) {
 
     companion object {

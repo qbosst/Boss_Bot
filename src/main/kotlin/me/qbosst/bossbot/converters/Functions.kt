@@ -32,8 +32,8 @@ fun Arguments.colour(
 fun Arguments.duration(displayName: String, description: String) =
     arg(displayName, description, DurationConverter())
 
-fun Arguments.maxLengthString(displayName: String, description: String, maxLength: Int) =
-    arg(displayName, description, MaxLengthStringConverter(maxLength))
+fun Arguments.maxLengthString(displayName: String, description: String, minLength: Int = 0, maxLength: Int) =
+    arg(displayName, description, MaxLengthStringConverter(minLength, maxLength))
 
 fun Arguments.zoneId(displayName: String, description: String) =
     arg(displayName, description, ZoneIdConverter())
@@ -53,9 +53,10 @@ fun Arguments.optionalDuration(displayName: String, description: String, outputE
 fun Arguments.optionalMaxLengthString(
     displayName: String,
     description: String,
+    minLength: Int = 0,
     maxLength: Int,
     outputError: Boolean = false
-) = arg(displayName, description, MaxLengthStringConverter(maxLength).toOptional(outputError = outputError))
+) = arg(displayName, description, MaxLengthStringConverter(minLength, maxLength).toOptional(outputError = outputError))
 
 fun Arguments.optionalZoneId(displayName: String, description: String, outputError: Boolean = false) =
     arg(displayName, description, ZoneIdConverter().toOptional(outputError = outputError))
@@ -75,9 +76,10 @@ fun Arguments.defaultingDuration(displayName: String, description: String, defau
 fun Arguments.defaultingMaxLengthString(
     displayName: String,
     description: String,
+    minLength: Int = 0,
     maxLength: Int,
     defaultValue: String
-) = arg(displayName, description, MaxLengthStringConverter(maxLength).toDefaulting(defaultValue))
+) = arg(displayName, description, MaxLengthStringConverter(minLength, maxLength).toDefaulting(defaultValue))
 
 fun Arguments.defaultingZoneId(displayName: String, description: String, defaultValue: ZoneId) =
     arg(displayName, description, ZoneIdConverter().toDefaulting(defaultValue))
@@ -102,6 +104,9 @@ fun Arguments.coalescedColour(
 
 fun Arguments.coalescedZoneId(displayName: String, description: String, shouldThrow: Boolean = false) =
     arg(displayName, description, ZoneIdConverter().toCoalescing(shouldThrow = shouldThrow))
+
+fun Arguments.coalescedMaxLengthString(displayName: String, description: String, minLength: Int = 0, maxLength: Int, shouldThrow: Boolean = false) =
+    arg(displayName, description, MaxLengthStringConverter(minLength, maxLength).toCoalescing(shouldThrow = shouldThrow))
 
 // region: Optional Coalescing Converters
 
