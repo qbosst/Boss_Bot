@@ -25,7 +25,9 @@ import me.qbosst.bossbot.util.embed.MenuEmbed
 import me.qbosst.bossbot.util.ext.reply
 import me.qbosst.spacespeak.SpaceSpeakAPI
 import me.qbosst.spacespeak.functions.Product
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Instant
@@ -59,7 +61,9 @@ class SpaceSpeakExtension(
     }
 
     override suspend fun setup() {
-        this.products = api.getProducts()
+        val scope = bot.kord
+
+        val productsJob = scope.async { api.getProducts() }
 
         // retrieve data that linked a SpaceSpeak message id to a discord user id.
         val links = transaction {
@@ -68,17 +72,20 @@ class SpaceSpeakExtension(
                 .toMap()
         }
 
-        this.messages = api.getMessages().asSequence()
-            .map { message -> SpaceSpeakMessage(
-                api = api,
-                messageId = message.messageId,
-                userId = links[message.messageId],
-                content = message.messageText,
-                launchDate = Instant.parse(message.launchDate+'Z')
-            ) }
-            .sortedBy { message -> message.messageId }
-            .toMutableList()
-
+        val messagesJob = scope.async {
+            api.getMessages().asSequence()
+                .map { message ->
+                    SpaceSpeakMessage(
+                        api = api,
+                        messageId = message.messageId,
+                        userId = links[message.messageId],
+                        content = message.messageText,
+                        launchDate = Instant.parse(message.launchDate + 'Z')
+                    )
+                }
+                .sortedBy { message -> message.messageId }
+                .toMutableList()
+        }
 
         group {
             name = "spacespeak"
@@ -162,34 +169,51 @@ class SpaceSpeakExtension(
 
                 action {
                     val spaceSpeakMessage: SpaceSpeakMessage? = messages.firstOrNull { message -> message.messageId == arguments.id }
-                    if(spaceSpeakMessage == null) {
-                        message.reply(false) {
-                            content = "Could not find SpaceSpeak message with id: ${arguments.id}"
-                        }
-                    } else {
-
-                        // request information here, as the embed builder scope does not suspend
-                        val scope = event.kord
-
-                        // request information about the message from SpaceSpeak
-                        val distanceTravelled = scope.async { spaceSpeakMessage.getDistanceTravelled() }
-                        val randomFact = scope.async { spaceSpeakMessage.getRandomSpaceFact() }
-
-                        // wait for responses
-                        awaitAll(distanceTravelled, randomFact)
-
-                        message.replySpaceSpeakEmbed {
-                            description = buildString {
-                                append("**Message**")
-                                append("\n${spaceSpeakMessage.content}")
+                    when {
+                        spaceSpeakMessage == null -> {
+                            message.reply(false) {
+                                content = "Could not find SpaceSpeak message with id: ${arguments.id}"
                             }
+                        }
+                        !spaceSpeakMessage.isPublic() -> {
+                            message.reply(false) {
+                                content = "This message is not public!"
+                            }
+                        }
+                        else -> {
+                            // request information here, as the embed builder scope does not suspend
+                            val scope = event.kord
 
-                            field("Distance Travelled", true) { distanceTravelled.getCompleted() }
-                            field("Fun Fact", true) { randomFact.getCompleted() }
-                            field("Launched At", true) { spaceSpeakMessage.launchDate.toString() }
+                            // request information about the message from SpaceSpeak
+                            val distanceTravelled = scope.async { spaceSpeakMessage.getDistanceTravelled() }
+                            val randomFact = scope.async { spaceSpeakMessage.getRandomSpaceFact() }
 
-                            footer {
-                                text = "Message ID: ${arguments.id}"
+                            // wait for responses
+                            awaitAll(distanceTravelled, randomFact)
+
+                            // user who sent the message into space
+                            val user = spaceSpeakMessage.getUser(event.kord)
+
+                            message.replySpaceSpeakEmbed {
+                                description = buildString {
+                                    append("**Message**")
+                                    append("\n${spaceSpeakMessage.content}")
+                                }
+
+                                field("Distance Travelled", true) { distanceTravelled.getCompleted() }
+                                field("Fun Fact", true) { randomFact.getCompleted() }
+                                field("User", true) {
+                                    if(spaceSpeakMessage.isAnonymous()) {
+                                        "Anonymous"
+                                    } else {
+                                        user?.tag ?: "N/A"
+                                    }
+                                }
+
+                                footer {
+                                    text = "Message ID: ${arguments.id} | Launch Date/Time"
+                                }
+                                timestamp = spaceSpeakMessage.launchDate
                             }
                         }
                     }
@@ -205,7 +229,7 @@ class SpaceSpeakExtension(
                 action {
                     val zoneId = user!!.getOrRetrieveData().zoneId ?: ZoneId.of("UTC")
 
-                    val builder = MenuEmbed<SpaceSpeakMessage>(3, messages.reversed()) { message, isFirst ->
+                    val builder = MenuEmbed<SpaceSpeakMessage>(3, messages.filter { it.isPublic() }.reversed()) { message, isFirst ->
                         field {
                             if(isFirst) {
                                 this.name = "Message ID"
@@ -238,8 +262,13 @@ class SpaceSpeakExtension(
                     }
                 }
             }
-
         }
+
+        // wait for calls to be finished before moving on, and set variables
+        awaitAll(productsJob, messagesJob)
+
+        this.messages = messagesJob.getCompleted()
+        this.products = productsJob.getCompleted()
     }
 
     private suspend fun MessageBehavior.replySpaceSpeakEmbed(builder: EmbedBuilder.() -> Unit) = reply {
@@ -265,10 +294,53 @@ class SpaceSpeakExtension(
     ) {
         suspend fun getUser(kord: Kord): User? = userId?.let { id -> kord.getUser(Snowflake(id)) }
 
-        suspend fun getDistanceTravelled() = api.getDistanceTraveled(messageId).removeSurrounding("\"")
+        suspend fun getDistanceTravelled(): String = api.getDistanceTraveled(messageId).removeSurrounding("\"")
 
-        suspend fun getRandomSpaceFact() = api.getRandomSpaceFact(messageId).removeSurrounding("\"")
+        suspend fun getRandomSpaceFact(): String {
+            var response = api.getRandomSpaceFact(messageId).removeSurrounding("\"").removePrefix("<br />")
 
+            // html tag regex
+            val pattern = "<a.*?href=\\\\?\"(.*?)\".*?>(.*?)<\\/a>".toPattern()
+
+            // convert html to markdown
+            var matcher = pattern.matcher(response)
+            while(matcher.find()) {
+                val link = matcher.group(1).replace("\\", "")
+                val name = matcher.group(2)
+
+                response = response.replaceRange(matcher.start(), matcher.end(), "[$name]($link)")
+                matcher = pattern.matcher(response)
+            }
+
+            return response
+        }
+
+        fun isAnonymous(): Boolean {
+            if(userId == null) {
+                return false
+            }
+
+            return transaction {
+                SpaceSpeakTable
+                    .select { SpaceSpeakTable.userId.eq(userId) and SpaceSpeakTable.messageId.eq(messageId) }
+                    .singleOrNull()
+                    ?.get(SpaceSpeakTable.isAnonymous)
+                    ?: false
+            }
+        }
+
+        fun isPublic(): Boolean {
+            if(userId == null) {
+                return true
+            }
+            return transaction {
+                SpaceSpeakTable
+                    .select { SpaceSpeakTable.userId.eq(userId) and SpaceSpeakTable.messageId.eq(messageId) }
+                    .singleOrNull()
+                    ?.get(SpaceSpeakTable.isPublic)
+                    ?: true
+            }
+        }
     }
 
     companion object {
