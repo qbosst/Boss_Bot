@@ -6,11 +6,8 @@ import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.enableEvent
-import dev.kord.core.enableEvents
-import dev.kord.core.event.channel.ChannelCreateEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
-import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.editPresence
 import kotlinx.serialization.decodeFromString
