@@ -181,9 +181,6 @@ class SpaceSpeakExtension(
                             }
                         }
                         else -> {
-                            // request information here, as the embed builder scope does not suspend
-                            val scope = event.kord
-
                             // request information about the message from SpaceSpeak
                             val distanceTravelled = scope.async { spaceSpeakMessage.getDistanceTravelled() }
                             val randomFact = scope.async { spaceSpeakMessage.getRandomSpaceFact() }

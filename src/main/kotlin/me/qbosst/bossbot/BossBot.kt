@@ -25,8 +25,6 @@ import mu.KotlinLogging
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
 
-private val botLogger = KotlinLogging.logger {  }
-
 class BossBot(
     settings: BossBotBuilder,
     val database: DatabaseManager,
