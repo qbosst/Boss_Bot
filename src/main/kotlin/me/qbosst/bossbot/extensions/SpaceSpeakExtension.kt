@@ -10,17 +10,14 @@ import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.reply
 import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.MessageCreateBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import me.qbosst.bossbot.converters.coalescedMaxLengthString
-import me.qbosst.bossbot.database.models.getOrRetrieveData
+import me.qbosst.bossbot.database.models.getOrRetrieveUserData
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
-import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.embed.MenuEmbed
 import me.qbosst.bossbot.util.ext.reply
 import me.qbosst.spacespeak.SpaceSpeakAPI
@@ -224,7 +221,7 @@ class SpaceSpeakExtension(
                 aliases = arrayOf("messages")
 
                 action {
-                    val zoneId = user!!.getOrRetrieveData().zoneId ?: ZoneId.of("UTC")
+                    val zoneId: ZoneId = user!!.getOrRetrieveUserData()?.zoneId?.let { ZoneId.of(it) } ?: ZoneId.of("UTC")
 
                     val builder = MenuEmbed<SpaceSpeakMessage>(3, messages.filter { it.isPublic() }.reversed()) { message, isFirst ->
                         field {

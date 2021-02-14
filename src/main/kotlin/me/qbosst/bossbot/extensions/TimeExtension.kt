@@ -24,12 +24,13 @@ import me.qbosst.bossbot.converters.impl.ZoneIdConverter
 import me.qbosst.bossbot.converters.optionalCoalescedDuration
 import me.qbosst.bossbot.converters.toCoalescing
 import me.qbosst.bossbot.database.models.UserData
-import me.qbosst.bossbot.database.models.getOrRetrieveData
+import me.qbosst.bossbot.database.models.getOrRetrieveUserData
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.util.TimeUtil
 import me.qbosst.bossbot.util.ext.reply
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.time.Duration
@@ -76,20 +77,30 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
                 name = "set"
 
                 action {
-                    val id = message.data.authorId.value
+                    val idLong = message.data.authorId.value
 
-                    val newZoneId = arguments.zoneId
-                    val oldZoneId = user?.getOrRetrieveData()?.zoneId
+                    val newZoneId = arguments.zoneId.id
+
+                    val oldZoneId = newSuspendedTransaction {
+                        val settings = user?.getOrRetrieveUserData(this)
+                        val oldZoneId = settings?.zoneId
+
+                        if(settings == null) {
+                            UserData.new(idLong) {
+                                zoneId = newZoneId
+                            }
+                        } else {
+                            settings.zoneId = newZoneId
+                        }
+
+                        return@newSuspendedTransaction oldZoneId
+                    }
 
                     message.reply(false) {
                         if(oldZoneId == newZoneId) {
                             content = "Your zone id is already set to `${oldZoneId}`"
                         } else {
-                            content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId.id}`"
-
-                            message.kord.cache
-                                .query<UserData> { UserData::userId.eq(id) }
-                                .update { data -> data.copy(zoneId = newZoneId) }
+                            content = "Your time zone has been updated from `${oldZoneId}` to `${newZoneId}`"
                         }
                     }
                 }
@@ -122,7 +133,7 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
         }
     }
 
-    private suspend fun UserBehavior.getZoneId(): ZoneId? = getOrRetrieveData().zoneId
+    private suspend fun UserBehavior.getZoneId(): ZoneId? = getOrRetrieveUserData()?.zoneId?.let { ZoneId.of(it) }
 
     private suspend fun displayNoTimeZone(channel: MessageChannelBehavior, user: User?) {
         channel.createMessage {
