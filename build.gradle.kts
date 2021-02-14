@@ -45,18 +45,15 @@ dependencies {
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.0.jar"))
 }
 
-tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "1.8"
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        freeCompilerArgs = listOf("-Xinline-classes")
+    }
 }
 
 val shadowJar by tasks.getting(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar::class) {
     manifest {
         attributes["Main-Class"] = "me.qbosst.bossbot.Launcher"
     }
-}
-
-val compileKotlin: KotlinCompile by tasks
-
-compileKotlin.kotlinOptions {
-    freeCompilerArgs = listOf("-Xinline-classes")
 }
