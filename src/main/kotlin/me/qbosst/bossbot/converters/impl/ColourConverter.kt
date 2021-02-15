@@ -7,8 +7,8 @@ import com.kotlindiscord.kord.extensions.commands.converters.SingleConverter
 import com.kotlindiscord.kord.extensions.commands.parser.Argument
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
+import me.qbosst.bossbot.util.Colour
 import java.util.regex.Pattern
-import java.awt.Color as Colour
 
 class ColourConverter(
     val colourProvider: suspend (CommandContext) -> Map<String, Colour> = { mapOf() }

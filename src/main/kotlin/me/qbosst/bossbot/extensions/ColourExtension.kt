@@ -31,15 +31,80 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import javax.imageio.ImageIO
 import kotlin.random.Random
-import kotlin.reflect.full.staticProperties
-import java.awt.Color as Colour
-import javafx.scene.paint.Color as ColourFX
+import kotlin.reflect.full.memberProperties
+
+private val systemColours: Map<String, Colour> = mutableMapOf<String, Colour>().apply {
+    Colour.Companion::class.memberProperties.forEach { prop ->
+        val colour = prop.get(Colour.Companion) as? Colour ?: return@forEach
+        put(prop.name.toLowerCase(), colour)
+    }
+}
+
+private suspend fun GuildBehavior.getCachedColours(): GuildColours? {
+    val idLong = id.value
+    val cache = kord.cache
+
+    return cache.query<GuildColours> { GuildColours::guildId.eq(idLong) }.singleOrNull()
+}
+
+/**
+ * @param shouldCache whether to cache the result retrieved from the database
+ */
+private suspend fun GuildBehavior.getColours(shouldCache: Boolean = true): GuildColours {
+    val idLong = id.value
+    val cache = kord.cache
+
+    // check to see if colours are cached, if so return that
+    val cached = getCachedColours()
+    if(cached != null) {
+        return cached
+    }
+
+    // get colours from database
+    val retrieved = transaction {
+        GuildColoursTable.select { GuildColoursTable.guildId.eq(idLong) }.asSequence()
+            .map { row -> row[GuildColoursTable.name] to rgba(row[GuildColoursTable.value]) }
+            .toMap().ifEmpty { emptyMap() }
+    }.let { map -> GuildColours(idLong, map) }
+
+    // cache the result
+    if(shouldCache) {
+        cache.put(retrieved)
+    }
+
+    return retrieved
+}
+
+private fun buildConverter(
+    includeDefault: Boolean,
+    includeGuild: Boolean,
+    includeRandom: Boolean
+): suspend (CommandContext) -> Map<String, Colour> = { ctx ->
+    mutableMapOf<String, Colour>().apply {
+        if(includeDefault) {
+            putAll(systemColours)
+        }
+        if(includeRandom) {
+            val colour = Random.nextColour(true)
+            put("rand", colour)
+            put("random", colour)
+        }
+
+        if(includeGuild) {
+            val guild = ctx.getGuild()
+            if(guild != null) {
+                val colours = guild.getCachedColours() ?: guild.getColours(true)
+                putAll(colours.data)
+            }
+        }
+    }
+}
 
 class ColourExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "colour"
 
     class ColourArgs: Arguments() {
-        val colour by coalescedColour("colour", "todo", true, buildConverter(true, true))
+        val colour by coalescedColour("colour", "todo", true, buildConverter(true, true, false))
     }
 
     class RandomColourArgs: Arguments() {
@@ -47,7 +112,7 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
     }
 
     class BlendColourArgs: Arguments() {
-        val colours by colourList("colours", "", true, buildConverter(true, true))
+        val colours by colourList("colours", "", true, buildConverter(true, true, true))
     }
 
     class CreateColourArgs: Arguments() {
@@ -187,7 +252,8 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
                 action {
                     val colours = buildConverter(
                         includeDefault = arguments.includeDefault,
-                        includeGuild = arguments.includeGuild
+                        includeGuild = arguments.includeGuild,
+                        includeRandom = false
                     ).invoke(this)
 
                     message.reply(false) {
@@ -202,24 +268,11 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
     @OptIn(ExperimentalStdlibApi::class)
     companion object {
 
-        val systemColours = buildMap<String, Colour> {
-            // add all java.awt colours to map
-            Colour::class.staticProperties.asSequence()
-                .mapNotNull { prop -> runCatching { prop.name to prop.get() as Colour }.getOrNull() }
-                .forEach { (name, colour) -> put(name.toLowerCase(), colour) }
-
-            // add all javafx colours
-            ColourFX::class.staticProperties.asSequence()
-                .mapNotNull { prop -> kotlin.runCatching { prop.name to prop.get() as ColourFX }.getOrNull() }
-                .map { (name, colour) -> name to colour.toAWT() }
-                .forEach { (name, colour) -> put(name.toLowerCase(), colour) }
-        }
-
         private fun Colour.draw(width: Int = 200, height: Int = 200): InputStream {
             val bi = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
             val ig2 = bi.createGraphics()
 
-            ig2.background = this
+            ig2.background = this.jColour
             ig2.clearRect(0, 0, width, height)
 
             return ByteArrayOutputStream()
@@ -234,7 +287,7 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
                 fun Int.hex() = "%02x".format(this)
 
                 val (r, g, b, a) = listOf(colour.red.hex(), colour.green.hex(), colour.blue.hex(), colour.alpha.hex())
-                color = colour.kColor
+                color = colour.kColour
                 field("Red", true) { "${colour.red} `${r}` [${colour.red * 100 / 255}%]" }
                 field("Green", true) { "${colour.green} `${g}` [${colour.green * 100 / 255}%]" }
                 field("Blue", true) { "${colour.blue} `${b}` [${colour.blue * 100 / 255}%]" }
@@ -246,62 +299,6 @@ class ColourExtension(bot: ExtensibleBot): Extension(bot) {
 
             allowedMentions { repliedUser = false }
             addFile(fileName, colour.draw())
-        }
-
-        private suspend fun GuildBehavior.getCachedColours(): GuildColours? {
-            val idLong = id.value
-            val cache = kord.cache
-
-            return cache.query<GuildColours> { GuildColours::guildId.eq(idLong) }.singleOrNull()
-        }
-
-        /**
-         * @param shouldCache whether to cache the result retrieved from the database
-         */
-        private suspend fun GuildBehavior.getColours(shouldCache: Boolean = true): GuildColours {
-            val idLong = id.value
-            val cache = kord.cache
-
-            // check to see if colours are cached, if so return that
-            val cached = getCachedColours()
-            if(cached != null) {
-                return cached
-            }
-
-            // get colours from database
-            val retrieved = transaction {
-                GuildColoursTable.select { GuildColoursTable.guildId.eq(idLong) }.asSequence()
-                    .map { row -> row[GuildColoursTable.name] to rgba(row[GuildColoursTable.value]) }
-                    .toMap().ifEmpty { emptyMap() }
-            }.let { map -> GuildColours(idLong, map) }
-
-            // cache the result
-            if(shouldCache) {
-                cache.put(retrieved)
-            }
-
-            return retrieved
-        }
-
-        /**
-         * Builds a [me.qbosst.bossbot.converters.impl.ColourConverter.colourProvider]
-         */
-        private fun buildConverter(
-            includeDefault: Boolean,
-            includeGuild: Boolean
-        ): suspend (CommandContext) -> Map<String, Colour> = { ctx ->
-            buildMap {
-                if(includeDefault) {
-                    putAll(systemColours)
-                }
-                if(includeGuild) {
-                    val guild = ctx.getGuild()
-                    if(guild != null) {
-                        val colours = guild.getColours().data
-                        putAll(colours)
-                    }
-                }
-            }
         }
 
         private fun Random.nextColour(isAlpha: Boolean = false) =

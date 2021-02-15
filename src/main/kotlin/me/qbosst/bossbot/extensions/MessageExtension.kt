@@ -19,6 +19,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.util.ext.isEmpty
 import me.qbosst.bossbot.util.ext.reply
+import me.qbosst.bossbot.util.kColour
 import me.qbosst.bossbot.util.nextColour
 import java.time.Instant
 import kotlin.random.Random
@@ -113,7 +114,7 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
                         thumbnail {
                             url = self.avatar.url
                         }
-                        color = Random.nextColour()
+                        color = Random.nextColour().kColour
                     }
 
                     val json = if(arguments.prettyPrint) prettyPrintJson else uglyPrintJson

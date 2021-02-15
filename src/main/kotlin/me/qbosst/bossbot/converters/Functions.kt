@@ -7,7 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.*
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import dev.kord.common.annotation.KordPreview
 import me.qbosst.bossbot.converters.impl.*
-import java.awt.Color as Colour
+import me.qbosst.bossbot.util.Colour
 import java.time.Duration
 import java.time.ZoneId
 
