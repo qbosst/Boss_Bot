@@ -54,9 +54,9 @@ suspend fun main(): Unit = try {
 
         database {
             // set database connection properties
-            this.host = config.databaseHost
-            this.username = config.databaseUsername
-            this.password = config.databasePassword
+            this.host = config.database.host
+            this.username = config.database.username
+            this.password = config.database.password
 
             // add the tables that this database will use
             tables {
@@ -69,13 +69,13 @@ suspend fun main(): Unit = try {
 
         cache {
             // set the amount of cached messages we want
-            this.cachedMessages = config.messageCacheSize
+            this.cachedMessages = config.discord.messageCacheSize
 
             kord {
                 // register custom objects to cache
-                forDescription(UserData.description, lruCache(config.defaultCacheSize))
-                forDescription(GuildSettings.description, lruCache(config.defaultCacheSize))
-                forDescription(GuildColours.description, lruCache(config.defaultCacheSize))
+                forDescription(UserData.description, lruCache(config.discord.defaultCacheSize))
+                forDescription(GuildSettings.description, lruCache(config.discord.defaultCacheSize))
+                forDescription(GuildColours.description, lruCache(config.discord.defaultCacheSize))
 
                 // configure the kord objects we want to cache
                 @Suppress("UNCHECKED_CAST")
@@ -98,7 +98,7 @@ suspend fun main(): Unit = try {
             this.invokeOnMention = true
             this.slashCommands = false
             this.messageCommands = true
-            this.defaultPrefix = config.defaultPrefix
+            this.defaultPrefix = config.discord.defaultPrefix
 
             prefix { default ->
                 val settings = message.getGuildOrNull()?.getOrRetrieveSettings()
@@ -128,7 +128,7 @@ suspend fun main(): Unit = try {
             add(::LoggerExtension)
             add(::ColourExtension)
             add { bot -> DeveloperExtension(bot, listOf(config.developerId)) }
-            add { bot -> SpaceSpeakExtension(bot, config.spaceSpeakToken, config.spaceSpeakEmailAddress, config.spaceSpeakUsername) }
+            add { bot -> SpaceSpeakExtension(bot, config.spaceSpeak) }
         }
     }
 

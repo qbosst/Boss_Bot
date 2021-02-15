@@ -15,6 +15,7 @@ import dev.kord.core.entity.User
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.converters.coalescedMaxLengthString
 import me.qbosst.bossbot.database.models.getOrRetrieveUserData
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
@@ -34,13 +35,11 @@ import java.util.*
 
 class SpaceSpeakExtension(
     bot: ExtensibleBot,
-    token: String,
-    private val emailAddress: String,
-    private val username: String
+    private val config: BotConfig.SpaceSpeak
 ): Extension(bot) {
     override val name: String = "spacespeak"
 
-    private val api = SpaceSpeakAPI(token)
+    private val api = SpaceSpeakAPI(config.token)
     private lateinit var products: List<Product>
     private lateinit var messages: MutableList<SpaceSpeakMessage>
 
@@ -104,8 +103,8 @@ class SpaceSpeakExtension(
                     // send message into space
                     val result = api.sendMessage(
                         productId = products.first().productId,
-                        email = emailAddress,
-                        username = username,
+                        email = config.emailAddress,
+                        username = config.username,
                         message = arguments.message
                     )
 

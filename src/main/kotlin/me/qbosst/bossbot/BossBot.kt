@@ -29,7 +29,7 @@ class BossBot(
     settings: BossBotBuilder,
     val database: DatabaseManager,
     val config: BotConfig
-): ExtensibleBot(settings, settings.config.discordToken) {
+): ExtensibleBot(settings, settings.config.discord.token) {
 
     override suspend fun start() {
         // connect to database
@@ -92,7 +92,7 @@ class BossBot(
          */
         suspend operator fun invoke(init: BossBotBuilder.() -> Unit): BossBot {
             val builder = BossBotBuilder().apply(init)
-            val token = builder.config.discordToken
+            val token = builder.config.discord.token
 
             return builder.build(token)
         }
