@@ -3,11 +3,14 @@ package me.qbosst.bossbot.extensions
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
-import com.kotlindiscord.kord.extensions.commands.converters.optionalChannel
+import com.kotlindiscord.kord.extensions.commands.GroupCommand
+import com.kotlindiscord.kord.extensions.commands.MessageSubCommand
+import com.kotlindiscord.kord.extensions.commands.converters.CoalescingConverter
+import com.kotlindiscord.kord.extensions.commands.converters.impl.ChannelConverter
+import com.kotlindiscord.kord.extensions.commands.converters.impl.StringCoalescingConverter
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.Color
-import dev.kord.common.entity.Snowflake
+import com.kotlindiscord.kord.extensions.utils.authorIsBot
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
@@ -15,123 +18,167 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
-import me.qbosst.bossbot.Constants
-import me.qbosst.bossbot.database.models.GuildSettings
-import me.qbosst.bossbot.database.models.getOrRetrieveSettings
-import me.qbosst.bossbot.database.tables.GuildSettingsTable
-import me.qbosst.bossbot.util.cache.MessageCache.Companion.files
-import me.qbosst.bossbot.util.ext.deleteAll
-import me.qbosst.bossbot.util.ext.reply
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import org.jetbrains.exposed.sql.transactions.transaction
+import dev.kord.rest.builder.message.EmbedBuilder
+import me.qbosst.bossbot.commands.ConfigCommandArgs
+import me.qbosst.bossbot.commands.ConfigSubCommand
+import me.qbosst.bossbot.commands.converters.SingleToCoalescingConverter
+import me.qbosst.bossbot.database.dao.GuildSettings
+import me.qbosst.bossbot.database.dao.getSettings
+import me.qbosst.bossbot.database.dao.insertOrUpdate
+import me.qbosst.bossbot.util.Colour
+import me.qbosst.bossbot.util.cache.files
+import me.qbosst.bossbot.util.ext.*
+import me.qbosst.bossbot.util.kColour
 import java.time.Instant
 
 class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "logger"
 
-    class SetMessageLogsArgs: Arguments() {
-        val logChannel by optionalChannel("new log channel", "", outputError = true)
-    }
+    private val defaultPrefix: String get() = bot.settings.commandsBuilder.defaultPrefix
 
     override suspend fun setup() {
-        group {
-            name = "set"
-
-            check(::anyGuild)
-
-            action {
-                val settings = newSuspendedTransaction {
-                    guildFor(event)!!.getOrRetrieveSettings()
-                }
-                println(settings)
-            }
-
-            command(::SetMessageLogsArgs) {
-                name = "messagelogs"
-                aliases = arrayOf("messagelog", "msglogs", "msglog")
-
-                action {
-                    val guild = event.getGuild()!!
-                    val settings = guild.getOrRetrieveSettings()
-                    transaction {
-                        if(settings == null) {
-                            GuildSettings.new(guild.id.value) {
-                                messageLogsChannelId = arguments.logChannel?.id?.value
-                            }
-                        } else {
-                            settings.messageLogsChannelId = arguments.logChannel?.id?.value
-                        }
-                    }
-                }
-            }
-        }
-
         event<MessageDeleteEvent> {
-            // make sure we only get guild message delete events.
             check(::anyGuild)
+            check { event -> event.message?.data?.authorIsBot?.not() ?: true }
 
             action {
                 val message = event.message
-                val files = message?.data?.files ?: listOf()
+                val files = message?.data?.files
 
-                kotlin.run {
+                run {
                     val logger = event.logger() ?: return@run
 
-                    // convert files into a map of input streams, for the message to use
-                    val streams = files.map { file -> file.name to file.inputStream() }
+                    val streams = files?.map { file -> file.name to file.inputStream() }
 
                     logger.createMessage {
+
+                        val author = message?.author
+
+                        // create embed, containing details about the deleted message
                         embed {
+
                             author {
                                 this.name = "Message Deleted"
                                 this.icon = message?.author?.avatar?.url
                             }
 
+                            // the channel the message was deleted in
                             field("Channel", true) { event.channel.mention }
-                            field("Author", true) { "todo" }
-                            if(streams.isNotEmpty()) {
+
+                            // the author of the message
+                            field("Author", true) { if(author != null) "${author.tag} ${author.mention}" else "N/A" }
+
+                            if(!streams.isNullOrEmpty()) {
                                 field("Attachments", true) { streams.size.toString() }
                             }
-                            field("Content", true) { message?.content ?: "N/A" }
-                            footer {
-                                text = buildString {
-                                    val userId = message?.author?.id?.value
-                                    if(userId != null) {
-                                        append("User ID: $userId | ")
-                                    }
-                                    append("Message ID: ${event.messageId.value}")
-                                }
+
+                            // add a field to display the content of the message (if any)
+                            val originalContent = message?.content?.maxLength(EmbedBuilder.Field.Limits.value)
+                            if(originalContent == null || originalContent.isNotEmpty()) {
+                                field("Content", true) { originalContent ?: "N/A" }
                             }
 
-                            color = Color(Constants.PASTEL_RED)
+                            footer {
+                                text = (author?.id?.value?.let { "User ID: $it | " } ?: "") + "Message ID: ${event.messageId.value}"
+                            }
+
+                            color = Colour.LIGHT_CORAL.kColour
                             timestamp = Instant.now()
                         }
 
                         // add deleted message attachments to log message
-                        streams.forEach { (fileName, stream) ->
+                        streams?.forEach { (fileName, stream) ->
                             addFile(fileName, stream)
                         }
                     }
 
-                    // once the message has been sent, we close the input streams so that it can be deleted
-                    streams.forEach { (_, stream) -> stream.close() }
+                    // once the message has been sent, we close the input streams so we can delete the files
+                    streams?.forEach { (_, stream) -> stream.close() }
                 }
 
-                // delete files from storage
-                files.deleteAll()
+                // delete the files from storage
+                files?.deleteAll()
+            }
+        }
+
+        group {
+            name = "settings"
+
+            check(::anyGuild)
+
+            action {
+                val guild = event.getGuild()!!
+                val settings = guild.getSettings()
+
+                message.replyEmbed {
+                    field("Prefix", true) { (settings?.prefix ?: defaultPrefix).wrap("`") }
+                    field("Message Logs Channel", true) { settings?.messageLogsChannelId?.channelMention() ?: "N/A" }
+                }
+            }
+
+            configCommand("prefix", "The new prefix", StringCoalescingConverter()) {
+                name = "prefix"
+
+                getSetting { this?.prefix }
+
+                updateSetting { guildId, guildSettings, newPrefix ->
+                    guildSettings.insertOrUpdate(guildId) {
+                        prefix = newPrefix
+                    }
+                }
+
+                formatValue { (it ?: defaultPrefix).wrap("`") }
+            }
+
+            configCommand("message logs", "", SingleToCoalescingConverter(ChannelConverter())) {
+                name = "messagelogs"
+
+                getSetting { ctx ->
+                    this?.messageLogsChannelId?.snowflake()?.let { id -> ctx.getGuild()?.getChannelOrNull(id) }
+                }
+
+                updateSetting { guildId, guildSettings, newChannel ->
+                    guildSettings.insertOrUpdate(guildId) {
+                        messageLogsChannelId = newChannel?.id?.value
+                    }
+                }
+
+                formatValue { it?.mention ?: "`N/A`" }
             }
         }
     }
 
+    private suspend fun <V: Any> GroupCommand<out Arguments>.configCommand(
+        displayName: String,
+        description: String,
+        converter: CoalescingConverter<V>,
+        body: ConfigSubCommand<Long, GuildSettings, V>.() -> Unit,
+    ): MessageSubCommand<ConfigCommandArgs<V>> {
+        val commandObj = ConfigSubCommand<Long, GuildSettings, V>(displayName, description, converter, extension, this)
+
+        commandObj.apply {
+            body()
+
+            check(::anyGuild)
+
+            getConfig { getGuild()?.getSettings() }
+
+            getPrimaryKey { event.guildId!!.value }
+        }
+
+
+        return command(commandObj) as MessageSubCommand<ConfigCommandArgs<V>>
+    }
+
     private suspend fun Event.logger(): MessageChannelBehavior? {
         val guild = guildFor(this) ?: return null
-        val settings = guild.getOrRetrieveSettings() ?: return null
+        val settings = guild.getSettings() ?: return null
 
         return when(this) {
-            // message events
             is MessageUpdateEvent, is MessageDeleteEvent ->
-                settings.messageLogsChannelId?.let { id -> guild.getChannelOfOrNull<GuildMessageChannel>(Snowflake(id)) }
-            else -> null
+                settings.messageLogsChannelId?.snowflake()?.let { guild.getChannelOfOrNull<GuildMessageChannel>(it) }
+            else ->
+                null
         }
     }
 }

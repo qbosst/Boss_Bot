@@ -6,117 +6,144 @@ import com.kotlindiscord.kord.extensions.commands.converters.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.user
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.utils.authorId
-import com.kotlindiscord.kord.extensions.utils.getTopRole
 import com.kotlindiscord.kord.extensions.utils.users
-import dev.kord.common.annotation.KordPreview
+import com.kotlindiscord.kord.extensions.utils.waitFor
 import dev.kord.core.behavior.channel.withTyping
-import dev.kord.core.event.message.MessageUpdateEvent
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.encodeToJsonElement
-import me.qbosst.bossbot.util.defaultCheck
+import me.qbosst.bossbot.util.ext.maxLength
 import me.qbosst.bossbot.util.ext.reply
+import me.qbosst.bossbot.util.ext.replyEmbed
+import me.qbosst.bossbot.util.ext.wrap
 import javax.script.ScriptEngineManager
 
-@OptIn(KordPreview::class)
-class DeveloperExtension(bot: ExtensibleBot, val developers: Collection<Long>): Extension(bot) {
-    private val json = Json {
-        prettyPrint = true
-    }
+class DeveloperExtension(bot: ExtensibleBot): Extension(bot) {
+    override val name: String = "developer"
 
     private val engine by lazy { ScriptEngineManager().getEngineByExtension("kts") }
 
-    override val name: String = "developer"
-
-    class ReadDirectMessagesArgs: Arguments() {
-        val target by user("target", "")
-        val amount by defaultingInt("amount", "", 100)
+    private val prettyJson = Json {
+        prettyPrint = true
     }
 
     class EvalArgs: Arguments() {
         val code by coalescedString("code", "")
     }
 
-    override suspend fun setup() {
-        command {
-            name = "botstatistics"
-            aliases = arrayOf("botstats")
+    class ReadDMsArgs: Arguments() {
+        val target by user("target", "the user's DMs that you want to read")
+        val amount by defaultingInt("amount", "the amount of messages to read", 100)
+    }
 
-            check(::defaultCheck)
+    override suspend fun setup() {
+        command(::EvalArgs) {
+            name = "eval"
 
             action {
-                message.reply(false) {
-                    embed {
-                        color = guild?.getMember(message.kord.selfId)?.getTopRole()?.color
-                        field("Guilds", true) { message.kord.guilds.count().toString() }
-                        field("Cached Users", true) { message.kord.users.count().toString() }
+                channel.withTyping {
+
+                    engine.apply {
+                        put("event", event)
+                        put("kord", kord)
+                        put("guild", guild)
+                        put("message", message)
+                        put("member", member)
+                        put("user", user)
+                        put("gateway", event.gateway)
+                        put("channel", channel)
+                    }
+
+                    val result = try { engine.eval(arguments.code) } catch (e: Exception) { e }
+
+                    message.reply(false) {
+                        content = "Result: $result".wrap("```").maxLength(2000, "...```")
                     }
                 }
             }
         }
 
-        command(::ReadDirectMessagesArgs) {
-            name = "readdirectmessages"
-            aliases = arrayOf("readdms")
-
-            check(::defaultCheck)
+        command(::ReadDMsArgs) {
+            name = "readdms"
 
             action {
                 val target = arguments.target
+
                 when {
                     target.id == message.kord.selfId -> {
                         message.reply(false) {
                             content = "I cannot check DM history with myself."
                         }
                     }
+
                     target.isBot -> {
                         message.reply(false) {
                             content = "I cannot check DM history with other bots."
                         }
                     }
-                    else -> {
-                        val channel = target.getDmChannel()
-                        val lastMessage = channel.getLastMessage()
-                        if(lastMessage == null) {
-                            message.reply(false) {
-                                content = "I do not have any DMs with ${target.tag}"
-                            }
-                        } else {
-                            message.channel.withTyping {
-                                val messages = buildJsonArray {
-                                    add(json.encodeToJsonElement(lastMessage))
-                                    channel.getMessagesBefore(lastMessage.id, arguments.amount)
-                                        .collect { message -> add(json.encodeToJsonElement(message)) }
-                                }
 
+                    else -> {
+                        val dmChannel = target.getDmChannelOrNull()
+                        val lastMessage = dmChannel?.getLastMessage()
+
+                        when {
+                            dmChannel == null -> {
                                 message.reply(false) {
-                                    addFile("${target.tag}_dms.json", json.encodeToString(messages).byteInputStream())
+                                    content = "I could not get the DM channel with ${target.tag}. Maybe they have me blocked or DMs off..."
+                                }
+                            }
+                            lastMessage == null -> {
+                                message.reply(false) {
+                                    content = "I do not have any DMs with ${target.tag}"
+                                }
+                            }
+                            else -> {
+                                message.channel.withTyping {
+                                    val messages = buildJsonArray {
+                                        add(prettyJson.encodeToJsonElement(lastMessage))
+                                        channel.getMessagesBefore(lastMessage.id, arguments.amount)
+                                            .collect { message -> add(prettyJson.encodeToJsonElement(message)) }
+                                    }
+
+                                    prettyJson.encodeToString(messages).byteInputStream().use {
+                                        message.reply(false) {
+                                            addFile("${target.tag}_dms.json", it)
+                                        }
+                                    }
                                 }
                             }
                         }
+
                     }
                 }
             }
         }
 
-        command(::EvalArgs) {
-            name = "eval"
+        command {
+            name = "botstatistics"
+            aliases = arrayOf("botstats")
 
             action {
-                channel.withTyping {
-                    val response = try { engine.eval(arguments.code) } catch (e: Exception) { e }
-                    channel.createMessage(response.toString())
+                val self = event.kord.getSelf()
+
+                val guilds = event.kord.guilds.count()
+                val cachedUsers = event.kord.users.count()
+
+                val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
+                val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
+
+                message.replyEmbed {
+                    title = "${self.tag} statistics"
+
+                    field("Memory Usage", true) { "${usedMb}MB / ${totalMb}MB" }
+                    field("Guilds", true) { guilds.toString() }
+                    field("Cached Users", true) { cachedUsers.toString() }
                 }
             }
-        }
-
-        // puts a check to see if the author is a developer for every command in this extension.
-        commands.forEach { command ->
-            command.checkList.add(0) { event -> event.message.data.authorId.value in developers }
         }
     }
 }

@@ -6,152 +6,148 @@ import com.kotlindiscord.kord.extensions.commands.converters.long
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorId
-import dev.kord.common.Color
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.Kord
 import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.User
+import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.channel.withTyping
+import dev.kord.core.entity.Message
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import me.qbosst.bossbot.commands.converters.SingleToCoalescingConverter
+import me.qbosst.bossbot.commands.converters.impl.MaxStringConverter
 import me.qbosst.bossbot.config.BotConfig
-import me.qbosst.bossbot.converters.coalescedMaxLengthString
-import me.qbosst.bossbot.database.models.getOrRetrieveUserData
+import me.qbosst.bossbot.database.dao.SpaceSpeakMessage
+import me.qbosst.bossbot.database.dao.UserData
+import me.qbosst.bossbot.database.dao.getUserData
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
-import me.qbosst.bossbot.util.embed.MenuEmbed
-import me.qbosst.bossbot.util.ext.reply
+import me.qbosst.bossbot.util.Colour
+import me.qbosst.bossbot.util.ext.snowflake
+import me.qbosst.bossbot.util.ext.wrap
+import me.qbosst.bossbot.util.kColour
 import me.qbosst.spacespeak.SpaceSpeakAPI
+import me.qbosst.spacespeak.functions.GetMessage
 import me.qbosst.spacespeak.functions.Product
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
-class SpaceSpeakExtension(
-    bot: ExtensibleBot,
-    private val config: BotConfig.SpaceSpeak
-): Extension(bot) {
+@OptIn(ExperimentalContracts::class)
+private suspend fun MessageBehavior.replySpaceSpeakEmbed(builder: EmbedBuilder.() -> Unit): Message {
+    contract {
+        callsInPlace(builder, InvocationKind.EXACTLY_ONCE)
+    }
+
+    return channel.createMessage {
+        messageReference = this@replySpaceSpeakEmbed.id
+        allowedMentions {
+            repliedUser = false
+        }
+        embed {
+            builder()
+
+            color = Colour.STEEL_BLUE.kColour
+            thumbnail {
+                url = "https://www.spacespeak.com/images/logo0b.png"
+            }
+        }
+    }
+}
+
+class SpaceSpeakExtension(bot: ExtensibleBot, val config: BotConfig.SpaceSpeak): Extension(bot) {
     override val name: String = "spacespeak"
 
-    private val api = SpaceSpeakAPI(config.token)
+    private val spaceSpeakAPI = SpaceSpeakAPI(config.token)
     private lateinit var products: List<Product>
-    private lateinit var messages: MutableList<SpaceSpeakMessage>
+    private lateinit var spaceSpeakMessages: ConcurrentHashMap<Long, GetMessage>
 
-    class SpaceSpeakSendArgs: Arguments() {
-        // set a minimum length needed to send a message to space, to prevent typos
-        val message by coalescedMaxLengthString("message", "The message to send to space", maxLength = 500, minLength = 8, shouldThrow = true)
+    class SpaceSpeakRecentArgs: Arguments() {
+        val pageNum by defaultingInt("page number", "", 0)
     }
 
     class SpaceSpeakInfoArgs: Arguments() {
-        val id by long("id", "The id of the message to view info about")
+        val id by long("id", "the id of the message to view info about")
     }
 
-    class SpaceSpeakRecentArgs: Arguments() {
-        val num by defaultingInt("page number", "", 0)
+    class SpaceSpeakSendArgs: Arguments() {
+        val message by arg("", "", SingleToCoalescingConverter(MaxStringConverter(minLength = 10, maxLength = 512)))
+    }
+
+    suspend fun getProducts(): List<Product> = when {
+        ::products.isInitialized -> products
+        else -> spaceSpeakAPI.getProducts().also { this.products = it }
     }
 
     override suspend fun setup() {
-        val scope = bot.kord
-
-        val productsJob = scope.async { api.getProducts() }
-
-        // retrieve data that linked a SpaceSpeak message id to a discord user id.
-        val links = transaction {
-            SpaceSpeakTable.selectAll().asSequence()
-                .map { row -> row[SpaceSpeakTable.messageId] to row[SpaceSpeakTable.userId] }
-                .toMap()
-        }
-
-        val messagesJob = scope.async {
-            api.getMessages().asSequence()
-                .map { message ->
-                    SpaceSpeakMessage(
-                        api = api,
-                        messageId = message.messageId,
-                        userId = links[message.messageId],
-                        content = message.messageText,
-                        launchDate = Instant.parse(message.launchDate + 'Z')
-                    )
-                }
-                .sortedBy { message -> message.messageId }
-                .toMutableList()
-        }
+        val spaceSpeakMessagesJob = bot.kord.async { spaceSpeakAPI.getMessages() }
 
         group {
             name = "spacespeak"
 
             action {
+                val prefix = bot.settings.commandsBuilder.prefixCallback.invoke(event, bot.settings.commandsBuilder.defaultPrefix)
+
                 message.replySpaceSpeakEmbed {
                     description = buildString {
-                        append("[SpaceSpeak](https://www.spacespeak.com) is a service that allows you to send messages into space!")
-                        //TODO: add more
+                        append("[SpaceSpeak](https://www.spacespeak.com) is a service that allows you to **send messages into space**!")
+                        append("\nCheck out what else they're up to [here](https://spacespeak.com/NewsAndEvents)!")
+
+                        append("\n\nTo send your message into space, use **${prefix}spacespeak send <message>**")
                     }
                 }
             }
 
             command(::SpaceSpeakSendArgs) {
                 name = "send"
-                description = "Sends a message into space!"
 
                 action {
-                    // send message into space
-                    val result = api.sendMessage(
-                        productId = products.first().productId,
-                        email = config.emailAddress,
-                        username = config.username,
-                        message = arguments.message
-                    )
+                    channel.withTyping {
+                        val product = getProducts().first()
 
-                    val userId = message.data.authorId.value
+                        // send message into space
+                        val response = spaceSpeakAPI.sendMessage(
+                            productId = product.productId,
+                            email = config.emailAddress,
+                            username = config.username,
+                            message = arguments.message
+                        )
 
-                    // associate space speak message id to discord user id
-                    transaction {
-                        SpaceSpeakTable.insert {
-                            it[SpaceSpeakTable.messageId] = result.messageId
-                            it[SpaceSpeakTable.userId] = userId
-                        }
-                    }
+                        // get the message we have just sent into space
+                        val sentMessage = spaceSpeakAPI.getMessages(messageId = response.messageId).first()
+                        spaceSpeakMessages[sentMessage.messageId] = sentMessage
 
-                    // create space speak message
-                    val spaceSpeakMessage = SpaceSpeakMessage(
-                        api = api,
-                        messageId = result.messageId,
-                        userId = userId,
-                        content = arguments.message,
-                        launchDate = Instant.now()
-                    )
-
-                    // add message to list of sent space speak messages
-                    messages.add(spaceSpeakMessage)
-
-                    // reply success message to user
-                    message.reply(false) {
-                        embed {
-                            author {
-                                this.name = user!!.tag
-                                this.icon = user!!.avatar.url
+                        // insert message into database
+                        transaction {
+                            SpaceSpeakMessage.new(sentMessage.messageId) {
+                                userId = message.data.authorId.value
+                                isPublic = true
+                                isAnonymous = false
                             }
+                        }
 
+                        // send success message
+                        message.replySpaceSpeakEmbed {
                             description = buildString {
                                 append("**Your message has been sent into space!**")
                                 append("\nSending images and audio is available at [spacespeak.com](https://www.spacespeak.com)")
                                 append("\n`${arguments.message}`")
                             }
+                            author {
+                                name = user!!.tag
+                                icon = user!!.avatar.url
+                            }
 
-                            color = spaceSpeakColour
                             footer {
                                 text = "Reach out to the Universe!"
                             }
                             timestamp = Instant.now()
-                            thumbnail {
-                                url = spaceSpeakLogoUrl
-                            }
                         }
                     }
                 }
@@ -159,54 +155,56 @@ class SpaceSpeakExtension(
 
             command(::SpaceSpeakInfoArgs) {
                 name = "info"
-                description = "Gives more details about a particular message sent into space"
-
-                aliases = arrayOf("view")
 
                 action {
-                    val spaceSpeakMessage: SpaceSpeakMessage? = messages.firstOrNull { message -> message.messageId == arguments.id }
+                    val message = transaction { SpaceSpeakMessage.findById(arguments.id) }
                     when {
-                        spaceSpeakMessage == null -> {
-                            message.reply(false) {
-                                content = "Could not find SpaceSpeak message with id: ${arguments.id}"
-                            }
+                        // no message found
+                        message == null -> {
+                            TODO()
                         }
-                        !spaceSpeakMessage.isPublic() -> {
-                            message.reply(false) {
-                                content = "This message is not public!"
-                            }
+                        // message is not public
+                        !message.isPublic -> {
+                            TODO()
                         }
+                        // display info
                         else -> {
-                            // request information about the message from SpaceSpeak
-                            val distanceTravelled = scope.async { spaceSpeakMessage.getDistanceTravelled() }
-                            val randomFact = scope.async { spaceSpeakMessage.getRandomSpaceFact() }
+                            // request information about the message
+                            val getMessage = message.getMessage
+                            val distanceTravelledJob = event.async { getMessage.getDistanceTravelled() }
+                            val randomFactJob = event.async { getMessage.getRandomFact() }
 
-                            // wait for responses
-                            awaitAll(distanceTravelled, randomFact)
+                            val user = message.userId?.snowflake()?.let { event.kord.getUser(it) }
 
-                            // user who sent the message into space
-                            val user = spaceSpeakMessage.getUser(event.kord)
+                            // wait for responses from requests
+                            awaitAll(distanceTravelledJob, randomFactJob)
 
-                            message.replySpaceSpeakEmbed {
-                                description = buildString {
-                                    append("**Message**")
-                                    append("\n${spaceSpeakMessage.content}")
+                            // send info about the message sent into space
+                            event.message.replySpaceSpeakEmbed {
+                                description = "**Message**\n${getMessage.messageText}"
+
+                                footer {
+                                    text = "Message ID: ${arguments.id} | Launch Date"
                                 }
+                                timestamp = getMessage.launchDateInstant
 
-                                field("Distance Travelled", true) { distanceTravelled.getCompleted() }
-                                field("Fun Fact", true) { randomFact.getCompleted() }
-                                field("User", true) {
-                                    if(spaceSpeakMessage.isAnonymous()) {
-                                        "Anonymous"
-                                    } else {
-                                        user?.tag ?: "N/A"
+                                author {
+                                    when {
+                                        message.isAnonymous -> {
+                                            name = "Sent by: Anonymous"
+                                        }
+                                        user == null -> {
+                                            name = "Sent by: N/A"
+                                        }
+                                        else -> {
+                                            name = user.tag
+                                            icon = user.avatar.url
+                                        }
                                     }
                                 }
 
-                                footer {
-                                    text = "Message ID: ${arguments.id} | Launch Date/Time"
-                                }
-                                timestamp = spaceSpeakMessage.launchDate
+                                field("Distance Travelled", true) { distanceTravelledJob.getCompleted() }
+                                field("Fun Fact", true) { randomFactJob.getCompleted() }
                             }
                         }
                     }
@@ -215,129 +213,123 @@ class SpaceSpeakExtension(
 
             command(::SpaceSpeakRecentArgs) {
                 name = "recent"
-                description = "Views the messages that have been sent into space using Boss Bot"
 
-                aliases = arrayOf("messages")
+                val maxPerPage = 3
 
                 action {
-                    val zoneId: ZoneId = user!!.getOrRetrieveUserData()?.zoneId?.let { ZoneId.of(it) } ?: ZoneId.of("UTC")
 
-                    val builder = MenuEmbed<SpaceSpeakMessage>(3, messages.filter { it.isPublic() }.reversed()) { message, isFirst ->
-                        field {
-                            if(isFirst) {
-                                this.name = "Message ID"
-                            }
-                            inline = true
-                            value = "`${message.messageId}`"
-                        }
-                        field {
-                            if(isFirst) {
-                                this.name = "Launch Date"
-                            }
-                            inline = true
-                            value = buildString {
+                    val (pgNum: Long, maxPages: Long, messages: List<SpaceSpeakMessage>) = transaction {
+                        val count = SpaceSpeakTable.selectAll().count()
 
-                                append(message.launchDate.atZone(zoneId).format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yy")))
-                                val useDaylightSavings = zoneId.rules.isDaylightSavings(Instant.now())
-                                append(" ${TimeZone.getTimeZone(zoneId).getDisplayName(useDaylightSavings, 0)}")
+                        val maxPages = run {
+                            var max = count / maxPerPage
+                            if(count % maxPerPage == 0L && max > 0) {
+                                max -= 1
                             }
+                            return@run max
                         }
-                        field {
-                            if(isFirst) {
-                                this.name = "Content"
-                            }
-                            inline = true
-                            value = message.content
-                        }
+
+                        val pgNum = (arguments.pageNum-1).toLong().coerceIn(0, maxPages)
+
+                        val query = SpaceSpeakTable
+                            .select { SpaceSpeakTable.isPublic.eq(true) }
+                            .orderBy(SpaceSpeakTable.id, order = SortOrder.DESC)
+                            .limit(maxPerPage, offset = (maxPerPage * pgNum))
+
+                        Triple(pgNum, maxPages, SpaceSpeakMessage.wrapRows(query).toList())
                     }
-                    message.replySpaceSpeakEmbed {
-                        builder.buildPage(embed = this, page = arguments.num)
+
+                    fun EmbedBuilder.addRecord(
+                        dbData: SpaceSpeakMessage, spaceData: GetMessage,
+                        userData: UserData,
+                        isFirst: Boolean
+                    ) {
+
+                        field(if(isFirst) "Message ID" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                            dbData.messageId.toString().wrap("`")
+                        }
+
+                        field(if(isFirst) "Launch Date" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                            buildString {
+                                val zone = userData.zoneId ?: ZoneId.of("UTC")
+                                append(spaceData.launchDateInstant.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yy")))
+                                val userDaylightSavings = zone.rules.isDaylightSavings(Instant.now())
+                                append(" ${TimeZone.getTimeZone(zone).getDisplayName(userDaylightSavings, 0)}")
+                            }
+                        }
+
+                        field(if(isFirst) "Content" else EmbedBuilder.ZERO_WIDTH_SPACE, true) { spaceData.messageText }
+                    }
+
+
+                    val userData = user!!.getUserData()
+                    event.message.replySpaceSpeakEmbed {
+                        var isFirst = true
+                        messages.forEach { message ->
+                            addRecord(message, message.getMessage, userData, isFirst)
+                            isFirst = false
+                        }
+
+                        footer {
+                            text = "Page ${pgNum+1} / ${maxPages+1}"
+                        }
                     }
                 }
             }
         }
 
-        // wait for calls to be finished before moving on, and set variables
-        awaitAll(productsJob, messagesJob)
+        this.spaceSpeakMessages = ConcurrentHashMap(
+            spaceSpeakMessagesJob.await()
+                .map { message -> message.messageId to message }
+                .toMap()
+        )
 
-        this.messages = messagesJob.getCompleted()
-        this.products = productsJob.getCompleted()
-    }
+        transaction {
+            // turn the list of messages sent into space into a list of message ids
+            val sentMessageIds = spaceSpeakMessages.keys
 
-    private suspend fun MessageBehavior.replySpaceSpeakEmbed(builder: EmbedBuilder.() -> Unit) = reply {
-        embed {
-            this.apply(builder)
+            // get the list of messages that we currently have stored
+            val presentMessageIds = SpaceSpeakTable
+                .select { SpaceSpeakTable.id.inList(sentMessageIds) }
+                .map { row -> row[SpaceSpeakTable.id].value }
 
-            thumbnail {
-                url = spaceSpeakLogoUrl
-            }
-            color = spaceSpeakColour
-        }
-        allowedMentions {
-            repliedUser = false
-        }
-    }
+            // remove all the messages that we already store
+            val missingMessageIds = sentMessageIds.toMutableList()
+            missingMessageIds.removeIf { presentMessageIds.contains(it) }
 
-    data class SpaceSpeakMessage(
-        val api: SpaceSpeakAPI,
-        val messageId: Long,
-        val userId: Long?,
-        val content: String,
-        val launchDate: Instant
-    ) {
-        suspend fun getUser(kord: Kord): User? = userId?.let { id -> kord.getUser(Snowflake(id)) }
-
-        suspend fun getDistanceTravelled(): String = api.getDistanceTraveled(messageId).removeSurrounding("\"")
-
-        suspend fun getRandomSpaceFact(): String {
-            var response = api.getRandomSpaceFact(messageId).removeSurrounding("\"").removePrefix("<br />")
-
-            // html tag regex
-            val pattern = "<a.*?href=\\\\?\"(.*?)\".*?>(.*?)<\\/a>".toPattern()
-
-            // convert html to markdown
-            var matcher = pattern.matcher(response)
-            while(matcher.find()) {
-                val link = matcher.group(1).replace("\\", "")
-                val name = matcher.group(2)
-
-                response = response.replaceRange(matcher.start(), matcher.end(), "[$name]($link)")
-                matcher = pattern.matcher(response)
-            }
-
-            return response
-        }
-
-        fun isAnonymous(): Boolean {
-            if(userId == null) {
-                return false
-            }
-
-            return transaction {
-                SpaceSpeakTable
-                    .select { SpaceSpeakTable.userId.eq(userId) and SpaceSpeakTable.messageId.eq(messageId) }
-                    .singleOrNull()
-                    ?.get(SpaceSpeakTable.isAnonymous)
-                    ?: false
-            }
-        }
-
-        fun isPublic(): Boolean {
-            if(userId == null) {
-                return true
-            }
-            return transaction {
-                SpaceSpeakTable
-                    .select { SpaceSpeakTable.userId.eq(userId) and SpaceSpeakTable.messageId.eq(messageId) }
-                    .singleOrNull()
-                    ?.get(SpaceSpeakTable.isPublic)
-                    ?: true
+            // create records for the messages we are missing
+            SpaceSpeakTable.batchInsert(missingMessageIds) { messageId ->
+                this[SpaceSpeakTable.id] = EntityID(messageId, SpaceSpeakTable)
+                this[SpaceSpeakTable.userId] = null
+                this[SpaceSpeakTable.isPublic] = true
+                this[SpaceSpeakTable.isAnonymous] = true
             }
         }
     }
 
-    companion object {
-        const val spaceSpeakLogoUrl = "https://www.spacespeak.com/images/logo0b.png"
-        val spaceSpeakColour = Color(0x2ca3fe)
+    private val SpaceSpeakMessage.getMessage: GetMessage get() = spaceSpeakMessages[messageId]!!
+
+    private suspend fun GetMessage.getDistanceTravelled(): String = spaceSpeakAPI.getDistanceTraveled(messageId)
+        .removeSurrounding("\"")
+
+    private suspend fun GetMessage.getRandomFact(): String {
+        var response = spaceSpeakAPI.getRandomSpaceFact(messageId).removeSurrounding("\"").removePrefix("<br />")
+
+        // html tag regex
+        val pattern = "<a.*?href=\\\\?\"(.*?)\".*?>(.*?)<\\/a>".toPattern()
+
+        // convert html to markdown
+        var matcher = pattern.matcher(response)
+        while(matcher.find()) {
+            val link = matcher.group(1).replace("\\", "")
+            val name = matcher.group(2)
+
+            response = response.replaceRange(matcher.start(), matcher.end(), "[$name]($link)")
+            matcher = pattern.matcher(response)
+        }
+
+        return response
     }
+
+    val GetMessage.launchDateInstant: Instant get() = Instant.parse(launchDate+'Z')
 }

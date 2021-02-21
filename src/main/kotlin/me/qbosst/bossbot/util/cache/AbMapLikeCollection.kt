@@ -4,7 +4,9 @@ import dev.kord.cache.map.MapLikeCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-abstract class MapLikeCollection<K, V>(private val map: MutableMap<K, V>): MapLikeCollection<K, V> {
+abstract class AbMapLikeCollection<K, V>(map: MutableMap<K, V>): MapLikeCollection<K, V> {
+    private val map: MutableMap<K, V> = map.toMutableMap()
+
     override suspend fun get(key: K): V? = map[key]
 
     override suspend fun contains(key: K): Boolean = map.contains(key)

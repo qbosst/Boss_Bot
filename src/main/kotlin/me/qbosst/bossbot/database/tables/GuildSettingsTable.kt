@@ -7,5 +7,5 @@ object GuildSettingsTable: LongIdTable(name = "guild_settings", columnName = "gu
 
     val messageLogsChannelId = long("message_logs_channel_id").nullable()
 
-    val prefix = varchar("prefix", MAX_PREFIX_LENGTH).nullable()
+    val prefix = varchar("prefix", 4).nullable()
 }

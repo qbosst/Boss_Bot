@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.converters
+package me.qbosst.bossbot.commands.converters
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.ParseException
@@ -17,7 +17,7 @@ class SingleToCoalescingConverter<T: Any>(
     newSignatureTypeString: String? = null,
     newShowTypeInSignature: Boolean? = null,
     newErrorTypeString: String? = null,
-    override val shouldThrow: Boolean = false
+    override val shouldThrow: Boolean = true
 ): CoalescingConverter<T>() {
 
     override val signatureTypeString: String = newSignatureTypeString ?: singleConverter.signatureTypeString
@@ -33,6 +33,7 @@ class SingleToCoalescingConverter<T: Any>(
             if(result) {
                 this.parsed = singleConverter.parsed
             }
+
             return args.size
         } catch (e: ParseException) {
             if(shouldThrow) {

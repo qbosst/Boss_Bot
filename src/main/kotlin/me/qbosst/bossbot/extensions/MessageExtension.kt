@@ -6,26 +6,24 @@ import com.kotlindiscord.kord.extensions.commands.converters.defaultingBoolean
 import com.kotlindiscord.kord.extensions.commands.converters.long
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.DiscordMessage
 import dev.kord.common.entity.optional.optional
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.MessageCreateBuilder
 import dev.kord.rest.json.request.EmbedRequest
 import dev.kord.rest.json.request.MessageCreateRequest
+import dev.kord.rest.json.request.MultipartMessageCreateRequest
 import dev.kord.rest.request.KtorRequestException
-import dev.kord.rest.route.Route
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import me.qbosst.bossbot.util.ext.isEmpty
-import me.qbosst.bossbot.util.ext.reply
+import me.qbosst.bossbot.util.Colour
+import me.qbosst.bossbot.util.ext.*
 import me.qbosst.bossbot.util.kColour
-import me.qbosst.bossbot.util.nextColour
 import java.time.Instant
-import kotlin.random.Random
 
 class MessageExtension(bot: ExtensibleBot): Extension(bot) {
-
     override val name: String = "message"
 
     private val prettyPrintJson = Json {
@@ -59,54 +57,58 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
 
             action {
                 try {
-                    // deserialize json to embed
                     val request = prettyPrintJson.decodeFromString<EmbedRequest>(arguments.code)
 
-                    // check if embed is empty, if so throw error
-                    if(request.isEmpty()) {
-                        throw IllegalArgumentException("Cannot send an empty embed.")
-                    }
+                    // validates the embed
+                    request.validate()
 
-                    // send embed
-                    event.kord.rest.unsafe(Route.MessagePost) {
-                        keys[Route.ChannelId] = channel.id
-                        val multipartRequest = MessageCreateRequest(embed = request.optional())
-                        body(MessageCreateRequest.serializer(), multipartRequest)
-                    }
+                    // create request message
+                    val multipartRequest = MultipartMessageCreateRequest(request = MessageCreateRequest(embed = request.optional()))
+
+                    // send message
+                    event.kord.rest.channel.createMessage(channel.id, multipartRequest)
 
                 } catch (e: Exception) {
                     val error = when(e) {
                         is SerializationException ->
-                            "```Could not parse JSON: ${e.localizedMessage.lines().first()}```"
-                        is IllegalArgumentException, is KtorRequestException ->
-                            "```Could not send embed: ${e.localizedMessage}```"
-                        else -> throw e
+                            "Could not parse JSON: ${e.localizedMessage.lines().first()}".wrap("```")
+                        is IllegalArgumentException ->
+                            "Invalid embed received: ${e.localizedMessage}".wrap("```")
+                        is KtorRequestException ->
+                            "Could not send embed: ${e.localizedMessage}".wrap("```")
+                        else ->
+                            "An unknown error has occurred... please make sure you provide valid input."
                     }
 
                     message.reply(false) {
-                        content = error
+                        content = error.maxLength(2000)
                     }
                 }
             }
 
             command(::EmbedTemplateArgs) {
-                name = "example"
-                aliases = arrayOf("template")
+                name = "template"
+
+                aliases = arrayOf("example")
 
                 action {
                     val self = message.kord.getSelf()
-                    val embed = buildEmbed {
-                        description = "This is the description!"
-                        title = "This is the title!"
+
+                    val embed = EmbedBuilder().apply {
+                        title = "This is the title! Titles cannot be longer than ${EmbedBuilder.Limits.title} characters."
+                        description = "This is the description! Descriptions cannot be longer than ${EmbedBuilder.Limits.description} characters."
                         timestamp = Instant.now()
-                        field("First Field", inline = true) { "This is the first field!" }
-                        field("Second Field", inline = false) { "You can have more than one fields" }
+                        color = Colour.random(false).kColour
+
+                        field("First Field", inline = true) { "This is the first field!"}
+                        field("Second Field", inline = false) { "You can have up to ${EmbedBuilder.Limits.fieldCount} fields!"}
+
                         footer {
-                            text = "Footer Text!"
+                            text = "Footers cannot be longer than ${EmbedBuilder.Footer.Limits.text} characters."
                             icon = message.author!!.avatar.url
                         }
                         author {
-                            name = "Author: ${message.author!!.tag}"
+                            name = "Author: ${message.author!!.tag}. Embed author texts cannot be longer than ${EmbedBuilder.Author.Limits.name} characters."
                             icon = message.author!!.avatar.url
                             url = message.author!!.avatar.url
                         }
@@ -114,7 +116,6 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
                         thumbnail {
                             url = self.avatar.url
                         }
-                        color = Random.nextColour().kColour
                     }
 
                     val json = if(arguments.prettyPrint) prettyPrintJson else uglyPrintJson
@@ -131,10 +132,10 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
                 name = "get"
 
                 action {
-                    val requestedMessage = channel.getMessageOrNull(Snowflake(arguments.id))
+                    val requestedMessage = channel.getMessageOrNull(arguments.id.snowflake())
                     if(requestedMessage == null) {
                         message.reply(false) {
-                            content = "Could not find message"
+                            content = "Could not find message by id: ${arguments.id}."
                         }
                     } else {
                         val json = if(arguments.prettyPrint) prettyPrintJson else uglyPrintJson
@@ -148,9 +149,5 @@ class MessageExtension(bot: ExtensibleBot): Extension(bot) {
                 }
             }
         }
-    }
-
-    companion object {
-        private fun buildEmbed(builder: EmbedBuilder.() -> Unit) = EmbedBuilder().apply(builder).toRequest()
     }
 }

@@ -1,7 +1,6 @@
 package me.qbosst.bossbot.util
 
 import kotlin.math.roundToInt
-import kotlin.random.Random
 
 class Colour {
     val rgb: Int
@@ -195,6 +194,26 @@ class Colour {
         val SLATE_GRAY = Colour(0x708090)
         val DARK_SLATE_GRAY = Colour(0x2F4F4F)
         val BLACK = Colour(0x000000)
+
+        fun blend(colours: Collection<Colour>): Colour {
+            val ratio = 1f / colours.size
+            var r = 0
+            var g = 0
+            var b = 0
+            var a = 0
+
+            colours.forEach { colour ->
+                r += (colour.red * ratio).roundToInt()
+                g += (colour.green * ratio).roundToInt()
+                b += (colour.blue * ratio).roundToInt()
+                a += (colour.alpha * ratio).roundToInt()
+            }
+
+            return Colour(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
+        }
+
+        fun random(hasAlpha: Boolean): Colour = (0..255)
+            .let { ints -> Colour(ints.random(), ints.random(), ints.random(), if(hasAlpha) ints.random() else 255) }
     }
 }
 
@@ -205,25 +224,6 @@ fun rgb(red: Int, green: Int, blue: Int) = Colour(red, green, blue)
 fun rgba(rgba: Int) = Colour(rgba, true)
 
 fun rgb(rgb: Int) = Colour(rgb)
-
-fun Collection<Colour>.blend(): Colour {
-    val ratio = 1f / size
-    var r = 0
-    var g = 0
-    var b = 0
-    var a = 0
-
-    forEach { colour ->
-        r += (colour.red * ratio).roundToInt()
-        g += (colour.green * ratio).roundToInt()
-        b += (colour.blue * ratio).roundToInt()
-        a += (colour.alpha * ratio).roundToInt()
-    }
-
-    return Colour(r.coerceIn(0, 255), g.coerceIn(0, 255), b.coerceIn(0, 255), a.coerceIn(0, 255))
-}
-
-fun Random.nextColour(hasAlpha: Boolean = true): Colour = Colour(nextInt(255), nextInt(255), nextInt(255), if(hasAlpha) nextInt(255) else 255)
 
 val Colour.kColour: dev.kord.common.Color get() = dev.kord.common.Color(rgb)
 

@@ -8,127 +8,94 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.enableEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
-import dev.kord.gateway.PrivilegedIntent
 import dev.kord.gateway.editPresence
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import me.qbosst.bossbot.config.BotConfig
-import me.qbosst.bossbot.database.models.GuildColours
-import me.qbosst.bossbot.database.models.GuildSettings
-import me.qbosst.bossbot.database.models.UserData
-import me.qbosst.bossbot.database.models.getOrRetrieveSettings
+import me.qbosst.bossbot.database.dao.GuildSettings
+import me.qbosst.bossbot.database.dao.UserData
+import me.qbosst.bossbot.database.dao.getSettings
 import me.qbosst.bossbot.database.tables.GuildColoursTable
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.extensions.*
-import mu.KotlinLogging
-import java.io.File
-import java.util.*
 import me.qbosst.bossbot.util.cache.MessageCache
+import mu.KLogger
+import mu.KotlinLogging
 
-@OptIn(PrivilegedIntent::class)
-suspend fun main(): Unit = try {
-    val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-        prettyPrint = true
-    }
+suspend fun main() = try {
+    // get the config file for the bot
+    val config = BotConfig.from("config.json")
 
-    val file = File(BotConfig.DIRECTORY)
-
-    // check if file exists, if not create a config file and throw error
-    if(!file.exists()) {
-        val default = BotConfig()
-        file.writeBytes(json.encodeToString(default).encodeToByteArray())
-        throw Exception("A config file has been generated at '${file.absolutePath}', please fill in the missing values")
-    }
-
-    // load config file
-    val config = json.decodeFromString<BotConfig>(file.readText())
-
-    // create instance of bot
+    // configure and create an instance of boss bot
     val bot = BossBot {
         this.config = config
 
         database {
-            // set database connection properties
-            this.host = config.database.host
-            this.username = config.database.username
-            this.password = config.database.password
+            host = config.database.host
+            username = config.database.username
+            password = config.database.password
 
-            // add the tables that this database will use
             tables {
-                add(GuildColoursTable)
                 add(GuildSettingsTable)
                 add(UserDataTable)
                 add(SpaceSpeakTable)
+                add(GuildColoursTable)
             }
         }
 
         cache {
-            // set the amount of cached messages we want
-            this.cachedMessages = config.discord.messageCacheSize
+            cachedMessages = config.discord.messageCacheSize
 
             kord {
-                // register custom objects to cache
-                forDescription(UserData.description, lruCache(config.discord.defaultCacheSize))
                 forDescription(GuildSettings.description, lruCache(config.discord.defaultCacheSize))
-                forDescription(GuildColours.description, lruCache(config.discord.defaultCacheSize))
-
-                // configure the kord objects we want to cache
-                @Suppress("UNCHECKED_CAST")
-                messages(mapLikeCollection(MessageCache(cachedMessages!!) { message -> !message.authorIsBot } as MapLikeCollection<MessageData, Snowflake>))
+                forDescription(UserData.description, lruCache(config.discord.defaultCacheSize))
 
                 emojis(none())
                 presences(none())
                 webhooks(none())
+
+                val messageCache = MessageCache(cachedMessages!!) { message -> !message.authorIsBot }
+                @Suppress("UNCHECKED_CAST")
+                messages(mapLikeCollection(messageCache as MapLikeCollection<MessageData, Snowflake>))
             }
 
-            // register custom objects we want to cache
             transformCache { cache ->
-                cache.register(UserData.description)
                 cache.register(GuildSettings.description)
-                cache.register(GuildColours.description)
+                cache.register(UserData.description)
             }
         }
 
         commands {
-            this.invokeOnMention = true
-            this.slashCommands = false
-            this.messageCommands = true
-            this.defaultPrefix = config.discord.defaultPrefix
+            invokeOnMention = true
+            slashCommands = false
+            messageCommands = true
+            defaultPrefix = config.discord.defaultPrefix
 
-            prefix { default ->
-                val settings = message.getGuildOrNull()?.getOrRetrieveSettings()
-
-                return@prefix settings?.prefix ?: default
-            }
+            prefix { default -> getGuild()?.getSettings()?.prefix ?: default }
         }
 
         presence {
-            this.status = PresenceStatus.DoNotDisturb
-            playing("Loading...")
+            status = PresenceStatus.DoNotDisturb
+            playing("loading...")
         }
 
         members {
-            this.fillPresences = false
+            fillPresences = false
             none()
         }
 
         intents {
-            // enable this, so we can cache guilds and their channels
+            // adds the guilds and direct messages intent, allowing us to cache stuff
             enableEvent(GuildCreateEvent::class)
         }
 
         extensions {
-            add(::TimeExtension)
-            add(::MessageExtension)
             add(::LoggerExtension)
+            add(::MessageExtension)
+            add(::DeveloperExtension)
+            add(::TimeExtension)
             add(::ColourExtension)
-            add { bot -> DeveloperExtension(bot, listOf(config.developerId)) }
-            add { bot -> SpaceSpeakExtension(bot, config.spaceSpeak) }
+            add { SpaceSpeakExtension(it, config.spaceSpeak) }
         }
     }
 
@@ -139,13 +106,14 @@ suspend fun main(): Unit = try {
         }
     }
 
+    // start the bot
     bot.start()
 
-}
-catch (t: Throwable) {
-    val logger = KotlinLogging.logger("me.qbosst.bossbot.main")
-    logger.error(t) { "Could not initialize Boss Bot" }
+} catch (e: Exception) {
+    val logger: KLogger = KotlinLogging.logger("me.qbosst.bossbot.main")
+    logger.error(e) { "Could not initialize Boss Bot" }
 } finally {
+    // exit program
     println("Press any key to EXIT the program...")
-    Scanner(System.`in`).next()
+    readLine()
 }
