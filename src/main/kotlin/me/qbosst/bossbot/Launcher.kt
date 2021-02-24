@@ -9,6 +9,7 @@ import dev.kord.core.enableEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.gateway.editPresence
+import me.qbosst.bossbot.commands.CommandRegistry
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.dao.GuildSettings
 import me.qbosst.bossbot.database.dao.UserData
@@ -20,6 +21,7 @@ import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.database.tables.UserDataTable
 import me.qbosst.bossbot.extensions.*
 import me.qbosst.bossbot.util.cache.MessageCache
+import me.qbosst.bossbot.util.defaultCheck
 import mu.KLogger
 import mu.KotlinLogging
 
@@ -75,6 +77,12 @@ suspend fun main() = try {
             defaultPrefix = config.discord.defaultPrefix
 
             prefix { default -> getGuild()?.getSettings()?.prefix ?: default }
+
+            messageRegistry { bot ->
+                CommandRegistry(bot) {
+                    globalCheck(::defaultCheck)
+                }
+            }
         }
 
         presence {
