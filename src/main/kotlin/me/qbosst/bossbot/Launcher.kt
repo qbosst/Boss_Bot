@@ -13,6 +13,7 @@ import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.dao.GuildSettings
 import me.qbosst.bossbot.database.dao.UserData
 import me.qbosst.bossbot.database.dao.getSettings
+import me.qbosst.bossbot.database.models.GuildColours
 import me.qbosst.bossbot.database.tables.GuildColoursTable
 import me.qbosst.bossbot.database.tables.GuildSettingsTable
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
@@ -49,6 +50,7 @@ suspend fun main() = try {
             kord {
                 forDescription(GuildSettings.description, lruCache(config.discord.defaultCacheSize))
                 forDescription(UserData.description, lruCache(config.discord.defaultCacheSize))
+                forDescription(GuildColours.description, lruCache(config.discord.defaultCacheSize))
 
                 emojis(none())
                 presences(none())
@@ -62,6 +64,7 @@ suspend fun main() = try {
             transformCache { cache ->
                 cache.register(GuildSettings.description)
                 cache.register(UserData.description)
+                cache.register(GuildColours.description)
             }
         }
 

@@ -7,6 +7,5 @@ class TimeExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "time"
 
     override suspend fun setup() {
-        TODO("Not yet implemented")
     }
 }
