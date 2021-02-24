@@ -26,6 +26,7 @@ data class BotConfig(
         val messageCacheSize: Int,
         val defaultCacheSize: Int,
         val developerId: Long,
+        val voteLinks: List<String>
     )
 
     /**
@@ -64,7 +65,8 @@ data class BotConfig(
                 defaultPrefix = "b!",
                 messageCacheSize = 10_000,
                 defaultCacheSize = 1_000,
-                developerId = 332947254602235914
+                developerId = 332947254602235914,
+                voteLinks = listOf()
             ),
             database = BotConfig.Database(
                 host = "",
