@@ -103,9 +103,9 @@ suspend fun main() = try {
         extensions {
             add(::LoggerExtension)
             add(::MessageExtension)
-            add(::DeveloperExtension)
             add(::TimeExtension)
             add(::ColourExtension)
+            add { bot -> DeveloperExtension(bot, listOf(config.discord.developerId)) }
             add { SpaceSpeakExtension(it, config.spaceSpeak) }
         }
     }

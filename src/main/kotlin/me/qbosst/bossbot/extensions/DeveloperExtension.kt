@@ -145,5 +145,17 @@ class DeveloperExtension(bot: ExtensibleBot, val developerIds: List<Long>): Base
                 }
             }
         }
+
+        command {
+            name = "shutdown"
+
+            action {
+                event.message.reply(false) {
+                    content = "Bye... :("
+                }
+
+                event.kord.shutdown()
+            }
+        }
     }
 }
