@@ -70,11 +70,11 @@ suspend fun MessageBehavior.reply(mention: Boolean, builder: MessageCreateBuilde
  * Jump URL for the message
  */
 val Message.jumpUrl: String
-    get() = "https://discord.com/channels/${data.guildId.value ?: "@me"}/${channelId.value}/${id.value}"
+    get() = "https://discord.com/channels/${data.guildId.value?.value ?: "@me"}/${channelId.value}/${id.value}"
 
 /**
  * Jump URL for the message
  */
 val DiscordPartialMessage.jumpUrl: String
-    get() = "https://discord.com/channels/${guildId.value ?: "@me"}/${channelId.value}/${id.value}"
+    get() = "https://discord.com/channels/${guildId.value?.value ?: "@me"}/${channelId.value}/${id.value}"
 

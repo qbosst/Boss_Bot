@@ -12,12 +12,14 @@ import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorIsBot
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
+import dev.kord.rest.Image
 import dev.kord.rest.builder.message.EmbedBuilder
 import me.qbosst.bossbot.commands.ConfigCommandArgs
 import me.qbosst.bossbot.commands.ConfigSubCommand
@@ -28,6 +30,7 @@ import me.qbosst.bossbot.database.dao.insertOrUpdate
 import me.qbosst.bossbot.util.Colour
 import me.qbosst.bossbot.util.cache.files
 import me.qbosst.bossbot.util.ext.*
+import me.qbosst.bossbot.util.isNotBot
 import me.qbosst.bossbot.util.kColour
 import java.time.Instant
 
@@ -38,8 +41,7 @@ class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
 
     override suspend fun setup() {
         event<MessageDeleteEvent> {
-            check(::anyGuild)
-            check { event -> event.message?.data?.authorIsBot?.not() ?: true }
+            check(::anyGuild, ::isNotBot)
 
             action {
                 val message = event.message
@@ -101,6 +103,40 @@ class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
             }
         }
 
+        event<MessageUpdateEvent> {
+
+            check(::anyGuild, ::isNotBot)
+
+            action {
+                val logger = event.logger() ?: return@action
+
+                val newMessage = event.message.asMessage()
+                val oldMessage = event.old
+                val author = newMessage.author!!
+
+
+                logger.createEmbed {
+                    author {
+                        name = "Message Edited"
+                        icon = author.avatar.url
+                    }
+
+                    field("Channel", true) { event.channel.mention }
+                    field("Author", true) { author.mention }
+                    field("Message", true) { "[Jump to Message](${newMessage.jumpUrl})" }
+                    field("Message Content Before", true) { oldMessage?.content?.zeroWidthIfBlank() ?: "N/A" }
+                    field("Message Content After", true) { newMessage.content.zeroWidthIfBlank() }
+
+                    footer {
+                        text = "User ID: ${author.id.value} | Message ID: ${newMessage.id.value}"
+                    }
+
+                    timestamp = Instant.now()
+                    color = Colour.SANDY_BROWN.kColour
+                }
+            }
+        }
+
         group {
             name = "settings"
 
@@ -111,8 +147,8 @@ class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
                 val settings = guild.getSettings()
 
                 message.replyEmbed {
-                    field("Prefix", true) { (settings?.prefix ?: defaultPrefix).wrap("`") }
-                    field("Message Logs Channel", true) { settings?.messageLogsChannelId?.channelMention() ?: "N/A" }
+                    field("Prefix", true) { (settings.prefix ?: defaultPrefix).wrap("`") }
+                    field("Message Logs Channel", true) { settings.messageLogsChannelId?.channelMention() ?: "N/A" }
                 }
             }
 
@@ -172,7 +208,7 @@ class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
 
     private suspend fun Event.logger(): MessageChannelBehavior? {
         val guild = guildFor(this) ?: return null
-        val settings = guild.getSettings() ?: return null
+        val settings = guild.getSettings()
 
         return when(this) {
             is MessageUpdateEvent, is MessageDeleteEvent ->
