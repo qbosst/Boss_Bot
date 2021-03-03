@@ -21,6 +21,7 @@ import me.qbosst.bossbot.database.dao.UserData
 import me.qbosst.bossbot.database.dao.getUserData
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.util.Colour
+import me.qbosst.bossbot.util.ext.reply
 import me.qbosst.bossbot.util.ext.snowflake
 import me.qbosst.bossbot.util.ext.wrap
 import me.qbosst.bossbot.util.kColour
@@ -161,11 +162,15 @@ class SpaceSpeakExtension(bot: ExtensibleBot, val config: BotConfig.SpaceSpeak):
                     when {
                         // no message found
                         message == null -> {
-                            TODO()
+                            event.message.reply(false) {
+                                content = "Could not find a message with the id: ${arguments.id}"
+                            }
                         }
                         // message is not public
                         !message.isPublic -> {
-                            TODO()
+                            event.message.reply(false) {
+                                content = "This message is not public!"
+                            }
                         }
                         // display info
                         else -> {

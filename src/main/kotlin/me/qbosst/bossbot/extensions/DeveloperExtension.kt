@@ -5,9 +5,12 @@ import com.kotlindiscord.kord.extensions.commands.converters.coalescedString
 import com.kotlindiscord.kord.extensions.commands.converters.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.user
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.users
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.withTyping
+import dev.kord.core.entity.ReactionEmoji
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.count
 import kotlinx.serialization.encodeToString

@@ -8,6 +8,7 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.enableEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
+import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.gateway.editPresence
 import me.qbosst.bossbot.commands.CommandRegistry
 import me.qbosst.bossbot.config.BotConfig
@@ -103,11 +104,10 @@ suspend fun main() = try {
         extensions {
             add(::LoggerExtension)
             add(::MessageExtension)
-            add(::TimeExtension)
             add(::ColourExtension)
             add { bot -> MiscExtension(bot, config.discord.voteLinks) }
             add { bot -> DeveloperExtension(bot, listOf(config.discord.developerId)) }
-            add { SpaceSpeakExtension(it, config.spaceSpeak) }
+            add { bot -> SpaceSpeakExtension(bot, config.spaceSpeak) }
         }
     }
 

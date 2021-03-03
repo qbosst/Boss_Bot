@@ -5,6 +5,8 @@ import com.kotlindiscord.kord.extensions.commands.converters.coalescedString
 import com.kotlindiscord.kord.extensions.commands.converters.optionalUser
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.edit
 import dev.kord.core.event.message.MessageCreateEvent
 import me.qbosst.bossbot.util.ext.reply
@@ -12,7 +14,7 @@ import me.qbosst.bossbot.util.ext.replyEmbed
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
-class MiscExtension(bot: ExtensibleBot, val voteLinks: List<String>): Extension(bot) {
+class MiscExtension(bot: ExtensibleBot, val voteLinks: List<String>, val devId: Long): Extension(bot) {
     override val name: String = "misc"
 
     class AvatarArgs: Arguments() {
