@@ -25,7 +25,7 @@ dependencies {
 
     // kord
     //implementation("dev.kord:kord-core:0.7.0-SNAPSHOT")
-    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-RC7")
+    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-20210303.120610-63")
 
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")

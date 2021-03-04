@@ -93,7 +93,7 @@ class SpaceSpeakExtension(bot: ExtensibleBot, val config: BotConfig.SpaceSpeak):
             name = "spacespeak"
 
             action {
-                val prefix = bot.settings.commandsBuilder.prefixCallback.invoke(event, bot.settings.commandsBuilder.defaultPrefix)
+                val prefix = bot.settings.messageCommandsBuilder.prefixCallback.invoke(event, bot.settings.messageCommandsBuilder.defaultPrefix)
 
                 message.replySpaceSpeakEmbed {
                     description = buildString {

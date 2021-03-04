@@ -33,7 +33,7 @@ class BossBot(
         // login to Discord
         kord.run {
             gateway.start(resources.token) {
-                shard = DiscordShard(0, resources.shardCount)
+                shard = DiscordShard(0, resources.shards.totalShards)
                 presence(settings.presenceBuilder)
                 name = "kord"
 

@@ -37,7 +37,7 @@ class MiscExtension(bot: ExtensibleBot, val voteLinks: List<String>, val devId: 
             }
 
             action {
-                val prefix = bot.settings.commandsBuilder.prefixCallback.invoke(event, bot.settings.commandsBuilder.defaultPrefix)
+                val prefix = bot.settings.messageCommandsBuilder.prefixCallback.invoke(event, bot.settings.messageCommandsBuilder.defaultPrefix)
 
                 event.message.reply(false) {
                     content = "My prefix is `${prefix}`"

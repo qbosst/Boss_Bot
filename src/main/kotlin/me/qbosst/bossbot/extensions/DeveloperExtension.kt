@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.coalescedString
 import com.kotlindiscord.kord.extensions.commands.converters.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.user
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.addReaction
 import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.users
@@ -23,7 +24,7 @@ import me.qbosst.bossbot.util.ext.replyEmbed
 import me.qbosst.bossbot.util.ext.wrap
 import javax.script.ScriptEngineManager
 
-class DeveloperExtension(bot: ExtensibleBot, val developerIds: List<Long>): BaseExtension(bot) {
+class DeveloperExtension(bot: ExtensibleBot, val developerIds: List<Long>): Extension(bot) {
     override val name: String = "developer"
 
     private val engine by lazy { ScriptEngineManager().getEngineByExtension("kts") }
@@ -42,7 +43,7 @@ class DeveloperExtension(bot: ExtensibleBot, val developerIds: List<Long>): Base
     }
 
     override suspend fun setup() {
-        commandCheck { it.message.data.authorId.value in developerIds }
+        check { it.message.data.authorId.value in developerIds }
 
         command(::EvalArgs) {
             name = "eval"

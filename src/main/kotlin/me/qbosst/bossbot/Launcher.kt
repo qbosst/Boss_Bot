@@ -8,9 +8,7 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.enableEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
-import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.gateway.editPresence
-import me.qbosst.bossbot.commands.CommandRegistry
 import me.qbosst.bossbot.config.BotConfig
 import me.qbosst.bossbot.database.dao.GuildSettings
 import me.qbosst.bossbot.database.dao.UserData
@@ -71,19 +69,20 @@ suspend fun main() = try {
             }
         }
 
-        commands {
+        messageCommands {
             invokeOnMention = true
-            slashCommands = false
-            messageCommands = true
+            enabled = true
             defaultPrefix = config.discord.defaultPrefix
 
-            prefix { default -> getGuild()?.getSettings()?.prefix ?: default }
-
-            messageRegistry { bot ->
-                CommandRegistry(bot) {
-                    globalCheck(::defaultCheck)
-                }
+            prefix { default ->
+                getGuild()?.getSettings()?.prefix ?: default
             }
+
+            check(::defaultCheck)
+        }
+
+        slashCommands {
+            enabled = false
         }
 
         presence {
@@ -105,7 +104,7 @@ suspend fun main() = try {
             add(::LoggerExtension)
             add(::MessageExtension)
             add(::ColourExtension)
-            add { bot -> MiscExtension(bot, config.discord.voteLinks) }
+            add { bot -> MiscExtension(bot, config.discord.voteLinks, config.discord.developerId) }
             add { bot -> DeveloperExtension(bot, listOf(config.discord.developerId)) }
             add { bot -> SpaceSpeakExtension(bot, config.spaceSpeak) }
         }

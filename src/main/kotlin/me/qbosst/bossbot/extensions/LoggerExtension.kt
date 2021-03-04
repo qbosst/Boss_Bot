@@ -37,7 +37,7 @@ import java.time.Instant
 class LoggerExtension(bot: ExtensibleBot): Extension(bot) {
     override val name: String = "logger"
 
-    private val defaultPrefix: String get() = bot.settings.commandsBuilder.defaultPrefix
+    private val defaultPrefix: String get() = bot.settings.messageCommandsBuilder.defaultPrefix
 
     override suspend fun setup() {
         event<MessageDeleteEvent> {
