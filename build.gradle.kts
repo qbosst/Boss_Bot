@@ -11,9 +11,8 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    jcenter()
-    maven("https://oss.sonatype.org/content/repositories/snapshots")
 
+    maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven {
         name = "Kotlin Discord"
         url = uri("https://maven.kotlindiscord.com/repository/maven-public/")
@@ -24,8 +23,7 @@ dependencies {
     val exposedVer = "0.24.1"
 
     // kord
-    //implementation("dev.kord:kord-core:0.7.0-SNAPSHOT")
-    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-20210303.120610-63")
+    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.0-20210519.172029-219")
 
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")
@@ -48,7 +46,10 @@ dependencies {
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "1.8"
-        freeCompilerArgs = listOf("-Xinline-classes")
+        freeCompilerArgs = listOf(
+            "-Xinline-classes",
+            "-Xopt-in=dev.kord.common.annotation.KordPreview"
+        )
     }
 }
 
