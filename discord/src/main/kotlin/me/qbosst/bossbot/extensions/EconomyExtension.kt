@@ -27,15 +27,18 @@ class EconomyExtension: Extension() {
         command(::WalletArgs) {
             name = "wallet"
             description = "Views your wallet"
-            aliases = arrayOf("tokens")
+            aliases = arrayOf("tokens", "balance")
 
             action {
                 val target = (arguments.member ?: message.getAuthorAsMember())!!
-
                 val tokenAmount = target.getUserDAO().tokens
 
                 message.reply {
-                    content = "${target.mention} has $tokenAmount `BT`"
+                    content = when (target.id) {
+                        message.author!!.id -> "You have"
+                        else -> "${target.mention} has"
+                    } + " $tokenAmount `BT`"
+
                     allowedMentions {}
                 }
             }
@@ -50,12 +53,36 @@ class EconomyExtension: Extension() {
                 val author = message.author!!
                 val target = arguments.member
 
-                TODO()
+                newSuspendedTransaction {
+                    val targetDAO = target.getUserDAO(this)
+
+                    message.reply {
+                        allowedMentions {}
+
+                        if(targetDAO.tokens == 0L) {
+                            content = "${target.mention} does not have any tokens to steal!"
+                        } else {
+                            val authorDAO = author.getUserDAO(this@newSuspendedTransaction)
+
+                            val percent = (0..5).random().toFloat() / 100
+                            val tokens = (targetDAO.tokens * percent).toLong()
+
+                            targetDAO.tokens -= tokens
+                            authorDAO.tokens += tokens
+
+                            content = if(tokens == 0L) {
+                                "You have failed to rob ${target.mention}"
+                            } else {
+                                "You have stolen $tokens `BT` from ${target.mention}"
+                            }
+                        }
+                    }
+                }
             }
         }
 
         command {
-            name = "claim"
+            name = "daily"
 
             // TODO: wait for cooldown pr
 
@@ -70,6 +97,27 @@ class EconomyExtension: Extension() {
 
                 message.respond {
                     content = "You have claimed your daily bonus! Come back tomorrow for more tokens."
+                    allowedMentions {}
+                }
+            }
+        }
+
+        command {
+            name = "weekly"
+
+            // TODO: wait for cooldown pr
+
+            action {
+                val author = message.author!!
+
+                newSuspendedTransaction {
+                    author.getUserDAO(this).insertOrUpdate(this, author.idLong) {
+                        tokens += 100
+                    }
+                }
+
+                message.respond {
+                    content = "You have claimed your weekly bonus! Come back next week for more tokens."
                     allowedMentions {}
                 }
             }

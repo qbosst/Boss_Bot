@@ -69,6 +69,7 @@ suspend fun main() = try {
         }
 
         cache {
+            cachedMessages = 10_000
 
             kord {
                 forDescription(User.description, lruCache(1000))
