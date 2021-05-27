@@ -34,20 +34,20 @@ fun isUser(vararg ids: Long): CheckFun {
     suspend fun inner(event: Event): Boolean {
         val user = userFor(event)
 
-        if(user == null) {
-            logger.failed("This event does not have a user associated.")
-            return false
-        }
-
-        for(id in ids) {
-            if(id == user.id.value) {
+        return when {
+            user == null -> {
+                logger.failed("This event does not have a user associated.")
+                false
+            }
+            ids.none { it == user.id.value } -> {
+                logger.failed("The user's id did not match any of the ids given")
+                false
+            }
+            else -> {
                 logger.passed()
-                return true
+                true
             }
         }
-
-        logger.failed("The user id did not match any of the ids given")
-        return false
     }
 
     return ::inner
