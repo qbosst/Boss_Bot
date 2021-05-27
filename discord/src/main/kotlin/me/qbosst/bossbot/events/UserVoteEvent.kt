@@ -11,7 +11,7 @@ import dev.kord.core.entity.User
  *
  * @param userId The Discord id of the user who has voted for the bot.
  */
-data class VoteEvent(
+data class UserVoteEvent(
     override val bot: ExtensibleBot,
     val userId: Long
 ): ExtensionEvent {

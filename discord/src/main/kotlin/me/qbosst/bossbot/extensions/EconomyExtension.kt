@@ -3,14 +3,17 @@ package me.qbosst.bossbot.extensions
 import com.kotlindiscord.kord.extensions.commands.converters.member
 import com.kotlindiscord.kord.extensions.commands.converters.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.respond
 import dev.kord.core.behavior.reply
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate
-import me.qbosst.bossbot.events.VoteEvent
+import me.qbosst.bossbot.events.UserVoteEvent
 import me.qbosst.bossbot.idLong
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import kotlin.math.log10
+import kotlin.math.pow
 
 class EconomyExtension: Extension() {
     override val name: String get() = "economy"
@@ -24,56 +27,62 @@ class EconomyExtension: Extension() {
     }
 
     override suspend fun setup() {
-        command(::WalletArgs) {
+        slashCommand(::WalletArgs) {
             name = "wallet"
             description = "Views your wallet"
-            aliases = arrayOf("tokens", "balance")
+            autoAck = AutoAckType.PUBLIC
+            guild(714482588005171200)
 
             action {
-                val target = (arguments.member ?: message.getAuthorAsMember())!!
+                val target = arguments.member?.asUser() ?: user
                 val tokenAmount = target.getUserDAO().tokens
 
-                message.reply {
-                    content = when (target.id) {
-                        message.author!!.id -> "You have"
-                        else -> "${target.mention} has"
-                    } + " $tokenAmount `BT`"
+                publicFollowUp {
+                    content = buildString {
+                        append(
+                            when(target.id) {
+                                user.id -> "You have"
+                                else -> "${target.mention} has"
+                            }
+                        )
 
-                    allowedMentions {}
+                        append(" $tokenAmount tokens")
+                    }
                 }
             }
         }
 
-        command(::StealArgs) {
+        slashCommand(::StealArgs) {
             name = "steal"
             description = "Steals Boss Tokens from a user."
-            aliases = arrayOf("rob")
+            autoAck = AutoAckType.PUBLIC
+            guild(714482588005171200)
 
             action {
-                val author = message.author!!
                 val target = arguments.member
 
                 newSuspendedTransaction {
                     val targetDAO = target.getUserDAO(this)
 
-                    message.reply {
-                        allowedMentions {}
-
+                    publicFollowUp {
                         if(targetDAO.tokens == 0L) {
                             content = "${target.mention} does not have any tokens to steal!"
                         } else {
-                            val authorDAO = author.getUserDAO(this@newSuspendedTransaction)
+                            val authorDAO = user.getUserDAO(this@newSuspendedTransaction)
+                            val targetTokens = targetDAO.tokens
 
-                            val percent = (0..5).random().toFloat() / 100
-                            val tokens = (targetDAO.tokens * percent).toLong()
+                            val calc = targetTokens * (0.05 * (0.5).pow(log10(targetTokens.toDouble()) - 3))
+                            val margin = (95..105).random() / 100.0
 
-                            targetDAO.tokens -= tokens
-                            authorDAO.tokens += tokens
+                            val robbedAmount = (calc * margin).toLong()
 
-                            content = if(tokens == 0L) {
+                            targetDAO.tokens -= robbedAmount
+                            authorDAO.tokens += robbedAmount
+
+                            content = if(robbedAmount == 0L) {
                                 "You have failed to rob ${target.mention}"
                             } else {
-                                "You have stolen $tokens `BT` from ${target.mention}"
+                                "You have stolen $robbedAmount `BT` from ${target.mention}"
                             }
                         }
                     }
@@ -81,55 +90,55 @@ class EconomyExtension: Extension() {
             }
         }
 
-        command {
+        slashCommand {
             name = "daily"
+            description = "Claims your daily tokens"
+            autoAck = AutoAckType.PUBLIC
+            guild(714482588005171200)
 
             // TODO: wait for cooldown pr
 
             action {
-                val author = message.author!!
-
                 newSuspendedTransaction {
-                    author.getUserDAO(this).insertOrUpdate(this, author.idLong) {
-                        tokens += 20
+                    user.getUserDAO(this).insertOrUpdate(this, user.idLong) {
+                        tokens += 200
                     }
                 }
 
-                message.respond {
+                publicFollowUp {
                     content = "You have claimed your daily bonus! Come back tomorrow for more tokens."
-                    allowedMentions {}
                 }
             }
         }
 
-        command {
+        slashCommand {
             name = "weekly"
+            description = "Claims your weekly tokens"
+            autoAck = AutoAckType.PUBLIC
+            guild(714482588005171200)
 
             // TODO: wait for cooldown pr
 
             action {
-                val author = message.author!!
-
                 newSuspendedTransaction {
-                    author.getUserDAO(this).insertOrUpdate(this, author.idLong) {
-                        tokens += 100
+                    user.getUserDAO(this).insertOrUpdate(this, user.idLong) {
+                        tokens += 2000
                     }
                 }
 
-                message.respond {
+                publicFollowUp {
                     content = "You have claimed your weekly bonus! Come back next week for more tokens."
-                    allowedMentions {}
                 }
             }
         }
 
-        event<VoteEvent> {
+        event<UserVoteEvent> {
             action {
                 val user = event.getUser()
 
                 newSuspendedTransaction {
                     user?.getUserDAO(this).insertOrUpdate(this, event.userId) {
-                        tokens += 10
+                        tokens += 150
                     }
                 }
             }

@@ -20,7 +20,6 @@ class DeveloperExtension: Extension() {
             action {
                 val self = event.kord.getSelf()
 
-                val shards = event.kord.gateway.gateways.count()
                 val guilds = event.kord.guilds.count()
                 val cachedUsers = event.kord.users.count()
 
@@ -28,14 +27,12 @@ class DeveloperExtension: Extension() {
                 val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
 
                 message.reply {
-                    content = "Test"
                     allowedMentions {}
 
                     embed {
                         title = "${self.tag} statistics"
 
                         field("Memory Usage", true) { "${usedMb}MB / ${totalMb}MB"}
-                        field("Shards", true) { shards.toString() }
                         field("Guilds", true) { guilds.toString() }
                         field("Cached Users", true) { cachedUsers.toString() }
                     }

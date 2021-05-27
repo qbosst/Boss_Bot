@@ -5,7 +5,10 @@ import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.gateway.Intent
 import me.qbosst.bossbot.database.DatabaseManager
+import me.qbosst.bossbot.database.dao.Guild
 import me.qbosst.bossbot.database.dao.User
+import me.qbosst.bossbot.database.dao.getGuildDAO
+import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
 import mu.KLogger
@@ -28,12 +31,21 @@ suspend fun main() = try {
         extensions {
             add(::EconomyExtension)
             add(::DeveloperExtension)
+            add(::CasinoExtension)
         }
 
         messageCommands {
             defaultPrefix = "b!"
 
+            prefix { defaultPrefix ->
+                message.getGuildOrNull()?.getGuildDAO()?.prefix ?: defaultPrefix
+            }
+
             check(defaultMessageCheck())
+        }
+
+        slashCommands {
+            enabled = true
         }
 
         hooks {
@@ -49,6 +61,7 @@ suspend fun main() = try {
 
                             tables {
                                 add(UsersTable)
+                                add(GuildsTable)
                             }
                         }
                     } bind DatabaseManager::class
@@ -73,10 +86,12 @@ suspend fun main() = try {
 
             kord {
                 forDescription(User.description, lruCache(1000))
+                forDescription(Guild.description, lruCache(1000))
             }
 
             transformCache { cache ->
                 cache.register(User.description)
+                cache.register(Guild.description)
             }
         }
     }
