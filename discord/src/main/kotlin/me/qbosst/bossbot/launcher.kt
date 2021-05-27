@@ -32,6 +32,7 @@ suspend fun main() = try {
             add(::EconomyExtension)
             add(::DeveloperExtension)
             add(::CasinoExtension)
+            add(::MiscExtension)
         }
 
         messageCommands {
@@ -87,6 +88,11 @@ suspend fun main() = try {
             kord {
                 forDescription(User.description, lruCache(1000))
                 forDescription(Guild.description, lruCache(1000))
+
+                emojis(none())
+                webhooks(none())
+                presences(none())
+                voiceState(none())
             }
 
             transformCache { cache ->

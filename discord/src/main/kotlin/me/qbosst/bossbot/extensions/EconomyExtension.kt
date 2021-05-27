@@ -1,16 +1,16 @@
 package me.qbosst.bossbot.extensions
 
+import com.kotlindiscord.kord.extensions.commands.converters.int
 import com.kotlindiscord.kord.extensions.commands.converters.member
 import com.kotlindiscord.kord.extensions.commands.converters.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.utils.respond
-import dev.kord.core.behavior.reply
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate
 import me.qbosst.bossbot.events.UserVoteEvent
 import me.qbosst.bossbot.idLong
+import me.qbosst.bossbot.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.math.log10
 import kotlin.math.pow
@@ -24,6 +24,11 @@ class EconomyExtension: Extension() {
 
     class StealArgs: Arguments() {
         val member by member("user", "The user who you want to steal from")
+    }
+
+    class SendArgs: Arguments() {
+        val amount by int("amount", "The amount of tokens you want to send", validator = positiveInt())
+        val member by member("user", "The user you want to send tokens to")
     }
 
     override suspend fun setup() {
@@ -61,6 +66,13 @@ class EconomyExtension: Extension() {
             action {
                 val target = arguments.member
 
+                if(target.id == user.id) {
+                    publicFollowUp {
+                        content = "You cannot create a bet against yourself."
+                    }
+                    return@action
+                }
+
                 newSuspendedTransaction {
                     val targetDAO = target.getUserDAO(this)
 
@@ -84,6 +96,40 @@ class EconomyExtension: Extension() {
                             } else {
                                 "You have stolen $robbedAmount `BT` from ${target.mention}"
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        slashCommand(::SendArgs) {
+            name = "send"
+            description = "Sends tokens to another user"
+            autoAck = AutoAckType.PUBLIC
+            guild(714482588005171200)
+
+            action {
+                val target = arguments.member.asUser()
+
+                if(target.id == user.id) {
+                    publicFollowUp {
+                        content = "You cannot create a bet against yourself."
+                    }
+                    return@action
+                }
+
+                newSuspendedTransaction {
+                    val authorDAO = user.getUserDAO(this)
+
+                    publicFollowUp {
+                        if(authorDAO.tokens < arguments.amount) {
+                            content = "You do not have `${arguments.amount}` tokens to send."
+                        } else {
+                            val targetDAO = target.getUserDAO(this@newSuspendedTransaction)
+                            authorDAO.tokens -= arguments.amount
+                            targetDAO.tokens += arguments.amount
+
+                            content = "You have sent `${arguments.amount}` to ${target.mention}"
                         }
                     }
                 }

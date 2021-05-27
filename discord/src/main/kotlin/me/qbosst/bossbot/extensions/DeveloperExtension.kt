@@ -2,6 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.env
+import com.kotlindiscord.kord.extensions.utils.getUrl
 import com.kotlindiscord.kord.extensions.utils.users
 import dev.kord.core.behavior.reply
 import kotlinx.coroutines.flow.count
@@ -25,6 +26,8 @@ class DeveloperExtension: Extension() {
 
                 val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
                 val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
+
+                message.getUrl()
 
                 message.reply {
                     allowedMentions {}

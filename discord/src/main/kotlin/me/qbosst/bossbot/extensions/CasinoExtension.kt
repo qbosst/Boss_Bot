@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.extensions
 
-import com.kotlindiscord.kord.extensions.CommandException
 import com.kotlindiscord.kord.extensions.commands.converters.enum
 import com.kotlindiscord.kord.extensions.commands.converters.int
 import com.kotlindiscord.kord.extensions.commands.converters.optionalMember
@@ -9,11 +8,12 @@ import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
+import me.qbosst.bossbot.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.random.Random
 
 class CasinoExtension: Extension() {
-    override val name: String = "casino"
+    override val name: String get() = "casino"
 
     class CoinFlipArgs: Arguments() {
         enum class CoinSide(override val readableName: String): ChoiceEnum {
@@ -22,11 +22,7 @@ class CasinoExtension: Extension() {
         }
 
         val betSide by enum<CoinSide>("coin-side", "The coin side you predict it will land on", "heads, tails")
-        val betAmount by int("bet-amount", "The amount of tokens you want to bet") { betAmount ->
-            if(betAmount <= 0) {
-                throw CommandException("Your bet must be a positive number.")
-            }
-        }
+        val betAmount by int("bet-amount", "The amount of tokens you want to bet", validator = positiveInt())
         val opponent by optionalMember("user", "The user you want to bet against", outputError = true)
     }
 
