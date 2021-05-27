@@ -27,10 +27,13 @@ suspend fun main() = try {
 
         extensions {
             add(::EconomyExtension)
+            add(::DeveloperExtension)
         }
 
         messageCommands {
             defaultPrefix = "b!"
+
+            check(defaultMessageCheck())
         }
 
         hooks {
@@ -40,9 +43,9 @@ suspend fun main() = try {
                 loadModule {
                     single {
                         DatabaseManager {
-                            host = "localhost:3306/bossbot?serverTimezone=BST"
-                            username = "root"
-                            password = "root"
+                            host = env("database.host")!!
+                            username = env("database.username")!!
+                            password = env("database.password")!!
 
                             tables {
                                 add(UsersTable)

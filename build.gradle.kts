@@ -45,7 +45,7 @@ dependencies {
 
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "9"
         freeCompilerArgs = listOf(
             "-Xinline-classes",
             "-Xopt-in=dev.kord.common.annotation.KordPreview"
