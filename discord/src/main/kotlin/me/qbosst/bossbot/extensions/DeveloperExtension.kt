@@ -6,7 +6,7 @@ import com.kotlindiscord.kord.extensions.utils.getUrl
 import com.kotlindiscord.kord.extensions.utils.users
 import dev.kord.core.behavior.reply
 import kotlinx.coroutines.flow.count
-import me.qbosst.bossbot.isUser
+import me.qbosst.bossbot.util.isUser
 
 class DeveloperExtension: Extension() {
     override val name: String get() = "developer"

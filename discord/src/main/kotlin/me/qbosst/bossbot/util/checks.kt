@@ -1,4 +1,4 @@
-package me.qbosst.bossbot
+package me.qbosst.bossbot.util
 
 import com.kotlindiscord.kord.extensions.checks.CheckFun
 import com.kotlindiscord.kord.extensions.checks.failed
@@ -10,7 +10,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import mu.KotlinLogging
 
 fun defaultMessageCheck(): suspend (MessageCreateEvent) -> Boolean {
-    val logger = KotlinLogging.logger("me.qbosst.bossbot.defaultMessageCheck")
+    val logger = KotlinLogging.logger("me.qbosst.bossbot.util.defaultMessageCheck")
 
     suspend fun inner(event: MessageCreateEvent): Boolean {
         return when {
@@ -28,8 +28,29 @@ fun defaultMessageCheck(): suspend (MessageCreateEvent) -> Boolean {
     return ::inner
 }
 
+suspend fun isNotBot(event: Event): Boolean {
+    val logger = KotlinLogging.logger("me.qbosst.bossbot.util.isNotBot")
+
+    val user = userFor(event)
+
+    return when {
+        user == null -> {
+            logger.failed("This event does not have a user associated. ):")
+            false
+        }
+        user.asUser().isBot -> {
+            logger.failed("This user is a bot.")
+            false
+        }
+        else -> {
+            logger.passed()
+            true
+        }
+    }
+}
+
 fun isUser(vararg ids: Long): CheckFun {
-    val logger = KotlinLogging.logger("me.qbosst.bossbot.isUser")
+    val logger = KotlinLogging.logger("me.qbosst.bossbot.util.isUser")
 
     suspend fun inner(event: Event): Boolean {
         val user = userFor(event)

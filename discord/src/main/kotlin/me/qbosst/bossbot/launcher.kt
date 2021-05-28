@@ -3,6 +3,9 @@ package me.qbosst.bossbot
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.loadModule
+import dev.kord.cache.map.MapLikeCollection
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.cache.data.MessageData
 import dev.kord.gateway.Intent
 import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.database.dao.Guild
@@ -11,6 +14,8 @@ import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
+import me.qbosst.bossbot.util.defaultMessageCheck
+import me.qbosst.bossbot.util.mapLikeCollection
 import mu.KLogger
 import mu.KotlinLogging
 import org.koin.dsl.bind
@@ -33,6 +38,7 @@ suspend fun main() = try {
             add(::DeveloperExtension)
             add(::CasinoExtension)
             add(::MiscExtension)
+            add(::LoggerExtension)
         }
 
         messageCommands {
@@ -83,12 +89,17 @@ suspend fun main() = try {
         }
 
         cache {
-            cachedMessages = 10_000
+            cachedMessages = null
 
             kord {
                 forDescription(User.description, lruCache(1000))
                 forDescription(Guild.description, lruCache(1000))
 
+                messages(
+                    @Suppress("UNCHECKED_CAST") // compiler being dumb
+                    mapLikeCollection(MessageCache(10_000) as MapLikeCollection<MessageData, Snowflake>)
+                )
+                
                 emojis(none())
                 webhooks(none())
                 presences(none())

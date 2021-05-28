@@ -1,4 +1,4 @@
-package me.qbosst.bossbot
+package me.qbosst.bossbot.util
 
 import com.kotlindiscord.kord.extensions.CommandException
 import com.kotlindiscord.kord.extensions.commands.parser.Argument
