@@ -13,3 +13,5 @@ fun <K, V: Any> KordCacheBuilder.mapLikeCollection(
 ): Generator<K, V> = { cache, description ->
     MapEntryCache(cache, description, map)
 }
+
+fun String.zeroWidthIfBlank() = ifBlank { "\u200E" }

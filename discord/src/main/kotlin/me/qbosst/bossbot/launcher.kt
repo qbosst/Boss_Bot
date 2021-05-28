@@ -14,7 +14,7 @@ import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
-import me.qbosst.bossbot.util.defaultMessageCheck
+import me.qbosst.bossbot.util.defaultMessageCommandCheck
 import me.qbosst.bossbot.util.mapLikeCollection
 import mu.KLogger
 import mu.KotlinLogging
@@ -48,7 +48,7 @@ suspend fun main() = try {
                 message.getGuildOrNull()?.getGuildDAO()?.prefix ?: defaultPrefix
             }
 
-            check(defaultMessageCheck())
+            check(::defaultMessageCommandCheck)
         }
 
         slashCommands {
@@ -97,7 +97,7 @@ suspend fun main() = try {
 
                 messages(
                     @Suppress("UNCHECKED_CAST") // compiler being dumb
-                    mapLikeCollection(MessageCache(10_000) as MapLikeCollection<MessageData, Snowflake>)
+                    mapLikeCollection(MessageCache(5) as MapLikeCollection<MessageData, Snowflake>)
                 )
                 
                 emojis(none())

@@ -4,8 +4,10 @@ import dev.kord.cache.map.MapLikeCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-abstract class AbstractMapLikeCollection<K, V>(map: MutableMap<K, V>): MapLikeCollection<K, V> {
-    private val map: MutableMap<K, V> = map.toMutableMap()
+/**
+ * Provides the same functionality as [MapLikeCollection.from] while also allowing you to override methods.
+ */
+abstract class AbstractMapLikeCollection<K, V>(private val map: MutableMap<K, V>): MapLikeCollection<K, V> {
 
     override suspend fun get(key: K): V? = map[key]
 

@@ -22,6 +22,7 @@ class Guild(id: EntityID<Long>): LongEntity(id) {
 
     val guildId: Long get() = id.value
     var prefix: String? by GuildsTable.prefix
+    val messageLogChannel: Long? by GuildsTable.messageLogChannel
 }
 
 fun Guild?.insertOrUpdate(

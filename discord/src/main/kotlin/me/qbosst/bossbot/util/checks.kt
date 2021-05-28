@@ -9,23 +9,19 @@ import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import mu.KotlinLogging
 
-fun defaultMessageCheck(): suspend (MessageCreateEvent) -> Boolean {
+fun defaultMessageCommandCheck(event: MessageCreateEvent): Boolean {
     val logger = KotlinLogging.logger("me.qbosst.bossbot.util.defaultMessageCheck")
 
-    suspend fun inner(event: MessageCreateEvent): Boolean {
-        return when {
-            event.message.author.isNullOrBot() -> {
-                logger.failed("Author is either a webhook or bot.")
-                false
-            }
-            else -> {
-                logger.passed()
-                true
-            }
+    return when {
+        event.message.author.isNullOrBot() -> {
+            logger.failed("Author is either a webhook or bot.")
+            false
+        }
+        else -> {
+            logger.passed()
+            true
         }
     }
-
-    return ::inner
 }
 
 suspend fun isNotBot(event: Event): Boolean {
@@ -35,7 +31,7 @@ suspend fun isNotBot(event: Event): Boolean {
 
     return when {
         user == null -> {
-            logger.failed("This event does not have a user associated. ):")
+            logger.failed("This event does not have a user associated.")
             false
         }
         user.asUser().isBot -> {

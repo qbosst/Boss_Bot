@@ -1,7 +1,12 @@
 package me.qbosst.bossbot.util.cache
 
-open class FixedCache<K, V>(val maxSize: Int): LinkedHashMap<K, V>(maxSize, 1.0F, true), MutableMap<K, V> {
+import dev.kord.core.kordLogger
 
+/**
+ * Same functionality as [dev.kord.cache.map.LRULinkedHashMap] while also giving you access to the entries that have
+ * been removed
+ */
+open class FixedCache<K, V>(val maxSize: Int): LinkedHashMap<K, V>(maxSize, 1.0F, true), MutableMap<K, V> {
     final override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean {
         return (size > maxSize).also {
             if (it && eldest != null) {
