@@ -31,7 +31,6 @@ class CasinoExtension: Extension() {
             name = "coinflip"
             description = "Flips a coin and allows you to bet on the outcome"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             action {
                 val flippedSide = CoinFlipArgs.CoinSide.values().random()

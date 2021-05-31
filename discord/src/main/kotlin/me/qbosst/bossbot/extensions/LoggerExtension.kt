@@ -4,7 +4,6 @@ import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorIsBot
-import com.kotlindiscord.kord.extensions.utils.deltas.MessageDelta
 import com.kotlindiscord.kord.extensions.utils.getUrl
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
@@ -13,16 +12,13 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.cache.data.AttachmentData
 import dev.kord.core.cache.data.MessageData
-import dev.kord.core.entity.Embed
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.util.cache.AbstractMapLikeCollection
 import me.qbosst.bossbot.util.cache.FixedCache
@@ -103,7 +99,9 @@ class LoggerExtension: Extension() {
     override val name: String = "logger"
 
     override suspend fun setup() {
-        File(DIRECTORY).mkdir()
+        withContext(Dispatchers.IO) {
+            File(DIRECTORY).mkdir()
+        }
 
         event<MessageUpdateEvent> {
             check(::anyGuild, ::isNotBot)
@@ -192,12 +190,16 @@ class LoggerExtension: Extension() {
                     fileStreams?.forEach { (_, stream) -> stream.close() }
                 }
 
-                files?.deleteAll()
+                withContext(Dispatchers.IO) {
+                    files?.deleteAll()
+                }
             }
         }
     }
 
     override suspend fun unload() {
-        File(DIRECTORY).deleteRecursively()
+        withContext(Dispatchers.IO) {
+            File(DIRECTORY).deleteRecursively()
+        }
     }
 }

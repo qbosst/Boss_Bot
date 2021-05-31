@@ -15,7 +15,6 @@ class MiscExtension: Extension() {
             name = "ping"
             description = "Pings the bot"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             action {
                 val (followUp, time) = measureTimedValue { publicFollowUp { content = "Pinging..." } }

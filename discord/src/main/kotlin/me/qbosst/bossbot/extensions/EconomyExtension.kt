@@ -36,7 +36,6 @@ class EconomyExtension: Extension() {
             name = "wallet"
             description = "Views your wallet"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             action {
                 val target = arguments.member?.asUser() ?: user
@@ -61,7 +60,6 @@ class EconomyExtension: Extension() {
             name = "steal"
             description = "Steals Boss Tokens from a user."
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             action {
                 val target = arguments.member
@@ -106,7 +104,6 @@ class EconomyExtension: Extension() {
             name = "send"
             description = "Sends tokens to another user"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             action {
                 val target = arguments.member.asUser()
@@ -140,7 +137,6 @@ class EconomyExtension: Extension() {
             name = "daily"
             description = "Claims your daily tokens"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             // TODO: wait for cooldown pr
 
@@ -161,7 +157,6 @@ class EconomyExtension: Extension() {
             name = "weekly"
             description = "Claims your weekly tokens"
             autoAck = AutoAckType.PUBLIC
-            guild(714482588005171200)
 
             // TODO: wait for cooldown pr
 

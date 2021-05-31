@@ -1,7 +1,5 @@
 package me.qbosst.bossbot.util.cache
 
-import dev.kord.core.kordLogger
-
 /**
  * Same functionality as [dev.kord.cache.map.LRULinkedHashMap] while also giving you access to the entries that have
  * been removed
