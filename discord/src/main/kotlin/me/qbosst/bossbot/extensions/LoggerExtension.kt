@@ -4,6 +4,8 @@ import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.authorIsBot
+import com.kotlindiscord.kord.extensions.utils.download
+import com.kotlindiscord.kord.extensions.utils.downloadToFile
 import com.kotlindiscord.kord.extensions.utils.getUrl
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
@@ -12,7 +14,10 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.cache.data.AttachmentData
 import dev.kord.core.cache.data.MessageData
+import dev.kord.core.entity.Attachment
+import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
+import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -22,7 +27,6 @@ import kotlinx.coroutines.*
 import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.util.cache.AbstractMapLikeCollection
 import me.qbosst.bossbot.util.cache.FixedCache
-import me.qbosst.bossbot.util.downloadToFile
 import me.qbosst.bossbot.util.idLong
 import me.qbosst.bossbot.util.isNotBot
 import me.qbosst.bossbot.util.zeroWidthIfBlank
@@ -36,13 +40,14 @@ private const val DIRECTORY = "./cached"
 private val MessageData.files: List<File>
     get() = attachments.mapIndexed { index, attachment -> File(genDir(id.value, index, attachment.fileExtension)) }
 
-private val httpClient = HttpClient(CIO)
-
 private val AttachmentData.fileExtension: String?
     get() {
         val index = filename.lastIndexOf('.') + 1
         return if(index == -1 || index == filename.length) null else filename.substring(index)
     }
+
+private val Attachment.fileExtension: String?
+    get() = data.fileExtension
 
 private fun genDir(id: Long, index: Int, extension: String?) =
     "$DIRECTORY/${id}_$index" + (extension?.let { ".$extension" } ?: "")
@@ -57,7 +62,7 @@ private fun Collection<File>.deleteAll() {
     }
 }
 
-private suspend fun Event.logger(): MessageChannelBehavior? {
+private suspend fun Event.getLogChannel(): MessageChannelBehavior? {
     val guild = guildFor(this) ?: return null
     val settings = guild.getGuildDAO()
 
@@ -73,27 +78,7 @@ class MessageCache(maxSize: Int): AbstractMapLikeCollection<Snowflake, MessageDa
     FixedCache(maxSize) { (_, message) ->
         message.files.deleteAll()
     }
-) {
-    override suspend fun put(key: Snowflake, message: MessageData) {
-        super.put(key, message)
-
-        if(message.authorIsBot) {
-            return
-        }
-
-        val jobs = coroutineScope {
-            message.attachments.mapIndexed { index, attachment ->
-                async {
-                    val file = File(genDir(message.id.value, index, attachment.fileExtension))
-                    httpClient.downloadToFile(file, attachment.url)
-                }
-            }
-        }
-
-        // make sure all attachments have finished downloading
-        jobs.awaitAll()
-    }
-}
+)
 
 class LoggerExtension: Extension() {
     override val name: String = "logger"
@@ -103,11 +88,30 @@ class LoggerExtension: Extension() {
             File(DIRECTORY).mkdir()
         }
 
+        event<MessageCreateEvent> {
+            check(::anyGuild, ::isNotBot)
+
+            action {
+                val message = event.message
+
+                val jobs = coroutineScope {
+                    message.attachments.mapIndexed { index, attachment ->
+                        async {
+                            val file = File(genDir(message.idLong, index, attachment.fileExtension))
+                            attachment.downloadToFile(file)
+                        }
+                    }
+                }
+
+                jobs.awaitAll()
+            }
+        }
+
         event<MessageUpdateEvent> {
             check(::anyGuild, ::isNotBot)
 
             action {
-                val logChannel = event.logger() ?: return@action
+                val logChannel = event.getLogChannel() ?: return@action
 
                 val newMessage = event.message.asMessage()
                 val oldMessage = event.old
@@ -145,7 +149,7 @@ class LoggerExtension: Extension() {
                 val files = message?.data?.files
 
                 run {
-                    val logChannel = event.logger() ?: return@run
+                    val logChannel = event.getLogChannel() ?: return@run
                     val fileStreams = files?.map { file -> file.name to file.inputStream() }
                     val author = message?.author
 
