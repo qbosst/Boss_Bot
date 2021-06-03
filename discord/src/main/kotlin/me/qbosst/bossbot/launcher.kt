@@ -54,7 +54,7 @@ suspend fun main() = try {
         slashCommands {
             enabled = true
 
-            defaultGuild(714482588005171200) // test guild
+            defaultGuild(842424873506308157) // test guild
         }
 
         hooks {

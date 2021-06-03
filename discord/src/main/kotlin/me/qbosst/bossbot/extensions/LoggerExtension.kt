@@ -3,10 +3,7 @@ package me.qbosst.bossbot.extensions
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.utils.authorIsBot
-import com.kotlindiscord.kord.extensions.utils.download
-import com.kotlindiscord.kord.extensions.utils.downloadToFile
-import com.kotlindiscord.kord.extensions.utils.getUrl
+import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createEmbed
@@ -15,15 +12,13 @@ import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.cache.data.AttachmentData
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.entity.Attachment
-import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.util.cache.AbstractMapLikeCollection
 import me.qbosst.bossbot.util.cache.FixedCache
@@ -33,7 +28,6 @@ import me.qbosst.bossbot.util.zeroWidthIfBlank
 import mu.KLogger
 import mu.KotlinLogging
 import java.io.File
-import java.time.Instant
 
 private const val DIRECTORY = "./cached"
 
@@ -125,7 +119,7 @@ class LoggerExtension: Extension() {
 
                     field("Channel", true) { event.channel.mention }
                     field("Author", true) { author.mention }
-                    field("Message", true) { "[Jump to Message](${newMessage.getUrl()})"}
+                    field("Message", true) { "[Jump to Message](${newMessage.getJumpUrl()})"}
 
                     val limit = EmbedBuilder.Field.Limits.value
                     field("Before", true) { oldMessage?.content?.take(limit)?.zeroWidthIfBlank() ?: "N/A" }
@@ -136,7 +130,7 @@ class LoggerExtension: Extension() {
                     }
 
                     // TODO: add colour
-                    timestamp = Instant.now()
+                    timestamp = Clock.System.now()
                 }
             }
         }
@@ -183,7 +177,7 @@ class LoggerExtension: Extension() {
                             }
 
                             // TODO: add colour
-                            timestamp = Instant.now()
+                            timestamp = Clock.System.now()
                         }
 
                         fileStreams?.forEach { (fileName, stream) ->

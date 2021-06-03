@@ -66,7 +66,7 @@ class EconomyExtension: Extension() {
 
                 if(target.id == user.id) {
                     publicFollowUp {
-                        content = "You cannot create a bet against yourself."
+                        content = "You cannot steal from yourself."
                     }
                     return@action
                 }
