@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.getUrl
 import com.kotlindiscord.kord.extensions.utils.users
+import dev.kord.core.Kord
 import dev.kord.core.behavior.reply
 import kotlinx.coroutines.flow.count
 import me.qbosst.bossbot.util.isUser
@@ -25,8 +26,8 @@ class DeveloperExtension: Extension() {
                 val guilds = event.kord.guilds.count()
                 val cachedUsers = event.kord.users.count()
 
-                val totalMb = Runtime.getRuntime().totalMemory() / (1024*1024)
-                val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024*1024)
+                val totalMb = Runtime.getRuntime().totalMemory() / (1024 * 1024)
+                val usedMb = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024 * 1024)
 
                 message.reply {
                     allowedMentions {}
@@ -34,7 +35,7 @@ class DeveloperExtension: Extension() {
                     embed {
                         title = "${self.tag} statistics"
 
-                        field("Memory Usage", true) { "${usedMb}MB / ${totalMb}MB"}
+                        field("Memory Usage", true) { "${usedMb}MB / ${totalMb}MB" }
                         field("Guilds", true) { guilds.toString() }
                         field("Cached Users", true) { cachedUsers.toString() }
                     }

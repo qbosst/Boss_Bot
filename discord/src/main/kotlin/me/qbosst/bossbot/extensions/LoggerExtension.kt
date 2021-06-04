@@ -78,6 +78,7 @@ class LoggerExtension: Extension() {
     override val name: String = "logger"
 
     override suspend fun setup() {
+        // create directory to store attachments
         withContext(Dispatchers.IO) {
             File(DIRECTORY).mkdir()
         }
@@ -196,6 +197,7 @@ class LoggerExtension: Extension() {
     }
 
     override suspend fun unload() {
+        // delete directory that stores attachments
         withContext(Dispatchers.IO) {
             File(DIRECTORY).deleteRecursively()
         }

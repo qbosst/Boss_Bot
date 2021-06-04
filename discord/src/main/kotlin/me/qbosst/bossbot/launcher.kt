@@ -1,12 +1,16 @@
 package me.qbosst.bossbot
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.cache.map.MapLikeCollection
+import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.cache.data.MessageData
+import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.gateway.Intent
+import dev.kord.gateway.editPresence
 import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.database.dao.Guild
 import me.qbosst.bossbot.database.dao.User
@@ -54,7 +58,7 @@ suspend fun main() = try {
         slashCommands {
             enabled = true
 
-            defaultGuild(842424873506308157) // test guild
+            defaultGuild(714482588005171200) // test guild
         }
 
         hooks {
@@ -101,7 +105,7 @@ suspend fun main() = try {
                     @Suppress("UNCHECKED_CAST") // compiler being dumb
                     mapLikeCollection(MessageCache(5) as MapLikeCollection<MessageData, Snowflake>)
                 )
-                
+
                 emojis(none())
                 webhooks(none())
                 presences(none())
@@ -113,13 +117,29 @@ suspend fun main() = try {
                 cache.register(Guild.description)
             }
         }
+
+        i18n {
+            defaultLocale = SupportedLocales.ENGLISH
+        }
+
+        presence {
+            status = PresenceStatus.DoNotDisturb
+            playing("Loading...")
+        }
+    }
+
+    bot.on<ReadyEvent> {
+        gateway.editPresence {
+            status = PresenceStatus.Online
+            playing("Loaded :D")
+        }
     }
 
     bot.start()
 
 } catch (e: Exception) {
     val logger: KLogger = KotlinLogging.logger("me.qbosst.bossbot.main")
-    logger.error(e) { "Could not initialize Boss Bot."}
+    logger.error(e) { "Could not initialize Boss Bot." }
 } finally {
     println("Press any key to EXIT the program...")
     readLine()

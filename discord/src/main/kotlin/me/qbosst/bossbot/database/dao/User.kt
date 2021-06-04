@@ -5,6 +5,7 @@ import dev.kord.cache.api.put
 import dev.kord.cache.api.query
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.cache.data.UserData
+import kotlinx.datetime.TimeZone
 import me.qbosst.bossbot.database.tables.UsersTable
 import org.jetbrains.exposed.dao.LongEntity
 import org.jetbrains.exposed.dao.LongEntityClass
@@ -22,6 +23,14 @@ class User(id: EntityID<Long>): LongEntity(id) {
 
     val userId: Long get() = id.value
     var tokens: Long by UsersTable.tokens
+    var timeZone: TimeZone? by UsersTable.timeZone.transform(
+        {
+            it?.id
+        },
+        {
+            it?.let { runCatching { TimeZone.of(it) }.getOrNull() }
+        }
+    )
 }
 
 fun User?.insertOrUpdate(
