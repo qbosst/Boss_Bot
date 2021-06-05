@@ -3,8 +3,10 @@ package me.qbosst.bossbot
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.utils.env
+import com.kotlindiscord.kord.extensions.utils.getTopRole
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.cache.map.MapLikeCollection
+import dev.kord.common.Color
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.cache.data.MessageData
@@ -19,6 +21,7 @@ import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
 import me.qbosst.bossbot.util.defaultMessageCommandCheck
+import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.mapLikeCollection
 import mu.KLogger
 import mu.KotlinLogging
@@ -43,6 +46,17 @@ suspend fun main() = try {
             add(::CasinoExtension)
             add(::MiscExtension)
             add(::LoggerExtension)
+
+            help {
+                colour {
+                    when(guildId) {
+                        null ->
+                            Color((0x000000..0xffffff).random()) // TODO: get bot pfp most dominant colour
+                        else ->
+                            kord.getSelf().asMember(guildId!!).getColour() ?: Color((0x000000..0xffffff).random())
+                    }
+                }
+            }
         }
 
         messageCommands {
@@ -62,7 +76,6 @@ suspend fun main() = try {
         }
 
         hooks {
-
             setup {
                 // database module
                 loadModule {
