@@ -23,23 +23,5 @@ class MiscExtension: Extension() {
                 }
             }
         }
-
-        command {
-            name = "ping"
-            description = "Pings the bot"
-
-            action {
-                val (followUp, time) = measureTimedValue {
-                    message.reply {
-                        allowedMentions {}
-                        content = "Pinging..."
-                    }
-                }
-
-                followUp.edit {
-                    content = "${time.inWholeMilliseconds}ms"
-                }
-            }
-        }
     }
 }

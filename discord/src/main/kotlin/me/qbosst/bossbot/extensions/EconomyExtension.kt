@@ -9,6 +9,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate
 import me.qbosst.bossbot.events.UserVoteEvent
+import me.qbosst.bossbot.util.cache.hybridCommand
 import me.qbosst.bossbot.util.idLong
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -32,25 +33,25 @@ class EconomyExtension: Extension() {
     }
 
     override suspend fun setup() {
-        slashCommand(::WalletArgs) {
+        hybridCommand(::WalletArgs) {
             name = "wallet"
             description = "Views your wallet"
-            autoAck = AutoAckType.PUBLIC
 
             action {
-                val target = arguments.member?.asUser() ?: user
+                val author = user!!
+                val target = arguments.member?.asUser() ?: author
                 val tokenAmount = target.getUserDAO().tokens
 
                 publicFollowUp {
                     content = buildString {
                         append(
                             when(target.id) {
-                                user.id -> "You have"
+                                author.id -> "You have"
                                 else -> "${target.mention} has"
                             }
                         )
 
-                        append(" $tokenAmount tokens")
+                        append(" $tokenAmount tokens.")
                     }
                 }
             }
