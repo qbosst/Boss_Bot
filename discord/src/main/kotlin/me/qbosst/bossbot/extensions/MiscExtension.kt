@@ -1,13 +1,9 @@
 package me.qbosst.bossbot.extensions
 
+import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.MessageFlag
-import dev.kord.common.entity.MessageFlags
 import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.interaction.edit
-import kotlinx.coroutines.delay
 import me.qbosst.bossbot.util.cache.hybridCommand
-import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 class MiscExtension: Extension() {
@@ -17,6 +13,10 @@ class MiscExtension: Extension() {
         hybridCommand {
             name = "ping"
             description = "Pings the bot"
+
+            slashSettings {
+                autoAck = AutoAckType.PUBLIC
+            }
 
             action {
                 val (message, time) = measureTimedValue {

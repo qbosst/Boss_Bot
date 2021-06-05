@@ -18,8 +18,47 @@ open class HybridCommand<T: Arguments>(
     open val arguments :(() -> T)? = null
 ): Command(extension), KoinComponent {
 
+    open class SlashSettings(
+        /** Type of automatic ack to use, if any. **/
+        open var autoAck: AutoAckType = AutoAckType.NONE
+    )
+
+    open class MessageSettings(
+
+        /**
+         * Whether this command is enabled and can be invoked.
+         *
+         * Disabled commands cannot be invoked, and won't be shown in help commands.
+         *
+         * This can be changed at runtime, if commands need to be enabled and disabled dynamically without being
+         * reconstructed.
+         */
+        open var enabled: Boolean = true,
+
+
+        /**
+         * Whether to hide this command from help command listings.
+         *
+         * By default, this is `false` - so the command will be shown.
+         */
+        open var hidden: Boolean = false,
+
+
+        /**
+         * Alternative names that can be used to invoke your command.
+         *
+         * There's no limit on the number of aliases a command may have, but in the event of an alias matching
+         * the [name] of a registered command, the command with the [name] takes priority.
+         */
+        open var aliases: Array<String> = arrayOf()
+    )
+
     /** Kord instance, backing the ExtensibleBot. **/
     val kord: Kord by inject()
+
+    val slashSettings: SlashSettings = SlashSettings()
+
+    val messageSettings: MessageSettings = MessageSettings()
 
     /**
      * @suppress
@@ -38,6 +77,14 @@ open class HybridCommand<T: Arguments>(
 
     /** Permissions required to be able to run this command. **/
     open val requiredPerms: MutableSet<Permission> = mutableSetOf()
+
+    fun slashSettings(init: SlashSettings.() -> Unit) {
+        slashSettings.init()
+    }
+
+    fun messageSettings(init: MessageSettings.() -> Unit) {
+        messageSettings.init()
+    }
 
     /** If your bot requires permissions to be able to execute the command, add them using this function. **/
     fun requirePermissions(vararg perms: Permission) {
@@ -79,6 +126,7 @@ open class HybridCommand<T: Arguments>(
 
     open fun toMessageCommand(): MessageCommand<T> {
         val commandObj = MessageCommand(extension, arguments)
+        val settings = messageSettings
 
         commandObj.apply {
             name = this@HybridCommand.name
@@ -86,6 +134,10 @@ open class HybridCommand<T: Arguments>(
 
             requiredPerms.addAll(this@HybridCommand.requiredPerms)
             checkList.addAll(this@HybridCommand.checkList)
+
+            enabled = settings.enabled
+            hidden = settings.hidden
+            aliases = settings.aliases
 
             action {
                 val context = HybridCommandContext<T>(this)
@@ -99,14 +151,16 @@ open class HybridCommand<T: Arguments>(
 
     open fun toSlashCommand(): SlashCommand<T> {
         val commandObj = SlashCommand(extension, arguments)
+        val settings = slashSettings
 
         commandObj.apply {
             name = this@HybridCommand.name
             description = this@HybridCommand.description
-            autoAck = AutoAckType.NONE
 
             requiredPerms.addAll(this@HybridCommand.requiredPerms)
             checkList.addAll(this@HybridCommand.checkList)
+
+            autoAck = settings.autoAck
 
             action {
                 val context = HybridCommandContext<T>(this)

@@ -3,6 +3,7 @@ package me.qbosst.bossbot.commands
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
@@ -93,7 +94,10 @@ open class HybridCommandContext<T: Arguments>(
 
         val response = when(context) {
             is SlashCommandContext<*> -> {
-                val interaction = ack(false) as PublicInteractionResponseBehavior
+                val interaction = when(context.acked) {
+                    false -> ack(false) as PublicInteractionResponseBehavior
+                    else -> context.interactionResponse!!
+                }
 
                 kord.rest.interaction.createFollowupMessage(
                     interaction.applicationId,
