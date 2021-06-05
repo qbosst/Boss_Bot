@@ -1,24 +1,32 @@
 package me.qbosst.bossbot.extensions
 
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kord.common.entity.MessageFlag
+import dev.kord.common.entity.MessageFlags
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.edit
-import dev.kord.core.behavior.reply
+import kotlinx.coroutines.delay
+import me.qbosst.bossbot.util.cache.hybridCommand
+import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
 class MiscExtension: Extension() {
     override val name: String get() = "misc"
 
     override suspend fun setup() {
-        slashCommand {
+        hybridCommand {
             name = "ping"
             description = "Pings the bot"
-            autoAck = AutoAckType.PUBLIC
 
             action {
-                val (followUp, time) = measureTimedValue { publicFollowUp { content = "Pinging..." } }
-                followUp.edit {
+                val (message, time) = measureTimedValue {
+                    publicFollowUp {
+                        allowedMentions {}
+                        content = "Pinging..."
+                    }
+                }
+
+                message.edit {
                     content = "${time.inWholeMilliseconds}ms"
                 }
             }

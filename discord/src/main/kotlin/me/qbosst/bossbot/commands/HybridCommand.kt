@@ -19,28 +19,28 @@ open class HybridCommand<T: Arguments>(
 ): Command(extension), KoinComponent {
 
     /** Kord instance, backing the ExtensibleBot. **/
-    public val kord: Kord by inject()
+    val kord: Kord by inject()
 
     /**
      * @suppress
      */
-    public open lateinit var body: suspend HybridCommandContext<out T>.() -> Unit
+    open lateinit var body: suspend HybridCommandContext<out T>.() -> Unit
 
     /** Command description, as displayed on Discord. **/
-    public open lateinit var description: String
+    open lateinit var description: String
 
     /**
      * @suppress
      */
-    public open val checkList: MutableList<suspend (Event) -> Boolean> = mutableListOf()
+    open val checkList: MutableList<suspend (Event) -> Boolean> = mutableListOf()
 
     override val parser: ArgumentParser = ArgumentParser()
 
     /** Permissions required to be able to run this command. **/
-    public open val requiredPerms: MutableSet<Permission> = mutableSetOf()
+    open val requiredPerms: MutableSet<Permission> = mutableSetOf()
 
     /** If your bot requires permissions to be able to execute the command, add them using this function. **/
-    public fun requirePermissions(vararg perms: Permission) {
+    fun requirePermissions(vararg perms: Permission) {
         perms.forEach { requiredPerms.add(it) }
     }
 
@@ -49,7 +49,7 @@ open class HybridCommand<T: Arguments>(
      *
      * @param action The body of your command, which will be executed when your command is invoked.
      */
-    public open fun action(action: suspend HybridCommandContext<out T>.() -> Unit) {
+    open fun action(action: suspend HybridCommandContext<out T>.() -> Unit) {
         this.body = action
     }
 
@@ -64,7 +64,7 @@ open class HybridCommand<T: Arguments>(
      *
      * @param checks Checks to apply to this command.
      */
-    public open fun check(vararg checks: suspend (Event) -> Boolean) {
+    open fun check(vararg checks: suspend (Event) -> Boolean) {
         checks.forEach { checkList.add(it) }
     }
 
@@ -73,11 +73,11 @@ open class HybridCommand<T: Arguments>(
      *
      * @param check Check to apply to this command.
      */
-    public open fun check(check: suspend (Event) -> Boolean) {
+    open fun check(check: suspend (Event) -> Boolean) {
         checkList.add(check)
     }
 
-    public open fun toMessageCommand(): MessageCommand<T> {
+    open fun toMessageCommand(): MessageCommand<T> {
         val commandObj = MessageCommand(extension, arguments)
 
         commandObj.apply {
@@ -97,7 +97,7 @@ open class HybridCommand<T: Arguments>(
         return commandObj
     }
 
-    public open fun toSlashCommand(): SlashCommand<T> {
+    open fun toSlashCommand(): SlashCommand<T> {
         val commandObj = SlashCommand(extension, arguments)
 
         commandObj.apply {

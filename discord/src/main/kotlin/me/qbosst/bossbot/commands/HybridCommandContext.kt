@@ -13,17 +13,18 @@ import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.interaction.InteractionResponseBehavior
 import dev.kord.core.behavior.interaction.PublicInteractionResponseBehavior
+import dev.kord.core.cache.data.MessageData
 import dev.kord.core.entity.Guild
+import dev.kord.core.entity.Message
 
 open class HybridCommandContext<T: Arguments>(
     private val context: CommandContext
-
 ): CommandContext(context.command, context.eventObj, context.commandName, context.argsList) {
 
-    public open val kord: Kord get() = eventObj.kord
+    open val kord: Kord get() = eventObj.kord
 
     /** Message channel this command happened in, if any. **/
-    public open val channel: MessageChannelBehavior get() = when(context) {
+    open val channel: MessageChannelBehavior get() = when(context) {
         is SlashCommandContext<*> -> context.channel
         is MessageCommandContext<*> -> context.channel
 
@@ -31,7 +32,7 @@ open class HybridCommandContext<T: Arguments>(
     }
 
     /** Guild this command happened in, if any. **/
-    public open val guild: Guild? get() = when(context) {
+    open val guild: Guild? get() = when(context) {
         is SlashCommandContext<*> -> context.guild
         is MessageCommandContext<*> -> context.guild
 
@@ -39,7 +40,7 @@ open class HybridCommandContext<T: Arguments>(
     }
 
     /** Guild member responsible for executing this command, if any. **/
-    public open val member: MemberBehavior? get() = when(context) {
+    open val member: MemberBehavior? get() = when(context) {
         is SlashCommandContext<*> -> context.member
         is MessageCommandContext<*> -> context.member
 
@@ -47,7 +48,7 @@ open class HybridCommandContext<T: Arguments>(
     }
 
     /** User responsible for executing this command, if any (if `null`, it's a webhook). **/
-    public open val user: UserBehavior? get() = when(context) {
+    open val user: UserBehavior? get() = when(context) {
         is SlashCommandContext<*> -> context.user
         is MessageCommandContext<*> -> context.user
 
@@ -55,15 +56,16 @@ open class HybridCommandContext<T: Arguments>(
     }
 
     /** Message object containing this command invocation. **/
-    public open val message: MessageBehavior? get() = when(context) {
+    open val message: MessageBehavior? get() = when(context) {
         is SlashCommandContext<*> -> null
         is MessageCommandContext<*> -> context.message
 
         else -> error("Unknown context type provided")
     }
 
+    /** Arguments object containing this command's parsed arguments. **/
     @Suppress("UNCHECKED_CAST")
-    public val arguments: T get() = when(context) {
+    val arguments: T get() = when(context) {
         is SlashCommandContext<*> -> context.arguments as T
         is MessageCommandContext<*> -> context.arguments as T
 
@@ -81,17 +83,17 @@ open class HybridCommandContext<T: Arguments>(
      *
      * @param ephemeral Whether this should be an ephemeral acknowledgement or not.
      */
-    public suspend fun ack(ephemeral: Boolean): InteractionResponseBehavior =
+    private suspend fun ack(ephemeral: Boolean): InteractionResponseBehavior =
         (context as SlashCommandContext<*>).ack(ephemeral)
 
-    public suspend fun publicFollowUp(
+    suspend fun publicFollowUp(
         builder: PublicHybridMessageCreateBuilder.() -> Unit
-    ) {
+    ): Message {
         val messageBuilder = PublicHybridMessageCreateBuilder().apply(builder)
 
-        when(context) {
+        val response = when(context) {
             is SlashCommandContext<*> -> {
-                val interaction = (ack(false) as PublicInteractionResponseBehavior)
+                val interaction = ack(false) as PublicInteractionResponseBehavior
 
                 kord.rest.interaction.createFollowupMessage(
                     interaction.applicationId,
@@ -99,6 +101,7 @@ open class HybridCommandContext<T: Arguments>(
                     messageBuilder.toSlashRequest()
                 )
             }
+
             is MessageCommandContext<*> -> {
                 val messageId = message?.id
 
@@ -110,7 +113,11 @@ open class HybridCommandContext<T: Arguments>(
                     }
                 )
             }
+            else -> error("Unknown context type provided")
         }
+
+        val data = MessageData.from(response)
+        return Message(data, kord)
     }
 
     override suspend fun getChannel(): ChannelBehavior? = context.getChannel()
