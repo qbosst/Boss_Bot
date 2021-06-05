@@ -14,10 +14,6 @@ class MiscExtension: Extension() {
             name = "ping"
             description = "Pings the bot"
 
-            slashSettings {
-                autoAck = AutoAckType.PUBLIC
-            }
-
             action {
                 val (message, time) = measureTimedValue {
                     publicFollowUp {
@@ -31,5 +27,7 @@ class MiscExtension: Extension() {
                 }
             }
         }
+
+        slashCommand {  }
     }
 }

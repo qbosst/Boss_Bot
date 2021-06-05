@@ -3,7 +3,6 @@ package me.qbosst.bossbot.commands
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
@@ -12,14 +11,12 @@ import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.behavior.interaction.InteractionResponseBehavior
-import dev.kord.core.behavior.interaction.PublicInteractionResponseBehavior
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 
 open class HybridCommandContext<T: Arguments>(
-    private val context: CommandContext
+    val context: CommandContext
 ): CommandContext(context.command, context.eventObj, context.commandName, context.argsList) {
 
     open val kord: Kord get() = eventObj.kord
@@ -73,21 +70,7 @@ open class HybridCommandContext<T: Arguments>(
         else -> error("Unknown context type provided")
     }
 
-
-    /**
-     * Send an acknowledgement manually, assuming you have `autoAck` set to `NONE`.
-     *
-     * Note that what you supply for `ephemeral` will decide how the rest of your interactions - both responses and
-     * follow-ups. They must match in ephemeral state.
-     *
-     * This function will throw an exception if an acknowledgement or response has already been sent.
-     *
-     * @param ephemeral Whether this should be an ephemeral acknowledgement or not.
-     */
-    private suspend fun ack(ephemeral: Boolean): InteractionResponseBehavior =
-        (context as SlashCommandContext<*>).ack(ephemeral)
-
-    suspend fun publicFollowUp(
+    suspend inline fun publicFollowUp(
         builder: PublicHybridMessageCreateBuilder.() -> Unit
     ): Message {
         val messageBuilder = PublicHybridMessageCreateBuilder().apply(builder)
@@ -95,7 +78,7 @@ open class HybridCommandContext<T: Arguments>(
         val response = when(context) {
             is SlashCommandContext<*> -> {
                 val interaction = when(context.acked) {
-                    false -> ack(false) as PublicInteractionResponseBehavior
+                    false -> context.ack(false)
                     else -> context.interactionResponse!!
                 }
 

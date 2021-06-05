@@ -8,6 +8,7 @@ import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
+import me.qbosst.bossbot.util.cache.hybridCommand
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.random.Random
@@ -27,17 +28,16 @@ class CasinoExtension: Extension() {
     }
 
     override suspend fun setup() {
-        slashCommand(::CoinFlipArgs) {
+        hybridCommand(::CoinFlipArgs) {
             name = "coinflip"
             description = "Flips a coin and allows you to bet on the outcome"
-            autoAck = AutoAckType.PUBLIC
 
             action {
                 val flippedSide = CoinFlipArgs.CoinSide.values().random()
                 val opponent = arguments.opponent
+                val user = user!!
 
                 publicFollowUp {
-
                     newSuspendedTransaction {
                         val authorDAO = user.getUserDAO(this)
 

@@ -57,13 +57,13 @@ class EconomyExtension: Extension() {
             }
         }
 
-        slashCommand(::StealArgs) {
+        hybridCommand(::StealArgs) {
             name = "steal"
             description = "Steals Boss Tokens from a user."
-            autoAck = AutoAckType.PUBLIC
 
             action {
                 val target = arguments.member
+                val user = user!!
 
                 if(target.id == user.id) {
                     publicFollowUp {
@@ -101,13 +101,13 @@ class EconomyExtension: Extension() {
             }
         }
 
-        slashCommand(::SendArgs) {
+        hybridCommand(::SendArgs) {
             name = "send"
             description = "Sends tokens to another user"
-            autoAck = AutoAckType.PUBLIC
 
             action {
                 val target = arguments.member.asUser()
+                val user = user!!
 
                 if(target.id == user.id) {
                     publicFollowUp {
@@ -134,14 +134,15 @@ class EconomyExtension: Extension() {
             }
         }
 
-        slashCommand {
+        hybridCommand {
             name = "daily"
             description = "Claims your daily tokens"
-            autoAck = AutoAckType.PUBLIC
 
             // TODO: wait for cooldown pr
 
             action {
+                val user = user!!
+
                 newSuspendedTransaction {
                     user.getUserDAO(this).insertOrUpdate(this, user.idLong) {
                         tokens += 200
@@ -154,14 +155,15 @@ class EconomyExtension: Extension() {
             }
         }
 
-        slashCommand {
+        hybridCommand {
             name = "weekly"
             description = "Claims your weekly tokens"
-            autoAck = AutoAckType.PUBLIC
 
             // TODO: wait for cooldown pr
 
             action {
+                val user = user!!
+
                 newSuspendedTransaction {
                     user.getUserDAO(this).insertOrUpdate(this, user.idLong) {
                         tokens += 2000

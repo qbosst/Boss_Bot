@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.commands
 
+import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.Command
 import com.kotlindiscord.kord.extensions.commands.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.parser.ArgumentParser
@@ -8,7 +9,9 @@ import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.entity.Permission
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.event.Event
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -18,13 +21,36 @@ open class HybridCommand<T: Arguments>(
     open val arguments :(() -> T)? = null
 ): Command(extension), KoinComponent {
 
-    open class SlashSettings(
+    private val settings: ExtensibleBotBuilder by inject()
+
+    /** Kord instance, backing the ExtensibleBot. **/
+    val kord: Kord by inject()
+
+    open inner class SlashSettings {
         /** Type of automatic ack to use, if any. **/
         open var autoAck: AutoAckType = AutoAckType.NONE
-    )
 
-    open class MessageSettings(
 
+        /** Guild ID this slash command is to be registered for, if any. **/
+        open var guild: Snowflake? = settings.slashCommandsBuilder.defaultGuild
+
+        /** Specify a specific guild for this slash command. **/
+        open fun guild(guild: Snowflake) {
+            this.guild = guild
+        }
+
+        /** Specify a specific guild for this slash command. **/
+        open fun guild(guild: Long) {
+            this.guild = Snowflake(guild)
+        }
+
+        /** Specify a specific guild for this slash command. **/
+        open fun guild(guild: GuildBehavior) {
+            this.guild = guild.id
+        }
+    }
+
+    open inner class MessageSettings {
         /**
          * Whether this command is enabled and can be invoked.
          *
@@ -33,7 +59,7 @@ open class HybridCommand<T: Arguments>(
          * This can be changed at runtime, if commands need to be enabled and disabled dynamically without being
          * reconstructed.
          */
-        open var enabled: Boolean = true,
+        open var enabled: Boolean = true
 
 
         /**
@@ -41,7 +67,7 @@ open class HybridCommand<T: Arguments>(
          *
          * By default, this is `false` - so the command will be shown.
          */
-        open var hidden: Boolean = false,
+        open var hidden: Boolean = false
 
 
         /**
@@ -51,10 +77,7 @@ open class HybridCommand<T: Arguments>(
          * the [name] of a registered command, the command with the [name] takes priority.
          */
         open var aliases: Array<String> = arrayOf()
-    )
-
-    /** Kord instance, backing the ExtensibleBot. **/
-    val kord: Kord by inject()
+    }
 
     val slashSettings: SlashSettings = SlashSettings()
 
@@ -161,6 +184,7 @@ open class HybridCommand<T: Arguments>(
             checkList.addAll(this@HybridCommand.checkList)
 
             autoAck = settings.autoAck
+            guild = settings.guild
 
             action {
                 val context = HybridCommandContext<T>(this)
