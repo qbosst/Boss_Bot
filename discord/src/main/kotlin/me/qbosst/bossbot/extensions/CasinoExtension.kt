@@ -1,11 +1,10 @@
 package me.qbosst.bossbot.extensions
 
-import com.kotlindiscord.kord.extensions.commands.converters.impl.enum
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
+import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.cache.hybridCommand
@@ -22,7 +21,7 @@ class CasinoExtension: Extension() {
             TAILS("tails")
         }
 
-        val betSide by enum<CoinSide>("coin-side", "The coin side you predict it will land on", "heads, tails")
+        val betSide by enumChoice<CoinSide>("coin-side", "The coin side you predict it will land on", "heads, tails")
         val betAmount by int("bet-amount", "The amount of tokens you want to bet", validator = positiveInt())
         val opponent by optionalMember("user", "The user you want to bet against", outputError = true)
     }

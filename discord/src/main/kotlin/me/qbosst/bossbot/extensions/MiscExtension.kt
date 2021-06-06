@@ -27,7 +27,5 @@ class MiscExtension: Extension() {
                 }
             }
         }
-
-        slashCommand {  }
     }
 }
