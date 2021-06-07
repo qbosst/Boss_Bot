@@ -97,15 +97,14 @@ class PublicHybridMessageCreateBuilder :
         files
     )
 
-    override fun toSlashRequest(): MultipartFollowupMessageCreateRequest =
-        MultipartFollowupMessageCreateRequest(
-            FollowupMessageCreateRequest(
-                content = _content,
-                tts = _tts,
-                embeds = if(_embed.value == null) Optional.Missing() else _embed.map { listOf(it.toRequest()) },
-                allowedMentions = _allowedMentions.map { it.build() }
-            ),
-            files
-        )
+    override fun toSlashRequest(): MultipartFollowupMessageCreateRequest = MultipartFollowupMessageCreateRequest(
+        FollowupMessageCreateRequest(
+            content = _content,
+            tts = _tts,
+            embeds = if(_embed.value == null) Optional.Missing() else _embed.map { listOf(it.toRequest()) },
+            allowedMentions = _allowedMentions.map { it.build() }
+        ),
+        files
+    )
 
 }

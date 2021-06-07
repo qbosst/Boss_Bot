@@ -11,13 +11,14 @@ import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.converters.*
 import com.kotlindiscord.kord.extensions.commands.parser.Argument
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import dev.kord.core.entity.channel.Channel
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import kotlinx.datetime.TimeZone
 import me.qbosst.bossbot.util.findZones
 
 class TimeZoneConverter(
-    override var validator: (suspend Argument<*>.(TimeZone) -> Unit)? = null,
+    override var validator: Validator<TimeZone> = null
 ): SingleConverter<TimeZone>() {
 
     override val signatureTypeString: String = "timeZone"
@@ -51,7 +52,7 @@ class TimeZoneConverter(
 public fun Arguments.timeZone(
     displayName: String,
     description: String,
-    validator: (suspend Argument<*>.(TimeZone) -> Unit)? = null,
+    validator: Validator<TimeZone> = null,
 ): SingleConverter<TimeZone> =
     arg(displayName, description, TimeZoneConverter(validator))
 
@@ -64,7 +65,7 @@ public fun Arguments.optionalTimeZone(
     displayName: String,
     description: String,
     outputError: Boolean = false,
-    validator: (suspend Argument<*>.(TimeZone?) -> Unit)? = null,
+    validator: Validator<TimeZone?> = null,
 ): OptionalConverter<TimeZone?> =
     arg(
         displayName,
@@ -82,7 +83,7 @@ public fun Arguments.defaultingTimeZone(
     displayName: String,
     description: String,
     defaultValue: TimeZone,
-    validator: (suspend Argument<*>.(TimeZone) -> Unit)? = null,
+    validator: Validator<TimeZone> = null,
 ): DefaultingConverter<TimeZone> =
     arg(
         displayName,
@@ -102,7 +103,7 @@ public fun Arguments.timeZoneList(
     displayName: String,
     description: String,
     required: Boolean = true,
-    validator: (suspend Argument<*>.(List<TimeZone>) -> Unit)? = null,
+    validator: Validator<List<TimeZone>> = null,
 ): MultiConverter<TimeZone> =
     arg(
         displayName,

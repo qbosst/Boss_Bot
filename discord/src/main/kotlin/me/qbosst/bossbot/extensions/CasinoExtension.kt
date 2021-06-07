@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.extensions
 
+import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
@@ -36,6 +37,8 @@ class CasinoExtension: Extension() {
         hybridCommand(::CoinFlipArgs) {
             name = "coinflip"
             description = "Flips a coin and allows you to bet on the outcome"
+
+            check(::anyGuild)
 
             action {
                 val flippedSide = CoinFlipArgs.CoinSide.values().random()

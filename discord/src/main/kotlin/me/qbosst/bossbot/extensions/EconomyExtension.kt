@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.extensions
 
+import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
@@ -69,6 +70,8 @@ class EconomyExtension: Extension() {
             name = "steal"
             description = "Steals Boss Tokens from a user."
 
+            check(::anyGuild)
+
             action {
                 val target = arguments.member
                 val user = user!!
@@ -105,6 +108,8 @@ class EconomyExtension: Extension() {
         hybridCommand(::SendArgs) {
             name = "send"
             description = "Sends tokens to another user"
+
+            check(::anyGuild)
 
             action {
                 val target = arguments.member.asUser()
