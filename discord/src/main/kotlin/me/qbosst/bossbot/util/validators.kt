@@ -12,7 +12,7 @@ fun Arguments.positiveInt(): Validator<Int> = { arg, int ->
 }
 
 fun Arguments.notAuthor(errorMessage: String): Validator<Member?> = { _, member ->
-    if(member != null && member.id != getUser()?.id) {
+    if(member != null && member.id == getUser()?.id) {
         throw CommandException(errorMessage)
     }
 }
