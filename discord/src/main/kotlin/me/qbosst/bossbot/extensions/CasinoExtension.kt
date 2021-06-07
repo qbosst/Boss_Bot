@@ -7,6 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
+import me.qbosst.bossbot.util.notAuthor
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -23,7 +24,12 @@ class CasinoExtension: Extension() {
 
         val betSide by enumChoice<CoinSide>("coin-side", "The coin side you predict it will land on", "heads, tails")
         val betAmount by int("bet-amount", "The amount of tokens you want to bet", validator = positiveInt())
-        val opponent by optionalMember("user", "The user you want to bet against", outputError = true)
+        val opponent by optionalMember(
+            "opponent",
+            "The user you want to bet against",
+            outputError = true,
+            validator = notAuthor("You cannot bet against yourself.")
+        )
     }
 
     override suspend fun setup() {

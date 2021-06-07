@@ -47,6 +47,8 @@ suspend fun main() = try {
             add(::LoggerExtension)
 
             help {
+
+
                 colour {
                     when(guildId) {
                         null ->

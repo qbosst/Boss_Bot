@@ -8,6 +8,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate
 import me.qbosst.bossbot.events.UserVoteEvent
+import me.qbosst.bossbot.util.notAuthor
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.idLong
 import me.qbosst.bossbot.util.positiveInt
@@ -23,12 +24,20 @@ class EconomyExtension: Extension() {
     }
 
     class StealArgs: Arguments() {
-        val member by member("user", "The user who you want to steal from")
+        val member by member(
+            "user",
+            "The user who you want to steal from",
+            validator = notAuthor("You cannot steal from yourself.")
+        )
     }
 
     class SendArgs: Arguments() {
         val amount by int("amount", "The amount of tokens you want to send", validator = positiveInt())
-        val member by member("user", "The user you want to send tokens to")
+        val member by member(
+            "user",
+            "The user you want to send tokens to",
+            validator = notAuthor("You cannot send tokens to yourself.")
+        )
     }
 
     override suspend fun setup() {
@@ -63,13 +72,6 @@ class EconomyExtension: Extension() {
             action {
                 val target = arguments.member
                 val user = user!!
-
-                if(target.id == user.id) {
-                    publicFollowUp {
-                        content = "You cannot steal from yourself."
-                    }
-                    return@action
-                }
 
                 newSuspendedTransaction {
                     val targetDAO = target.getUserDAO(this)
@@ -107,13 +109,6 @@ class EconomyExtension: Extension() {
             action {
                 val target = arguments.member.asUser()
                 val user = user!!
-
-                if(target.id == user.id) {
-                    publicFollowUp {
-                        content = "You cannot create a bet against yourself."
-                    }
-                    return@action
-                }
 
                 newSuspendedTransaction {
                     val authorDAO = user.getUserDAO(this)
