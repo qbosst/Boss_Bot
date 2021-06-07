@@ -4,7 +4,8 @@ import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.utils.*
+import com.kotlindiscord.kord.extensions.utils.downloadToFile
+import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createEmbed

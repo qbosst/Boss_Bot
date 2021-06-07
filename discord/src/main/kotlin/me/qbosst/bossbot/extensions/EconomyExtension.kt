@@ -4,7 +4,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate

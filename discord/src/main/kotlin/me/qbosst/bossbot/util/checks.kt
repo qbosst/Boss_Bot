@@ -4,9 +4,7 @@ import com.kotlindiscord.kord.extensions.checks.CheckFun
 import com.kotlindiscord.kord.extensions.checks.failed
 import com.kotlindiscord.kord.extensions.checks.passed
 import com.kotlindiscord.kord.extensions.checks.userFor
-import com.kotlindiscord.kord.extensions.utils.isNullOrBot
 import dev.kord.core.event.Event
-import dev.kord.core.event.message.MessageCreateEvent
 import mu.KotlinLogging
 
 fun isUser(vararg ids: Long): CheckFun {

@@ -2,10 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.env
-import com.kotlindiscord.kord.extensions.utils.getJumpUrl
-import com.kotlindiscord.kord.extensions.utils.getUrl
 import com.kotlindiscord.kord.extensions.utils.users
-import dev.kord.core.Kord
 import dev.kord.core.behavior.reply
 import kotlinx.coroutines.flow.count
 import me.qbosst.bossbot.util.isUser

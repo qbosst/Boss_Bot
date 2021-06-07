@@ -1,6 +1,5 @@
 package me.qbosst.bossbot.extensions
 
-import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.core.behavior.edit
 import me.qbosst.bossbot.util.cache.hybridCommand

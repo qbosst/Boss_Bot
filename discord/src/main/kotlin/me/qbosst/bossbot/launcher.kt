@@ -4,7 +4,6 @@ import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.utils.env
-import com.kotlindiscord.kord.extensions.utils.getTopRole
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.cache.map.MapLikeCollection
 import dev.kord.common.Color
