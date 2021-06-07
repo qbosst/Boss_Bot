@@ -1,6 +1,7 @@
 package me.qbosst.bossbot
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.getTopRole
@@ -20,7 +21,6 @@ import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
-import me.qbosst.bossbot.util.defaultMessageCommandCheck
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.mapLikeCollection
 import mu.KLogger
@@ -66,7 +66,7 @@ suspend fun main() = try {
                 message.getGuildOrNull()?.getGuildDAO()?.prefix ?: defaultPrefix
             }
 
-            check(::defaultMessageCommandCheck)
+            check(::isNotBot)
         }
 
         slashCommands {

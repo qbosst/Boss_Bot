@@ -2,6 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.guildFor
+import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.entity.Snowflake
@@ -23,7 +24,6 @@ import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.util.cache.AbstractMapLikeCollection
 import me.qbosst.bossbot.util.cache.FixedCache
 import me.qbosst.bossbot.util.idLong
-import me.qbosst.bossbot.util.isNotBot
 import me.qbosst.bossbot.util.zeroWidthIfBlank
 import mu.KLogger
 import mu.KotlinLogging
