@@ -18,7 +18,7 @@ fun isUser(vararg ids: Long): CheckFun {
                 logger.failed("This event does not have a user associated.")
                 false
             }
-            ids.none { it == user.id.value } -> {
+            ids.none { it == user.idLong } -> {
                 logger.failed("The user's id did not match any of the ids given")
                 false
             }

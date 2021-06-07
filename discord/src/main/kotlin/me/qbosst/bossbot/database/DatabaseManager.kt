@@ -24,7 +24,7 @@ class DatabaseManager(
                 SchemaUtils.createMissingTablesAndColumns(table)
 
                 if(table is InitTable) {
-                    table.init()
+                    table.init(this)
                 }
             }
         }
