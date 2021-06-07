@@ -1,8 +1,9 @@
-package me.qbosst.bossbot.util.cache
+package me.qbosst.bossbot.util
 
 import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kord.core.event.Event
 import me.qbosst.bossbot.commands.HybridCommand
 
 @ExtensionDSL
@@ -40,4 +41,18 @@ public suspend fun Extension.hybridCommand(
     slashCommand(slashCommandObj)
 
     return hybridCommandObj
+}
+
+@ExtensionDSL
+public fun Extension.hybridCheck(
+    body: suspend (Event) -> Boolean
+) {
+    commandChecks.add(body)
+    slashCommandChecks.add(body)
+}
+
+@ExtensionDSL
+public fun Extension.hybridCheck(vararg checks: suspend (Event) -> Boolean) {
+    commandChecks.addAll(checks)
+    slashCommandChecks.addAll(checks)
 }

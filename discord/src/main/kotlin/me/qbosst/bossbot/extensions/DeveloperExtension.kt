@@ -5,13 +5,16 @@ import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.users
 import dev.kord.core.behavior.reply
 import kotlinx.coroutines.flow.count
+import me.qbosst.bossbot.util.hybridCheck
 import me.qbosst.bossbot.util.isUser
+
+private val developerId = env("discord.developer_id")!!.toLong()
 
 class DeveloperExtension: Extension() {
     override val name: String get() = "developer"
 
     override suspend fun setup() {
-        check(isUser(env("discord.developer_id")!!.toLong()))
+        hybridCheck(isUser(developerId))
 
         command {
             name = "botstatistics"

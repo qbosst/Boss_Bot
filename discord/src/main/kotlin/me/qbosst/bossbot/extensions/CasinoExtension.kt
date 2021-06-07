@@ -7,7 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
-import me.qbosst.bossbot.util.cache.hybridCommand
+import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.random.Random

@@ -2,7 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.core.behavior.edit
-import me.qbosst.bossbot.util.cache.hybridCommand
+import me.qbosst.bossbot.util.hybridCommand
 import kotlin.time.measureTimedValue
 
 class MiscExtension: Extension() {
