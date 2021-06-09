@@ -174,17 +174,5 @@ class EconomyExtension: Extension() {
                 }
             }
         }
-
-        event<UserVoteEvent> {
-            action {
-                val user = event.getUser()
-
-                newSuspendedTransaction {
-                    user?.getUserDAO(this).insertOrUpdate(this, event.userId) {
-                        tokens += 150
-                    }
-                }
-            }
-        }
     }
 }

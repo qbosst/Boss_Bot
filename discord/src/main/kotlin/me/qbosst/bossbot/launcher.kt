@@ -23,6 +23,7 @@ import me.qbosst.bossbot.database.tables.GuildsTable
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
+import me.qbosst.bossbot.extensions.vote.VoteExtension
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.mapLikeCollection
 import mu.KLogger
@@ -53,6 +54,7 @@ suspend fun main() = try {
             add(::MiscExtension)
             add(::LoggerExtension)
             add(::SpaceSpeakExtension)
+            add(::VoteExtension)
 
             help {
                 colour {
