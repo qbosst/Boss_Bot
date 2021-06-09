@@ -18,6 +18,7 @@ import me.qbosst.bossbot.database.dao.Guild
 import me.qbosst.bossbot.database.dao.User
 import me.qbosst.bossbot.database.dao.getGuildDAO
 import me.qbosst.bossbot.database.tables.GuildsTable
+import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.database.tables.UsersTable
 import me.qbosst.bossbot.extensions.*
 import me.qbosst.bossbot.util.getColour
@@ -45,6 +46,7 @@ suspend fun main() = try {
             add(::CasinoExtension)
             add(::MiscExtension)
             add(::LoggerExtension)
+            add(::SpaceSpeakExtension)
 
             help {
 
@@ -77,7 +79,7 @@ suspend fun main() = try {
         }
 
         hooks {
-            setup {
+            created {
                 // database module
                 loadModule {
                     single {
@@ -89,6 +91,7 @@ suspend fun main() = try {
                             tables {
                                 add(UsersTable)
                                 add(GuildsTable)
+                                add(SpaceSpeakTable)
                             }
                         }
                     } bind DatabaseManager::class
@@ -102,7 +105,7 @@ suspend fun main() = try {
                 }
             }
 
-            beforeStart {
+            beforeExtensionsAdded {
                 // initialize database tables
                 getKoin().get<DatabaseManager>().init()
             }

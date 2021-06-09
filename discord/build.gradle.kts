@@ -41,6 +41,7 @@ dependencies {
 
     // local dependency of SpaceSpeak API. Cannot be published open source (yet).
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.1.jar"))
+    implementation("io.ktor:ktor-client-logging:1.6.0")
 
 }
 
