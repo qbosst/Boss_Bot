@@ -26,6 +26,7 @@ import me.qbosst.bossbot.extensions.*
 import me.qbosst.bossbot.extensions.vote.VoteExtension
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.mapLikeCollection
+import me.qbosst.bossbot.util.random
 import mu.KLogger
 import mu.KotlinLogging
 import org.koin.dsl.bind
@@ -60,9 +61,9 @@ suspend fun main() = try {
                 colour {
                     when(guildId) {
                         null ->
-                            Color((0x000000..0xffffff).random()) // TODO: get bot pfp most dominant colour
+                            Color.random() // TODO: get bot pfp most dominant colour
                         else ->
-                            kord.getSelf().asMember(guildId!!).getColour() ?: Color((0x000000..0xffffff).random())
+                            kord.getSelf().asMemberOrNull(guildId!!)?.getColour() ?: Color.random()
                     }
                 }
             }

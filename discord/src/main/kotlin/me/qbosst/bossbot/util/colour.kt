@@ -160,3 +160,5 @@ val Colour.Companion.LIGHT_SLATE_GRAY get() =  Colour(0x778899)
 val Colour.Companion.SLATE_GRAY get() =  Colour(0x708090)
 val Colour.Companion.DARK_SLATE_GRAY get() =  Colour(0x2F4F4F)
 val Colour.Companion.BLACK get() =  Colour(0x000000)
+
+fun Colour.Companion.random(): Colour = Colour((0x000000..0xffffff).random())

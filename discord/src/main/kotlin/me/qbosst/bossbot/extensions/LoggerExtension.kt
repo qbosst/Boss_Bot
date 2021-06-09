@@ -6,6 +6,7 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.downloadToFile
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
+import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.createEmbed
@@ -22,6 +23,8 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import me.qbosst.bossbot.database.dao.getGuildDAO
+import me.qbosst.bossbot.util.LIGHT_CORAL
+import me.qbosst.bossbot.util.SANDY_BROWN
 import me.qbosst.bossbot.util.cache.AbstractMapLikeCollection
 import me.qbosst.bossbot.util.cache.FixedCache
 import me.qbosst.bossbot.util.idLong
@@ -131,7 +134,7 @@ class LoggerExtension: Extension() {
                         text = "Message ID: ${newMessage.idLong} | User ID: ${author.idLong}"
                     }
 
-                    // TODO: add colour
+                    color = Color.SANDY_BROWN
                     timestamp = Clock.System.now()
                 }
             }
@@ -178,7 +181,7 @@ class LoggerExtension: Extension() {
                                 }
                             }
 
-                            // TODO: add colour
+                            color = Color.LIGHT_CORAL
                             timestamp = Clock.System.now()
                         }
 
