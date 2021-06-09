@@ -1,10 +1,9 @@
 package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.CommandException
-import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
-import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingInt
-import com.kotlindiscord.kord.extensions.commands.converters.impl.long
+import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.env
 import dev.kord.common.entity.Snowflake
@@ -22,10 +21,7 @@ import me.qbosst.bossbot.util.idLong
 import me.qbosst.spacespeak.SpaceSpeakAPI
 import me.qbosst.spacespeak.entity.Product
 import me.qbosst.spacespeak.functions.GetMessageResponse
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.concurrent.ConcurrentHashMap
@@ -68,7 +64,8 @@ class SpaceSpeakExtension: Extension() {
     }
 
     class SpaceSpeakRecentArgs: Arguments() {
-        val pageNumber by defaultingInt("page-number", "The page number", 0)
+        val pageNumber by defaultingLong("page-number", "The page number", 0)
+        val member by optionalMember("user", "The messages you want to see from this user")
     }
 
     private suspend fun getProducts() = when(::products.isInitialized) {
@@ -150,6 +147,7 @@ class SpaceSpeakExtension: Extension() {
             subCommand(::SpaceSpeakSendArgs) {
                 name = "send"
                 description = "Sends your message into outer space"
+                slashSettings { autoAck = AutoAckType.PUBLIC }
 
                 action {
                     val product = getProducts().first()
@@ -236,7 +234,7 @@ class SpaceSpeakExtension: Extension() {
                 name = "recent"
                 description = "Displays recent messages that have been sent to space from other Discord users"
 
-                val maxPerPage = 3
+                val maxPerPage: Long = 3
 
                 fun EmbedBuilder.addRecord(data: GetMessageResponse, isFirst: Boolean) {
                     field(if(isFirst) "Message ID" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
@@ -253,36 +251,42 @@ class SpaceSpeakExtension: Extension() {
                 }
 
                 action {
-                    val count = messages.count()
+                    val (pageNumber: Long, maxPages: Long, messages: List<GetMessageResponse>) = transaction {
+                        val query = when(val userId = arguments.member?.idLong) {
+                            null -> SpaceSpeakTable.selectAll()
+                            else -> SpaceSpeakTable.select { SpaceSpeakTable.userId.eq(userId) }
+                        }.orderBy(SpaceSpeakTable.id, order = SortOrder.DESC)
 
-                    val maxPages = (count / maxPerPage).let { when {
-                        count % maxPerPage == 0 && it > 0 -> it-1
-                        else -> it
-                    } }
+                        val count = query.count()
 
-                    val pageNumber = (arguments.pageNumber-1).coerceIn(0, maxPages)
+                        val maxPages = (count / maxPerPage).let { when {
+                            count % maxPerPage == 0L && it > 0 -> it-1
+                            else -> it
+                        } }
+
+                        val pageNumber = (arguments.pageNumber-1).coerceIn(0, maxPages)
+
+                        val messages = SpaceSpeakMessage.wrapRows(
+                            query.limit(maxPerPage.toInt(), offset = (maxPerPage * pageNumber))
+                        ).map { it.getData() }
+
+                        Triple(pageNumber, maxPages, messages)
+                    }
 
                     publicSpaceSpeakFollowUp {
-                        footer { text = "Page ${pageNumber+1} / ${maxPages+1}" }
-
-                        val messages = transaction {
-                            SpaceSpeakMessage.wrapRows(
-                                SpaceSpeakTable.selectAll()
-                                    .orderBy(SpaceSpeakTable.id, order = SortOrder.DESC)
-                                    .limit(maxPerPage, offset = (maxPerPage * pageNumber).toLong())
-                            ).map { it.getData() }
-                        }
-
                         var isFirst = true
                         messages.forEach { message ->
                             addRecord(message, isFirst)
                             isFirst = false
                         }
+
+                        footer { text = "Page ${pageNumber+1} / ${maxPages+1}" }
                     }
                 }
             }
         }
 
+        getProducts() // initialize products
         messagesJob.await()
     }
 }
