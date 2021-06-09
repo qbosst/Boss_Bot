@@ -2,6 +2,7 @@ package me.qbosst.bossbot.commands
 
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.Command
+import com.kotlindiscord.kord.extensions.commands.GroupCommand
 import com.kotlindiscord.kord.extensions.commands.MessageCommand
 import com.kotlindiscord.kord.extensions.commands.parser.ArgumentParser
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
@@ -13,12 +14,16 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.event.Event
+import mu.KotlinLogging
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+private val logger = KotlinLogging.logger("me.qbosst.bossbot.commands.HybridCommand")
+
 open class HybridCommand<T: Arguments>(
     extension: Extension,
-    open val arguments :(() -> T)? = null
+    open val arguments :(() -> T)? = null,
+    open val parentCommand: HybridCommand<out Arguments>? = null,
 ): Command(extension), KoinComponent {
 
     private val settings: ExtensibleBotBuilder by inject()
@@ -82,6 +87,8 @@ open class HybridCommand<T: Arguments>(
     val slashSettings: SlashSettings = SlashSettings()
 
     val messageSettings: MessageSettings = MessageSettings()
+
+    val subCommands: MutableList<HybridCommand<out Arguments>> = mutableListOf()
 
     /**
      * @suppress
@@ -147,8 +154,62 @@ open class HybridCommand<T: Arguments>(
         checkList.add(check)
     }
 
+
+    /**
+     * DSL function for easily registering a subcommand, with arguments.
+     *
+     * Use this in your setup function to register a subcommand that may be executed on Discord.
+     *
+     * @param arguments Arguments builder (probably a reference to the class constructor).
+     * @param body Builder lambda used for setting up the hybrid command object.
+     */
+    open suspend fun <T : Arguments> subCommand(
+        arguments: (() -> T),
+        body: suspend HybridCommand<T>.() -> Unit
+    ): HybridCommand<T> {
+        val commandObj = HybridCommand(this.extension, arguments, this)
+        body.invoke(commandObj)
+
+        return subCommand(commandObj)
+    }
+
+    /**
+     * DSL function for easily registering a subcommand, without arguments.
+     *
+     * Use this in your hybrid command function to register a subcommand that may be executed on Discord.
+     *
+     * @param body Builder lambda used for setting up the subcommand object.
+     */
+    open suspend fun subCommand(
+        body: suspend HybridCommand<out Arguments>.() -> Unit
+    ): HybridCommand<out Arguments> {
+        val commandObj = HybridCommand<Arguments>(this.extension, null, this)
+        body.invoke(commandObj)
+
+        return subCommand(commandObj)
+    }
+
+
+    /**
+     * Function for registering a custom hybrid command object, for subcommands.
+     *
+     * You can use this if you have a custom hybrid command subclass you need to register.
+     *
+     * @param commandObj SlashCommand object to register as a subcommand.
+     */
+    open suspend fun <T : Arguments> subCommand(
+        commandObj: HybridCommand<T>
+    ): HybridCommand<T> {
+        subCommands.add(commandObj)
+
+        return commandObj
+    }
+
     open fun toMessageCommand(): MessageCommand<T> {
-        val commandObj = MessageCommand(extension, arguments)
+        val commandObj = when(subCommands.isEmpty()) {
+            true -> MessageCommand(extension, arguments)
+            false -> GroupCommand(extension, arguments)
+        }
         val settings = messageSettings
 
         commandObj.apply {
@@ -166,6 +227,12 @@ open class HybridCommand<T: Arguments>(
                 val context = HybridCommandContext<T>(this)
 
                 this@HybridCommand.body.invoke(context)
+            }
+
+            if(this is GroupCommand) {
+                commands.addAll(
+                    this@HybridCommand.subCommands.map { it.toMessageCommand() }
+                )
             }
         }
 
@@ -186,10 +253,25 @@ open class HybridCommand<T: Arguments>(
             autoAck = settings.autoAck
             guild = settings.guild
 
-            action {
-                val context = HybridCommandContext<T>(this)
+            when(this@HybridCommand.subCommands.isEmpty()) {
+                false -> {
+                    if(this@HybridCommand::body.isInitialized) {
+                        logger.warn {
+                            "Command action and subcommands/groups given, but slash commands may not have an action if" +
+                                    " they have a subcommand or group."
+                        }
+                    }
 
-                this@HybridCommand.body.invoke(context)
+                    subCommands.addAll(
+                        this@HybridCommand.subCommands.map { it.toSlashCommand() }
+                    )
+                }
+
+                true -> action {
+                    val context = HybridCommandContext<T>(this)
+
+                    this@HybridCommand.body.invoke(context)
+                }
             }
         }
 

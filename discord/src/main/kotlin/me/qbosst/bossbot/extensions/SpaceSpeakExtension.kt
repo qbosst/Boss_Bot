@@ -2,6 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.CommandException
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingInt
 import com.kotlindiscord.kord.extensions.commands.converters.impl.long
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -9,27 +10,43 @@ import com.kotlindiscord.kord.extensions.utils.env
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.Color as Colour
 import dev.kord.core.behavior.MessageBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.reply
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Clock
+import me.qbosst.bossbot.commands.HybridCommandContext
 import me.qbosst.bossbot.database.dao.SpaceSpeakMessage
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.util.STEEL_BLUE
+import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.idLong
 import me.qbosst.spacespeak.SpaceSpeakAPI
 import me.qbosst.spacespeak.entity.Product
 import me.qbosst.spacespeak.functions.GetMessageResponse
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.transactions.transactionScope
 import java.util.concurrent.ConcurrentHashMap
 
 private suspend inline fun MessageBehavior.replySpaceEmbed(builder: EmbedBuilder.() -> Unit) = reply {
+    allowedMentions {}
+    embed {
+        builder()
+
+        color = Colour.STEEL_BLUE
+        thumbnail { url = "https://www.spacespeak.com/images/logo0b.png" }
+    }
+}
+
+private suspend inline fun HybridCommandContext<out Arguments>.publicSpaceSpeakFollowUp(
+    builder: EmbedBuilder.() -> Unit
+) = publicFollowUp {
     allowedMentions {}
     embed {
         builder()
@@ -63,10 +80,16 @@ class SpaceSpeakExtension: Extension() {
         val id by long("message-id", "The id of the message you want to view info about")
     }
 
+    class SpaceSpeakRecentArgs: Arguments() {
+        val pageNumber by defaultingInt("page-number", "The page number", 0)
+    }
+
     private suspend fun getProducts() = when(::products.isInitialized) {
         true -> products
         else -> api.getProducts().also { this.products = it }
     }
+
+    private fun SpaceSpeakMessage.getData(): GetMessageResponse = messages[messageId]!!
 
     private suspend fun GetMessageResponse.getDistanceTravelled(): String =
         api.getDistanceTravelled(messageId).removeSurrounding("\"")
@@ -120,26 +143,26 @@ class SpaceSpeakExtension: Extension() {
             }
         } } }
 
-        group {
+        hybridCommand {
             name = "spacespeak"
+            description = "todo"
 
             action {
-                val prefix = with(bot.settings.messageCommandsBuilder) { prefixCallback.invoke(event, defaultPrefix) }
-
-                message.replySpaceEmbed {
+                publicSpaceSpeakFollowUp {
                     description = """
                         [SpaceSpeak](https://www.spacespeak.com) is a service that allows you to **send messages into 
                         space**!
                         Check out what else they're up to [here](https://spacespeak.com/NewsAndEvents)!
                         
-                        To send your message into space, use **${prefix}spacespeak send <message>**
+                        To send your message into space, use **/spacespeak send <message>**
                         
                     """.trimIndent()
                 }
             }
 
-            command(::SpaceSpeakSendArgs) {
+            subCommand(::SpaceSpeakSendArgs) {
                 name = "send"
+                description = "Sends your message into outer space"
 
                 action {
                     val product = getProducts().first()
@@ -160,7 +183,7 @@ class SpaceSpeakExtension: Extension() {
                     }
 
                     // send success message
-                    message.replySpaceEmbed {
+                    publicSpaceSpeakFollowUp {
                         description = """
                             **Your message has been sent into space!**
                             Sending images and audio is available at [spacespeak.com](https://www.spacespeak.com)
@@ -168,8 +191,9 @@ class SpaceSpeakExtension: Extension() {
                         """.trimIndent()
 
                         author {
-                            name = user!!.tag
-                            icon = user!!.avatar.url
+                            val user = user!!.asUser()
+                            name = user.tag
+                            icon = user.avatar.url
                         }
 
                         footer { text = "Reach out to the Universe!" }
@@ -182,13 +206,14 @@ class SpaceSpeakExtension: Extension() {
                 }
             }
 
-            command(::SpaceSpeakInfoArgs) {
+            subCommand(::SpaceSpeakInfoArgs) {
                 name = "info"
+                description = "Displays information about a certain message"
 
                 action {
                     when (val spaceMessage = messages[arguments.id]) {
                         null -> {
-                            message.reply {
+                            publicFollowUp {
                                 allowedMentions {}
                                 content = "Could not find a message with the id: ${arguments.id}"
                             }
@@ -198,14 +223,14 @@ class SpaceSpeakExtension: Extension() {
                             val distanceTravelledJob = coroutineScope { async { spaceMessage.getDistanceTravelled() } }
                             val randomFactJob = coroutineScope { async { spaceMessage.getRandomFact() } }
 
-                            message.replySpaceEmbed {
+                            publicSpaceSpeakFollowUp {
                                 description = "**Message**\n${spaceMessage.messageText}"
 
                                 footer { text = "Message Id \u2022 ${arguments.id} | Launch Date" }
                                 timestamp = spaceMessage.launchDate
 
                                 author {
-                                    val user = spaceMessageDAO.userId?.let { event.kord.getUser(Snowflake(it)) }
+                                    val user = spaceMessageDAO.userId?.let { eventObj.kord.getUser(Snowflake(it)) }
 
                                     name = "Sent by: ${user?.tag ?: "N/A"}"
                                     icon = user?.avatar?.url
@@ -220,12 +245,52 @@ class SpaceSpeakExtension: Extension() {
                 }
             }
 
-            command {
+            subCommand(::SpaceSpeakRecentArgs) {
                 name = "recent"
+                description = "Displays recent messages that have been sent to space from other Discord users"
+
+                val maxPerPage = 3
+
+                fun EmbedBuilder.addRecord(data: GetMessageResponse, isFirst: Boolean) {
+                    field(if(isFirst) "Message ID" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                        data.messageId.toString()
+                    }
+
+                    field(if(isFirst) "Launched" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                        data.launchDate.toString()
+                    }
+
+                    field(if(isFirst) "Content" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                        data.messageText
+                    }
+                }
 
                 action {
-                    message.replySpaceEmbed {
-                        description = messages.map { it.key }.toString()
+                    val count = messages.count()
+
+                    val maxPages = (count / maxPerPage).let { when {
+                        count % maxPerPage == 0 && it > 0 -> it-1
+                        else -> it
+                    } }
+
+                    val pageNumber = (arguments.pageNumber-1).coerceIn(0, maxPages)
+
+                    publicSpaceSpeakFollowUp {
+                        footer { text = "Page ${pageNumber+1} / ${maxPages+1}" }
+
+                        val messages = transaction {
+                            SpaceSpeakMessage.wrapRows(
+                                SpaceSpeakTable.selectAll()
+                                    .orderBy(SpaceSpeakTable.id, order = SortOrder.DESC)
+                                    .limit(maxPerPage, offset = (maxPerPage * pageNumber).toLong())
+                            ).map { it.getData() }
+                        }
+
+                        var isFirst = true
+                        messages.forEach { message ->
+                            addRecord(message, isFirst)
+                            isFirst = false
+                        }
                     }
                 }
             }
