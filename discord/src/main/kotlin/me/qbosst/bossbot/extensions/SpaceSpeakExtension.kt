@@ -8,10 +8,6 @@ import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.env
 import dev.kord.common.entity.Snowflake
-import dev.kord.common.Color as Colour
-import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.reply
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -33,16 +29,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.concurrent.ConcurrentHashMap
-
-private suspend inline fun MessageBehavior.replySpaceEmbed(builder: EmbedBuilder.() -> Unit) = reply {
-    allowedMentions {}
-    embed {
-        builder()
-
-        color = Colour.STEEL_BLUE
-        thumbnail { url = "https://www.spacespeak.com/images/logo0b.png" }
-    }
-}
+import dev.kord.common.Color as Colour
 
 private suspend inline fun HybridCommandContext<out Arguments>.publicSpaceSpeakFollowUp(
     builder: EmbedBuilder.() -> Unit
