@@ -3,7 +3,9 @@ package me.qbosst.bossbot
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
+import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.utils.env
+import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.cache.map.MapLikeCollection
 import dev.kord.common.Color
@@ -33,6 +35,8 @@ suspend fun main() = try {
             +Intent.Guilds
             +Intent.GuildMessages
             +Intent.DirectMessages
+            +Intent.GuildMessageReactions
+            +Intent.DirectMessagesReactions
         }
 
         members {
@@ -41,6 +45,8 @@ suspend fun main() = try {
         }
 
         extensions {
+            sentry = true
+
             add(::EconomyExtension)
             add(::DeveloperExtension)
             add(::CasinoExtension)
@@ -49,8 +55,6 @@ suspend fun main() = try {
             add(::SpaceSpeakExtension)
 
             help {
-
-
                 colour {
                     when(guildId) {
                         null ->
@@ -143,6 +147,12 @@ suspend fun main() = try {
             status = PresenceStatus.DoNotDisturb
             playing("Loading...")
         }
+    }
+
+    bot.getKoin().get<SentryAdapter>().init {
+        this.dsn = env("sentry")!!
+        this.tracesSampleRate = 1.0
+        this.environment = "production"
     }
 
     bot.on<ReadyEvent> {
