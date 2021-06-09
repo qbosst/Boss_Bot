@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.commands
 
+import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
@@ -14,12 +15,16 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
+import dev.kord.core.event.message.MessageCreateEvent
+import org.koin.core.component.inject
 
 open class HybridCommandContext<T: Arguments>(
     val context: CommandContext
 ): CommandContext(context.command, context.eventObj, context.commandName, context.argsList) {
 
     open val kord: Kord get() = eventObj.kord
+
+    private val bot: ExtensibleBot by inject()
 
     /** Message channel this command happened in, if any. **/
     open val channel: MessageChannelBehavior get() = when(context) {
@@ -67,6 +72,15 @@ open class HybridCommandContext<T: Arguments>(
         is SlashCommandContext<*> -> context.arguments as T
         is MessageCommandContext<*> -> context.arguments as T
 
+        else -> error("Unknown context type provided")
+    }
+
+    /** Gets the prefix used for this context **/
+    suspend fun getPrefix() = when(context) {
+        is SlashCommandContext<*> -> "/"
+        is MessageCommandContext<*> -> with(bot.settings.messageCommandsBuilder) {
+            prefixCallback.invoke(eventObj as MessageCreateEvent, defaultPrefix)
+        }
         else -> error("Unknown context type provided")
     }
 

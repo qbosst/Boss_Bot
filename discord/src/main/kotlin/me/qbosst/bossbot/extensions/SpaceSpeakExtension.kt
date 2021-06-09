@@ -154,7 +154,7 @@ class SpaceSpeakExtension: Extension() {
                         space**!
                         Check out what else they're up to [here](https://spacespeak.com/NewsAndEvents)!
                         
-                        To send your message into space, use **/spacespeak send <message>**
+                        To send your message into space, use **${getPrefix()}spacespeak send <message>**
                         
                     """.trimIndent()
                 }
