@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.extensions.vote.topgg
 
+import com.kotlindiscord.kord.extensions.utils.env
 import io.ktor.application.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -7,6 +8,7 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.util.*
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.qbosst.bossbot.extensions.vote.VoteAPI
@@ -29,9 +31,15 @@ class TopGgAPI(token: String, botId: Long): VoteAPI(token, botId) {
     override suspend fun setup() {
         route("/topgg") {
             post {
-                val response: VoteWebhook = call.receive()
-                call.respond(HttpStatusCode.OK)
-                sendVoteEvent(response.userId)
+                val authToken = env("topgg.auth")!!
+
+                if(call.request.headers["Authorization"] == authToken) {
+                    val response: VoteWebhook = call.receive()
+                    call.respond(HttpStatusCode.OK)
+                    sendVoteEvent(response.userId)
+                } else {
+                    call.respond(HttpStatusCode.Unauthorized)
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.extensions.vote.discordbotlist
 
+import com.kotlindiscord.kord.extensions.utils.env
 import io.ktor.application.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -29,9 +30,15 @@ class DiscordBotListAPI(token: String, botId: Long): VoteAPI(token, botId) {
     override suspend fun setup() {
         route("/discordbotlist") {
             post {
-                val response: VoteWebhook = call.receive()
-                call.respond(HttpStatusCode.OK)
-                sendVoteEvent(response.id)
+                val authToken = env("discordbotlist.auth")!!
+
+                if(call.request.headers["Authorization"] == authToken) {
+                    val response: VoteWebhook = call.receive()
+                    call.respond(HttpStatusCode.OK)
+                    sendVoteEvent(response.id)
+                } else {
+                    call.respond(HttpStatusCode.Unauthorized)
+                }
             }
         }
     }
