@@ -29,8 +29,9 @@ class TopGgAPI(token: String, botId: Long): VoteAPI(token, botId) {
     override suspend fun setup() {
         route("/topgg") {
             post {
-                //TODO: add response logic
+                val response: VoteWebhook = call.receive()
                 call.respond(HttpStatusCode.OK)
+                sendVoteEvent(response.userId)
             }
         }
     }
