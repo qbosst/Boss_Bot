@@ -116,6 +116,14 @@ suspend fun main() = try {
                 // initialize database tables
                 getKoin().get<DatabaseManager>().init()
             }
+
+            afterKoinSetup {
+                getKoin().get<SentryAdapter>().init {
+                    dsn = env("sentry")!!
+                    tracesSampleRate = 1.0
+                    environment = "production"
+                }
+            }
         }
 
         cache {
@@ -150,12 +158,6 @@ suspend fun main() = try {
             status = PresenceStatus.DoNotDisturb
             playing("Loading...")
         }
-    }
-
-    bot.getKoin().get<SentryAdapter>().init {
-        this.dsn = env("sentry")!!
-        this.tracesSampleRate = 1.0
-        this.environment = "production"
     }
 
     bot.on<ReadyEvent> {
