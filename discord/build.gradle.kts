@@ -43,6 +43,10 @@ dependencies {
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.1.jar"))
     implementation("io.ktor:ktor-client-logging:1.6.0")
 
+    //ktor
+    implementation("io.ktor:ktor-server-cio:1.6.0")
+    implementation("io.ktor:ktor-serialization:1.6.0")
+
     implementation("com.jakewharton.picnic:picnic:0.5.0")
 
 }
