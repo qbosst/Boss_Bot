@@ -1,6 +1,8 @@
 package me.qbosst.bossbot.extensions.vote
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.utils.env
+import dev.kord.common.Color
 import dev.kord.core.Kord
 import dev.kord.core.event.gateway.ReadyEvent
 import kotlinx.coroutines.*
@@ -12,7 +14,9 @@ import me.qbosst.bossbot.extensions.vote.botsfordiscord.BotsForDiscordAPI
 import me.qbosst.bossbot.extensions.vote.discordboats.DiscordBoatsAPI
 import me.qbosst.bossbot.extensions.vote.discordbotlist.DiscordBotListAPI
 import me.qbosst.bossbot.extensions.vote.topgg.TopGgAPI
+import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.hybridCommand
+import me.qbosst.bossbot.util.random
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlin.time.Duration
 
@@ -23,7 +27,7 @@ class VoteExtension: Extension() {
     private lateinit var discordBotListApi: DiscordBotListAPI
     private lateinit var discordBoatsApi: DiscordBoatsAPI
     private lateinit var botsForDiscordApi: BotsForDiscordAPI
-    private var autoUpdateGuildCounts: Boolean = false /* can't test this rn */
+    private var autoUpdateGuildCounts: Boolean = false
 
     private val apis: List<VoteAPI> by lazy {
         listOf(
@@ -51,10 +55,10 @@ class VoteExtension: Extension() {
             action {
                 val botId = kord.selfId.value
 
-                topGgApi = TopGgAPI("", botId)
-                discordBotListApi = DiscordBotListAPI("", botId)
-                discordBoatsApi = DiscordBoatsAPI("", botId)
-                botsForDiscordApi = BotsForDiscordAPI("", botId)
+                topGgApi = TopGgAPI(env("topgg.token")!!, botId)
+                discordBotListApi = DiscordBotListAPI(env("discordbotlist.token")!!, botId)
+                discordBoatsApi = DiscordBoatsAPI(env("discordboats.token")!!, botId)
+                botsForDiscordApi = BotsForDiscordAPI(env("botsfordiscord.token")!!, botId)
 
                 if(autoUpdateGuildCounts) {
                     coroutineScope {
@@ -91,6 +95,7 @@ class VoteExtension: Extension() {
 
                     embed {
                         description = apis.joinToString("\n") { it.markdownVoteLink }
+                        color = guild?.getMemberOrNull(kord.selfId)?.getColour() ?: Color.random()
                     }
                 }
             }
