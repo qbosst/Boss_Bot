@@ -5,12 +5,12 @@ import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.sentry.SentryAdapter
 import com.kotlindiscord.kord.extensions.utils.env
-import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.cache.map.MapLikeCollection
 import dev.kord.common.Color
 import dev.kord.common.entity.PresenceStatus
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.Kord
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.gateway.Intent
@@ -30,6 +30,7 @@ import me.qbosst.bossbot.util.random
 import mu.KLogger
 import mu.KotlinLogging
 import org.koin.dsl.bind
+import org.koin.java.KoinJavaComponent.getKoin
 
 suspend fun main() = try {
     val bot = ExtensibleBot(env("token")!!) {
@@ -47,7 +48,7 @@ suspend fun main() = try {
         }
 
         extensions {
-            sentry = true
+            sentry = false
 
             add(::EconomyExtension)
             add(::DeveloperExtension)
@@ -69,8 +70,10 @@ suspend fun main() = try {
             }
         }
 
+
         messageCommands {
             defaultPrefix = "b!"
+
 
             prefix { defaultPrefix ->
                 message.getGuildOrNull()?.getGuildDAO()?.prefix ?: defaultPrefix
@@ -123,6 +126,12 @@ suspend fun main() = try {
                     tracesSampleRate = 1.0
                     environment = "production"
                 }
+            }
+
+            beforeStart {
+                val kord = getKoin().get<Kord>()
+                val intents = kord.resources.intents.values.map { it::class.simpleName }
+                logger.info { "Connecting with the following intents: $intents" }
             }
         }
 

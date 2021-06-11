@@ -18,9 +18,8 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
-
     val exposedVer = "0.31.1"
+    val ktorVer = "1.6.0"
 
     // kord
     implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.1-20210610.131238-16")
@@ -38,14 +37,16 @@ dependencies {
     // kotlin
     implementation(kotlin("reflect"))
     implementation(kotlin("scripting-jsr223"))
+    implementation(kotlin("stdlib"))
 
     // local dependency of SpaceSpeak API. Cannot be published open source (yet).
     implementation(files("libs/SpaceSpeakAPI-jvm-1.0.1.jar"))
-    implementation("io.ktor:ktor-client-logging:1.6.0")
 
     //ktor
-    implementation("io.ktor:ktor-server-cio:1.6.0")
-    implementation("io.ktor:ktor-serialization:1.6.0")
+    implementation("io.ktor:ktor-client-logging:$ktorVer")
+    implementation("io.ktor:ktor-server-cio:$ktorVer")
+    implementation("io.ktor:ktor-serialization:$ktorVer")
+    implementation("io.ktor:ktor-network-tls-certificates:$ktorVer")
 
     implementation("com.jakewharton.picnic:picnic:0.5.0")
 
