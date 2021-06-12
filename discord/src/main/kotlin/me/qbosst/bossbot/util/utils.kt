@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.firstOrNull
 
 val Entity.idLong: Long get() = id.value
 
-val Color.Companion.DEFAULT_ROLE_COLOUR: Color get() = Color(0x000000)
-
 fun <K, V: Any> KordCacheBuilder.mapLikeCollection(
     map: MapLikeCollection<K, V>
 ): Generator<K, V> = { cache, description ->
@@ -22,4 +20,4 @@ fun <K, V: Any> KordCacheBuilder.mapLikeCollection(
 
 fun String.zeroWidthIfBlank() = ifBlank { "\u200E" }
 
-suspend fun Member.getColour(): Color? = roles.firstOrNull { it.color != Color.DEFAULT_ROLE_COLOUR }?.color
+suspend fun Member.getColour(): Color? = roles.firstOrNull { it.color.rgb != 0x000000 }?.color
