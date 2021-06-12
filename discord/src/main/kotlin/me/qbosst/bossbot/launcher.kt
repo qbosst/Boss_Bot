@@ -60,12 +60,8 @@ suspend fun main() = try {
 
             help {
                 colour {
-                    when(guildId) {
-                        null ->
-                            Color.random() // TODO: get bot pfp most dominant colour
-                        else ->
-                            kord.getSelf().asMemberOrNull(guildId!!)?.getColour() ?: Color.random()
-                    }
+                    // TODO: use bot's most dominant pfp colour instead of random colour
+                    getGuild()?.getMemberOrNull(kord.selfId)?.getColour() ?: Color.random()
                 }
             }
         }
@@ -73,7 +69,6 @@ suspend fun main() = try {
 
         messageCommands {
             defaultPrefix = "b!"
-
 
             prefix { defaultPrefix ->
                 message.getGuildOrNull()?.getGuildDAO()?.prefix ?: defaultPrefix
@@ -85,7 +80,9 @@ suspend fun main() = try {
         slashCommands {
             enabled = true
 
-            defaultGuild(714482588005171200) // test guild
+            env("testGuild")?.toLongOrNull()?.let {
+                defaultGuild(it)
+            }
         }
 
         hooks {
