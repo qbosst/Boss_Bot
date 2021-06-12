@@ -1,5 +1,6 @@
 package me.qbosst.bossbot.commands
 
+import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.DiscordMessageReference
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.Optional
@@ -7,6 +8,8 @@ import dev.kord.common.entity.optional.OptionalBoolean
 import dev.kord.common.entity.optional.OptionalSnowflake
 import dev.kord.common.entity.optional.delegate.delegate
 import dev.kord.common.entity.optional.map
+import dev.kord.rest.builder.component.ActionRowBuilder
+import dev.kord.rest.builder.component.MessageComponentBuilder
 import dev.kord.rest.builder.message.AllowedMentionsBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.json.request.FollowupMessageCreateRequest
@@ -45,12 +48,23 @@ class PublicHybridMessageCreateBuilder :
 
     val files: MutableList<Pair<String, InputStream>> = mutableListOf()
 
+    val components: MutableList<MessageComponentBuilder> = mutableListOf()
+
     fun addFile(name: String, content: InputStream) {
         files += name to content
     }
 
     suspend fun addFile(path: Path) = withContext(Dispatchers.IO) {
         addFile(path.fileName.toString(), Files.newInputStream(path))
+    }
+
+    @OptIn(ExperimentalContracts::class)
+    inline fun actionRow(builder: ActionRowBuilder.() -> Unit) {
+        contract {
+            callsInPlace(builder, InvocationKind.EXACTLY_ONCE)
+        }
+
+        components.add(ActionRowBuilder().apply(builder))
     }
 
 
@@ -82,7 +96,8 @@ class PublicHybridMessageCreateBuilder :
                     id = OptionalSnowflake.Value(messageReference),
                     failIfNotExists = OptionalBoolean.Value(true)
                 )
-            )
+            ),
+            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
         ),
         files
     )
@@ -92,7 +107,8 @@ class PublicHybridMessageCreateBuilder :
             content = _content,
             tts = _tts,
             embed = _embed.map { it.toRequest() },
-            allowedMentions = _allowedMentions.map { it.build() }
+            allowedMentions = _allowedMentions.map { it.build() },
+            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
         ),
         files
     )
@@ -102,7 +118,8 @@ class PublicHybridMessageCreateBuilder :
             content = _content,
             tts = _tts,
             embeds = if(_embed.value == null) Optional.Missing() else _embed.map { listOf(it.toRequest()) },
-            allowedMentions = _allowedMentions.map { it.build() }
+            allowedMentions = _allowedMentions.map { it.build() },
+            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
         ),
         files
     )
