@@ -15,6 +15,7 @@ import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
+import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import org.koin.core.component.inject
 
@@ -59,7 +60,7 @@ open class HybridCommandContext<T: Arguments>(
     }
 
     /** Message object containing this command invocation. **/
-    open val message: MessageBehavior? get() = when(context) {
+    open val message: Message? get() = when(context) {
         is SlashCommandContext<*> -> null
         is MessageCommandContext<*> -> context.message
 
@@ -74,6 +75,12 @@ open class HybridCommandContext<T: Arguments>(
 
         else -> error("Unknown context type provided")
     }
+
+    val messageCreateEvent: MessageCreateEvent get() = eventObj as MessageCreateEvent
+    val interactionCreateEvent: InteractionCreateEvent get() = eventObj as InteractionCreateEvent
+
+    val isFromMessageContext: Boolean get() = context is MessageCommandContext<*>
+    val isFromSlashContext: Boolean get() = context is SlashCommandContext<*>
 
     /** Gets the prefix used for this context **/
     suspend fun getPrefix() = when(context) {
