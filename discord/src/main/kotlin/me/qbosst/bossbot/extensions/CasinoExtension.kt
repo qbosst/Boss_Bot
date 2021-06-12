@@ -28,7 +28,7 @@ class CasinoExtension: Extension() {
         val opponent by optionalMember(
             "opponent",
             "The user you want to bet against",
-            outputError = true,
+            required = true,
             validator = notAuthor("You cannot bet against yourself.")
         )
     }

@@ -20,9 +20,10 @@ repositories {
 dependencies {
     val exposedVer = "0.31.1"
     val ktorVer = "1.6.0"
+    val kordexVer = "1.4.1-20210612.182106-24"
 
     // kord
-    implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.4.1-20210610.131238-16")
+    implementation("com.kotlindiscord.kord.extensions:kord-extensions:$kordexVer")
 
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")

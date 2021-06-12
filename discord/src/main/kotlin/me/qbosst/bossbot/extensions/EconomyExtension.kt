@@ -21,7 +21,7 @@ class EconomyExtension: Extension() {
     override val name: String get() = "economy"
 
     class WalletArgs: Arguments() {
-        val member by optionalMember("user", "Views a user's wallet", outputError = true)
+        val member by optionalMember("user", "Views a user's wallet", required = true)
     }
 
     class StealArgs: Arguments() {
