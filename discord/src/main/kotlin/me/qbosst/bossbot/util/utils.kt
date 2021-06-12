@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.firstOrNull
 
 val Entity.idLong: Long get() = id.value
 
-val Color.Companion.DEFAULT_ROLE_COLOUR: Color get() = Color(0xffffff)
+val Color.Companion.DEFAULT_ROLE_COLOUR: Color get() = Color(0x000000)
 
 fun <K, V: Any> KordCacheBuilder.mapLikeCollection(
     map: MapLikeCollection<K, V>
