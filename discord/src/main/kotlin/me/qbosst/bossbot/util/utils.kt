@@ -7,7 +7,6 @@ import dev.kord.core.cache.Generator
 import dev.kord.core.cache.KordCacheBuilder
 import dev.kord.core.entity.Entity
 import dev.kord.core.entity.Member
-import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.coroutines.flow.firstOrNull
 
 val Entity.idLong: Long get() = id.value

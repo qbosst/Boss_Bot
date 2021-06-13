@@ -1,11 +1,9 @@
 package me.qbosst.bossbot.extensions
 
-import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.Color
-import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.edit
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.hybridCommand

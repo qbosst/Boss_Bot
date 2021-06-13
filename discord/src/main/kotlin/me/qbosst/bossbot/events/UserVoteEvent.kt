@@ -5,7 +5,6 @@ import com.kotlindiscord.kord.extensions.events.ExtensionEvent
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.User
-import me.qbosst.bossbot.extensions.vote.VoteAPI
 
 /**
  * This is an event representing a user has voted for the bot.

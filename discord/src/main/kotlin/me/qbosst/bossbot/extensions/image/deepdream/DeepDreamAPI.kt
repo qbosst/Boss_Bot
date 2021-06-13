@@ -11,9 +11,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import mu.KotlinLogging
 
 private const val baseUrl = "https://api.deepai.org/api/deepdream"
 

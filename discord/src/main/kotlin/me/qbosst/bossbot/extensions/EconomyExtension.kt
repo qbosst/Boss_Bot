@@ -8,7 +8,6 @@ import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.database.dao.insertOrUpdate
-import me.qbosst.bossbot.events.UserVoteEvent
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.idLong
 import me.qbosst.bossbot.util.notAuthor

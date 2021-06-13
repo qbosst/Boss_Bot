@@ -8,7 +8,6 @@ import io.ktor.http.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.util.*
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import me.qbosst.bossbot.extensions.vote.VoteAPI

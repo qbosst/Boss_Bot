@@ -13,7 +13,6 @@ import dev.kord.core.Kord
 import dev.kord.core.event.Event
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.lang.Exception
 
 class HybridGroupCommand<T: Arguments>(
     val extension: Extension,

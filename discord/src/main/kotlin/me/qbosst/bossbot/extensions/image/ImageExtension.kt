@@ -1,14 +1,10 @@
 package me.qbosst.bossbot.extensions.image
 
-import com.kotlindiscord.kord.extensions.CommandException
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.utils.env
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.Attachment
-import dev.kord.core.entity.Member
 import me.qbosst.bossbot.extensions.image.deepdream.DeepDreamAPI
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.hybridCommand
@@ -25,10 +21,6 @@ class ImageExtension: Extension() {
             converters = arrayOf(MemberConverter(), StringConverter()),
             shouldThrow = true
         )
-    }
-
-    class TestArgs: Arguments() {
-        val imageUrl by optionalString("image-url", "url of your choice")
     }
 
     class DeepDreamUserArgs: Arguments() {
