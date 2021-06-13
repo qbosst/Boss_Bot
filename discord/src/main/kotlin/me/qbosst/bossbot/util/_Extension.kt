@@ -7,7 +7,7 @@ import dev.kord.core.event.Event
 import me.qbosst.bossbot.commands.HybridCommand
 
 @ExtensionDSL
-public suspend fun <T: Arguments> Extension.hybridCommand(
+suspend fun <T: Arguments> Extension.hybridCommand(
     arguments: (() -> T)?,
     body: suspend HybridCommand<T>.() -> Unit
 ): HybridCommand<T> {
@@ -26,9 +26,7 @@ public suspend fun <T: Arguments> Extension.hybridCommand(
 }
 
 @ExtensionDSL
-public suspend fun Extension.hybridCommand(
-    body: suspend HybridCommand<Arguments>.() -> Unit
-): HybridCommand<Arguments> {
+suspend fun Extension.hybridCommand(body: suspend HybridCommand<Arguments>.() -> Unit): HybridCommand<Arguments> {
     val hybridCommandObj = HybridCommand<Arguments>(this)
     body.invoke(hybridCommandObj)
 
@@ -44,15 +42,13 @@ public suspend fun Extension.hybridCommand(
 }
 
 @ExtensionDSL
-public fun Extension.hybridCheck(
-    body: suspend (Event) -> Boolean
-) {
+fun Extension.hybridCheck(body: suspend (Event) -> Boolean) {
     commandChecks.add(body)
     slashCommandChecks.add(body)
 }
 
 @ExtensionDSL
-public fun Extension.hybridCheck(vararg checks: suspend (Event) -> Boolean) {
+fun Extension.hybridCheck(vararg checks: suspend (Event) -> Boolean) {
     commandChecks.addAll(checks)
     slashCommandChecks.addAll(checks)
 }

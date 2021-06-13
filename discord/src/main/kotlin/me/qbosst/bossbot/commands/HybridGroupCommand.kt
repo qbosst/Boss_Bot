@@ -15,11 +15,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.lang.Exception
 
-open class HybridCommand<T: Arguments>(
+class HybridGroupCommand<T: Arguments>(
     val extension: Extension,
     val arguments: (() -> T)? = null,
-    val parentCommand: HybridCommand<out Arguments>? = null,
-    val parentGroup: HybridGroupCommand<out Arguments>? = null
+    val parentCommand: HybridCommand<out Arguments>
 ): KoinComponent {
     inner class SlashSettings {
         var autoAck: AutoAckType = AutoAckType.NONE
@@ -45,7 +44,6 @@ open class HybridCommand<T: Arguments>(
     val checkList: MutableList<suspend (Event) -> Boolean> = mutableListOf()
     val requiredPerms: MutableSet<Permission> = mutableSetOf()
     val commands: MutableList<HybridCommand<out Arguments>> = mutableListOf()
-    val groups: MutableList<HybridGroupCommand<out Arguments>> = mutableListOf()
 
     fun slashSettings(init: SlashSettings.() -> Unit) {
         slashSettings.apply(init)
@@ -93,40 +91,18 @@ open class HybridCommand<T: Arguments>(
         requiredPerms += perms
     }
 
-    suspend fun <R: Arguments> group(
-        arguments: (() -> R)?,
-        body: suspend HybridGroupCommand<R>.() -> Unit
-    ): HybridGroupCommand<R> {
-        val commandObj = HybridGroupCommand(extension, arguments, parentCommand = this)
-        body.invoke(commandObj)
-
-        return group(commandObj)
-    }
-
-    suspend fun group(body: suspend HybridGroupCommand<Arguments>.() -> Unit): HybridGroupCommand<Arguments> {
-        val commandObj = HybridGroupCommand<Arguments>(extension, null, parentCommand = this)
-        body.invoke(commandObj)
-
-        return group(commandObj)
-    }
-
-    suspend fun <R: Arguments> group(commandObj: HybridGroupCommand<R>): HybridGroupCommand<R> {
-        groups.add(commandObj)
-        return commandObj
-    }
-
     suspend fun <R: Arguments> subCommand(
         arguments: (() -> R)?,
         body: suspend HybridCommand<R>.() -> Unit
     ): HybridCommand<R> {
-        val commandObj = HybridCommand(extension, arguments, parentCommand = this)
+        val commandObj = HybridCommand(extension, arguments, parentGroup = this)
         body.invoke(commandObj)
 
         return subCommand(commandObj)
     }
 
     suspend fun subCommand(body: suspend HybridCommand<Arguments>.() -> Unit): HybridCommand<Arguments> {
-        val commandObj = HybridCommand<Arguments>(extension, null, parentCommand = this)
+        val commandObj = HybridCommand<Arguments>(extension, null, parentGroup = this)
         body.invoke(commandObj)
 
         return subCommand(commandObj)
@@ -137,54 +113,35 @@ open class HybridCommand<T: Arguments>(
         return commandObj
     }
 
-    fun toSlashCommand(
-        parentCommand: SlashCommand<out Arguments>? = null,
-        parentGroup: SlashGroup? = null
-    ): SlashCommand<T> = SlashCommand(extension, arguments, parentCommand, parentGroup).apply {
-        name = this@HybridCommand.name
-        description = this@HybridCommand.description
-        checkList += this@HybridCommand.checkList
-        requiredPerms += this@HybridCommand.requiredPerms
-        autoAck = this@HybridCommand.slashSettings.autoAck
-
-        when {
-            this@HybridCommand.groups.isNotEmpty() -> {
-                groups.putAll(this@HybridCommand.groups.map { it.name to it.toSlashGroup(this) })
-            }
-            this@HybridCommand.commands.isNotEmpty() -> {
-                subCommands.addAll(this@HybridCommand.commands.map { it.toSlashCommand(parentCommand = this) })
-            }
-            else -> {
-                action { this@HybridCommand.body.invoke(HybridCommandContext(this)) }
-            }
-        }
-    }
-
     fun toMessageCommand(): MessageCommand<T> {
-        val commandObj = if(commands.isNotEmpty() || groups.isNotEmpty()) {
+        val commandObj = if(commands.isNotEmpty()) {
             GroupCommand(extension, arguments).apply {
-                commands.addAll(this@HybridCommand.commands.map(HybridCommand<*>::toMessageCommand))
-                commands.addAll(this@HybridCommand.groups.map(HybridGroupCommand<*>::toMessageCommand))
-                if(!this@HybridCommand::body.isInitialized) {
+                commands.addAll(this@HybridGroupCommand.commands.map(HybridCommand<*>::toMessageCommand))
+                if(!this@HybridGroupCommand::body.isInitialized) {
                     action { sendHelp() }
                 } else {
-                    action { this@HybridCommand.body.invoke(HybridCommandContext(this)) }
+                    action { this@HybridGroupCommand.body.invoke(HybridCommandContext(this)) }
                 }
             }
         } else {
             MessageCommand(extension, arguments).apply {
-                action { this@HybridCommand.body.invoke(HybridCommandContext(this)) }
+                action { this@HybridGroupCommand.body.invoke(HybridCommandContext(this)) }
             }
         }
 
         return commandObj.apply {
-            name = this@HybridCommand.name
-            description = this@HybridCommand.description
-            enabled = this@HybridCommand.messageSettings.enabled
-            hidden = this@HybridCommand.messageSettings.hidden
-            aliases = this@HybridCommand.messageSettings.aliases
-            checkList += this@HybridCommand.checkList
-            requiredPerms += this@HybridCommand.requiredPerms
+            name = this@HybridGroupCommand.name
+            description = this@HybridGroupCommand.description
+            enabled = this@HybridGroupCommand.messageSettings.enabled
+            hidden = this@HybridGroupCommand.messageSettings.hidden
+            aliases = this@HybridGroupCommand.messageSettings.aliases
+            checkList += this@HybridGroupCommand.checkList
+            requiredPerms += this@HybridGroupCommand.requiredPerms
         }
+    }
+
+    fun toSlashGroup(parentCommand: SlashCommand<out Arguments>): SlashGroup = SlashGroup(name, parentCommand).apply {
+        description = this@HybridGroupCommand.description
+        subCommands.addAll(this@HybridGroupCommand.commands.map { it.toSlashCommand(parentGroup = this)})
     }
 }
