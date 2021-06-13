@@ -4,9 +4,17 @@ import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.converters.impl.int
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
+import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kord.common.entity.AllowedMentionType
+import dev.kord.common.entity.ButtonStyle
+import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.interaction.edit
+import dev.kord.core.behavior.reply
+import dev.kord.core.entity.Message
+import dev.kord.core.entity.interaction.PublicFollowupMessage
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.notAuthor
@@ -45,7 +53,8 @@ class CasinoExtension: Extension() {
                 val opponent = arguments.opponent
                 val user = user!!
 
-                publicFollowUp {
+                lateinit var followUp: Message
+                followUp = publicFollowUp {
                     newSuspendedTransaction {
                         val authorDAO = user.getUserDAO(this)
 
@@ -58,30 +67,49 @@ class CasinoExtension: Extension() {
                                 if(opponentDAO.tokens < arguments.betAmount) {
                                     content = "${opponent.mention} does not have enough tokens."
                                 } else {
-                                    // TODO: ask opponent if they want to accept the bet
-                                    val accepted = Random.nextBoolean() // placeholder
+                                    //allowedMentions { add(AllowedMentionType.UserMentions) }
+                                    content = "${opponent.mention}, ${user.asUser().tag} has challenged you."
+                                    actionRow {
+                                        button(ButtonStyle.Success) {
+                                            label = "Accept"
 
-                                    if(accepted) {
-                                        val winningUser = if(flippedSide == arguments.betSide) {
-                                            authorDAO.tokens += arguments.betAmount
-                                            opponentDAO.tokens -= arguments.betAmount
+                                            action(AutoAckType.PUBLIC) {
+                                                followUp.delete()
+                                                publicFollowUp {
+                                                    allowedMentions {}
 
-                                            user
-                                        } else {
-                                            authorDAO.tokens -= arguments.betAmount
-                                            opponentDAO.tokens += arguments.betAmount
+                                                    val winningUser = if(flippedSide == arguments.betSide) {
+                                                        authorDAO.tokens += arguments.betAmount
+                                                        opponentDAO.tokens -= arguments.betAmount
 
-                                            opponent.asUser()
+                                                        user
+                                                    } else {
+                                                        authorDAO.tokens -= arguments.betAmount
+                                                        opponentDAO.tokens += arguments.betAmount
+
+                                                        opponent.asUser()
+                                                    }
+
+                                                    content = buildString {
+                                                        append("The coin has landed on `${flippedSide.readableName}`. ")
+                                                        append("${ winningUser.mention } has won the bet, ")
+                                                        append("winning `${arguments.betAmount}` tokens.")
+                                                    }
+                                                }
+                                            }
                                         }
 
-                                        content = buildString {
-                                            append("The coin has landed on `${flippedSide.readableName}`. ")
-                                            append("${ winningUser.mention } has won the bet, ")
-                                            append("winning `${arguments.betAmount}` tokens.")
-                                        }
+                                        button(ButtonStyle.Danger) {
+                                            label = "Deny"
 
-                                    } else {
-                                        content = "${opponent.mention} has not accepted the bet."
+                                            action(AutoAckType.PUBLIC) {
+                                                followUp.delete()
+                                                publicFollowUp {
+                                                    allowedMentions {}
+                                                    content = "${opponent.mention} has not accepted the bet."
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

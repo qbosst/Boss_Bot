@@ -20,7 +20,7 @@ repositories {
 dependencies {
     val exposedVer = "0.31.1"
     val ktorVer = "1.6.0"
-    val kordexVer = "1.4.1-20210612.182106-24"
+    val kordexVer = "1.4.1-20210613.173344-25"
 
     // kord
     implementation("com.kotlindiscord.kord.extensions:kord-extensions:$kordexVer")
