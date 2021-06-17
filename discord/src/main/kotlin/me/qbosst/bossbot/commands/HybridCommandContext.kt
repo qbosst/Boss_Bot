@@ -75,6 +75,9 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
         else -> error("Unknown context type provided.")
     }
 
+    /**
+     * Note: This will not be ephemeral if [context] is from a [MessageCommandContext]
+     */
     suspend inline fun ephemeralFollowUp(
         builder: EphemeralHybridMessageCreateBuilder.() -> Unit
     ): EphemeralHybridMessage {
