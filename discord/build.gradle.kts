@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "1.5.10"
     kotlin("plugin.serialization") version "1.5.10"
     id("com.github.johnrengelman.shadow") version("6.0.0")
+    id("com.google.devtools.ksp")
 }
 
 group = "me.boss"
@@ -9,6 +10,7 @@ version = "1.0.0"
 
 repositories {
     mavenCentral()
+    google()
 
     maven("https://oss.sonatype.org/content/repositories/snapshots")
     maven {
@@ -20,10 +22,12 @@ repositories {
 dependencies {
     val exposedVer = "0.31.1"
     val ktorVer = "1.6.0"
-    val kordexVer = "1.4.1-20210613.173344-25"
+    val kordexVer = "1.4.1-SNAPSHOT"
 
     // kord
     implementation("com.kotlindiscord.kord.extensions:kord-extensions:$kordexVer")
+    implementation("com.kotlindiscord.kord.extensions:annotations:$kordexVer")
+    ksp("com.kotlindiscord.kord.extensions:annotation-processor:$kordexVer")
 
     // logging
     implementation("ch.qos.logback:logback-classic:1.2.3")
@@ -50,7 +54,20 @@ dependencies {
     implementation("io.ktor:ktor-network-tls-certificates:$ktorVer")
 
     implementation("com.jakewharton.picnic:picnic:0.5.0")
+}
 
+sourceSets {
+    main {
+        java {
+            srcDir(file("$buildDir/generated/ksp/main/kotlin/"))
+        }
+    }
+
+    test {
+        java {
+            srcDir(file("$buildDir/generated/ksp/test/kotlin/"))
+        }
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
