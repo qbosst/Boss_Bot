@@ -24,6 +24,17 @@ class HybridCommand<T: Arguments>(
         /** Guild ID this slash command is to be registered for, if any. **/
         var guild: Snowflake? = settings.defaultGuild
 
+        /**
+         * Slash groups cannot have actions, use this to turn the group action into a subcommand or null if you don't
+         * want that behaviour
+         */
+        var subCommandName: String? = null
+
+        /**
+         * Slash groups cannot have actions, this will be used for the subcommand's description.
+         */
+        var subCommandDescription: String? = null
+
         /** Specify a specific guild for this slash command. **/
         fun guild(guild: Snowflake) {
             this.guild = guild
@@ -190,5 +201,22 @@ class HybridCommand<T: Arguments>(
 
             else -> action { this@HybridCommand.body.invoke(HybridCommandContext(this)) }
         }
+
+        if(this@HybridCommand.slashSettings.subCommandName != null && this@HybridCommand.hasBody) {
+            this.subCommands.add(toSlashSubCommand(this))
+        }
+    }
+
+    private fun toSlashSubCommand(
+        parent: SlashCommand<out Arguments>
+    ): SlashCommand<T> = SlashCommand(extension, arguments, parentCommand = parent).apply {
+        this.name = this@HybridCommand.slashSettings.subCommandName!!
+        this.description = this@HybridCommand.slashSettings.subCommandDescription ?: this@HybridCommand.description
+        this.checkList += this@HybridCommand.checkList
+        this.requiredPerms += this@HybridCommand.requiredPerms
+
+        this.autoAck = this@HybridCommand.slashSettings.autoAck
+
+        action { this@HybridCommand.body.invoke(HybridCommandContext(this)) }
     }
 }

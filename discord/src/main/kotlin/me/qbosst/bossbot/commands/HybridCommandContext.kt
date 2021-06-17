@@ -85,7 +85,7 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
 
         val (response, interaction) = when(context) {
             is SlashCommandContext<*> -> {
-                val interaction = if(context.acked) context.ack(true) else context.interactionResponse!!
+                val interaction = if(!context.acked) context.ack(true) else context.interactionResponse!!
 
                 kord.rest.interaction.createFollowupMessage(
                     interaction.applicationId,
@@ -118,7 +118,7 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
 
         val (response, interaction) = when(context) {
             is SlashCommandContext<*> -> {
-                val interaction = if(context.acked) context.ack(false) else context.interactionResponse!!
+                val interaction = if(!context.acked) context.ack(false) else context.interactionResponse!!
 
                 kord.rest.interaction.createFollowupMessage(
                     interaction.applicationId,

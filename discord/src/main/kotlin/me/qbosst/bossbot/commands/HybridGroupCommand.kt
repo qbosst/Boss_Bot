@@ -2,11 +2,14 @@ package me.qbosst.bossbot.commands
 
 import com.kotlindiscord.kord.extensions.CommandRegistrationException
 import com.kotlindiscord.kord.extensions.InvalidCommandException
+import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.GroupCommand
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.slash.SlashGroup
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.GuildBehavior
 import mu.KLogger
 import mu.KotlinLogging
 
@@ -18,6 +21,20 @@ class HybridGroupCommand<T: Arguments>(
     arguments: (() -> T)? = null,
     val parent: HybridCommand<out Arguments>
 ): BasicHybridCommand<T>(extension, arguments) {
+    class SlashSettings: BasicHybridCommand.SlashSettings() {
+        /**
+         * Slash groups cannot have actions, use this to turn the group action into a subcommand or null if you don't
+         * want that behaviour
+         */
+        var subCommandName: String? = null
+
+        /**
+         * Slash groups cannot have actions, this will be used for the subcommand's description.
+         */
+        var subCommandDescription: String? = null
+    }
+
+    override val slashSettings: SlashSettings = SlashSettings()
     val commands: MutableList<HybridSubCommand<out Arguments>> = mutableListOf()
 
     override fun validate() {
@@ -97,5 +114,23 @@ class HybridGroupCommand<T: Arguments>(
                 .filter { it.slashSettings.enabled }
                 .map { it.toSlashCommand(group = this) }
         )
+
+        if(this@HybridGroupCommand.slashSettings.subCommandName != null && this@HybridGroupCommand.hasBody) {
+            this.subCommands.add(toSlashCommand(this))
+        }
+    }
+
+    private fun toSlashCommand(
+        parent: SlashGroup
+    ): SlashCommand<T> = SlashCommand(extension, arguments, parentGroup = parent).apply {
+        this.name = this@HybridGroupCommand.slashSettings.subCommandName!!
+        this.description = this@HybridGroupCommand.slashSettings.subCommandDescription
+            ?: this@HybridGroupCommand.description
+        this.checkList += this@HybridGroupCommand.checkList
+        this.requiredPerms += this@HybridGroupCommand.requiredPerms
+
+        this.autoAck = this@HybridGroupCommand.slashSettings.autoAck
+
+        action { this@HybridGroupCommand.body.invoke(HybridCommandContext(this)) }
     }
 }
