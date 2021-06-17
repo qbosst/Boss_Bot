@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.commands
+package me.qbosst.bossbot.commands.builder
 
 import dev.kord.common.entity.DiscordMessageReference
 import dev.kord.common.entity.Snowflake
@@ -15,23 +15,12 @@ import dev.kord.rest.json.request.FollowupMessageCreateRequest
 import dev.kord.rest.json.request.MessageCreateRequest
 import dev.kord.rest.json.request.MultipartFollowupMessageCreateRequest
 import dev.kord.rest.json.request.MultipartMessageCreateRequest
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Path
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-interface HybridRequestBuilder<M, S> {
-    fun toMessageRequest(): M
-
-    fun toSlashRequest(): S
-}
-
-class PublicHybridMessageCreateBuilder :
-    HybridRequestBuilder<MultipartMessageCreateRequest, MultipartFollowupMessageCreateRequest> {
+class EphemeralHybridMessageCreateBuilder
+    : HybridRequestBuilder<MultipartMessageCreateRequest, MultipartFollowupMessageCreateRequest> {
 
     private var _content: Optional<String> = Optional.Missing()
     var content: String? by ::_content.delegate()
@@ -45,17 +34,7 @@ class PublicHybridMessageCreateBuilder :
     private var _embed: Optional<EmbedBuilder> = Optional.Missing()
     var embed: EmbedBuilder? by ::_embed.delegate()
 
-    val files: MutableList<Pair<String, InputStream>> = mutableListOf()
-
     val components: MutableList<MessageComponentBuilder> = mutableListOf()
-
-    fun addFile(name: String, content: InputStream) {
-        files += name to content
-    }
-
-    suspend fun addFile(path: Path) = withContext(Dispatchers.IO) {
-        addFile(path.fileName.toString(), Files.newInputStream(path))
-    }
 
     @OptIn(ExperimentalContracts::class)
     inline fun actionRow(builder: ActionRowBuilder.() -> Unit) {
@@ -97,8 +76,7 @@ class PublicHybridMessageCreateBuilder :
                 )
             ),
             components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
-        ),
-        files
+        )
     )
 
     override fun toMessageRequest(): MultipartMessageCreateRequest = MultipartMessageCreateRequest(
@@ -108,19 +86,13 @@ class PublicHybridMessageCreateBuilder :
             embed = _embed.map { it.toRequest() },
             allowedMentions = _allowedMentions.map { it.build() },
             components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
-        ),
-        files
+        )
     )
 
     override fun toSlashRequest(): MultipartFollowupMessageCreateRequest = MultipartFollowupMessageCreateRequest(
         FollowupMessageCreateRequest(
-            content = _content,
-            tts = _tts,
-            embeds = if(_embed.value == null) Optional.Missing() else _embed.map { listOf(it.toRequest()) },
-            allowedMentions = _allowedMentions.map { it.build() },
-            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
-        ),
-        files
+
+        )
     )
 
 }

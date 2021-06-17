@@ -15,6 +15,7 @@ import dev.kord.core.behavior.interaction.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.interaction.PublicFollowupMessage
+import me.qbosst.bossbot.commands.entity.PublicHybridMessage
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.notAuthor
@@ -53,7 +54,7 @@ class CasinoExtension: Extension() {
                 val opponent = arguments.opponent
                 val user = user!!
 
-                lateinit var followUp: Message
+                lateinit var followUp: PublicHybridMessage
                 followUp = publicFollowUp {
                     newSuspendedTransaction {
                         val authorDAO = user.getUserDAO(this)

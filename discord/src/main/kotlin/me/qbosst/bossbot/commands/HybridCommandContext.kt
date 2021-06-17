@@ -5,15 +5,22 @@ import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
+import dev.kord.common.entity.DiscordMessage
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.interaction.InteractionResponseBehavior
 import dev.kord.core.cache.data.MessageData
+import dev.kord.core.cache.data.toData
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
+import me.qbosst.bossbot.commands.builder.EphemeralHybridMessageCreateBuilder
+import me.qbosst.bossbot.commands.builder.PublicHybridMessageCreateBuilder
+import me.qbosst.bossbot.commands.entity.EphemeralHybridMessage
+import me.qbosst.bossbot.commands.entity.PublicHybridMessage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -68,21 +75,20 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
         else -> error("Unknown context type provided.")
     }
 
-    suspend inline fun publicFollowUp(builder: PublicHybridMessageCreateBuilder.() -> Unit): Message {
-        val messageBuilder = PublicHybridMessageCreateBuilder().apply(builder)
+    suspend inline fun ephemeralFollowUp(
+        builder: EphemeralHybridMessageCreateBuilder.() -> Unit
+    ): EphemeralHybridMessage {
+        val messageBuilder = EphemeralHybridMessageCreateBuilder().apply(builder)
 
-        val response = when(context) {
+        val (response, interaction) = when(context) {
             is SlashCommandContext<*> -> {
-                val interaction = when(context.acked) {
-                    false -> context.ack(false)
-                    else -> context.interactionResponse!!
-                }
+                val interaction = if(context.acked) context.ack(true) else context.interactionResponse!!
 
                 kord.rest.interaction.createFollowupMessage(
                     interaction.applicationId,
                     interaction.token,
                     messageBuilder.toSlashRequest()
-                )
+                ) to interaction
             }
 
             is MessageCommandContext<*> -> {
@@ -94,12 +100,45 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
                         null -> messageBuilder.toMessageRequest()
                         else -> messageBuilder.toMessageRequest(messageId)
                     }
-                )
+                ) to null
+            }
+
+            else -> error("Unknown context type provided")
+        }
+
+        val data = MessageData.from(response)
+        return EphemeralHybridMessage(Message(data, kord), interaction?.applicationId, interaction?.token, kord)
+    }
+
+    suspend inline fun publicFollowUp(builder: PublicHybridMessageCreateBuilder.() -> Unit): PublicHybridMessage {
+        val messageBuilder = PublicHybridMessageCreateBuilder().apply(builder)
+
+        val (response, interaction) = when(context) {
+            is SlashCommandContext<*> -> {
+                val interaction = if(context.acked) context.ack(false) else context.interactionResponse!!
+
+                kord.rest.interaction.createFollowupMessage(
+                    interaction.applicationId,
+                    interaction.token,
+                    messageBuilder.toSlashRequest()
+                ) to interaction
+            }
+
+            is MessageCommandContext<*> -> {
+                val messageId = message?.id
+
+                kord.rest.channel.createMessage(
+                    channel.id,
+                    when(messageId) {
+                        null -> messageBuilder.toMessageRequest()
+                        else -> messageBuilder.toMessageRequest(messageId)
+                    }
+                ) to null
             }
             else -> error("Unknown context type provided")
         }
 
         val data = MessageData.from(response)
-        return Message(data, kord)
+        return PublicHybridMessage(Message(data, kord), interaction?.applicationId, interaction?.token, kord)
     }
 }
