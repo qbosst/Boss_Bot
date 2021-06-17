@@ -1,17 +1,15 @@
-package me.qbosst.bossbot.commands.entity
+package me.qbosst.bossbot.commands.hybrid.entity
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.interaction.PublicFollowupMessageBehavior
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.Strategizable
 import dev.kord.core.entity.interaction.EphemeralFollowupMessage
 import dev.kord.core.entity.interaction.PublicFollowupMessage
 import dev.kord.core.supplier.EntitySupplier
 import dev.kord.core.supplier.EntitySupplyStrategy
-import me.qbosst.bossbot.commands.behaviour.HybridMessageBehaviour
-import me.qbosst.bossbot.commands.behaviour.PublicHybridMessageBehaviour
+import me.qbosst.bossbot.commands.hybrid.behaviour.HybridMessageBehaviour
+import me.qbosst.bossbot.commands.hybrid.behaviour.PublicHybridMessageBehaviour
 
 sealed class HybridMessage(val message: Message): HybridMessageBehaviour {
 

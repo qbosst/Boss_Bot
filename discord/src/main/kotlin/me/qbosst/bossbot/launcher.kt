@@ -15,6 +15,7 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.gateway.Intent
 import dev.kord.gateway.editPresence
+import me.qbosst.bossbot.commands.slash.BetterSlashCommandRegistry
 import me.qbosst.bossbot.database.DatabaseManager
 import me.qbosst.bossbot.database.dao.Guild
 import me.qbosst.bossbot.database.dao.User
@@ -59,6 +60,7 @@ suspend fun main() = try {
             add(::SpaceSpeakExtension)
             add(::VoteExtension)
             add(::ImageExtension)
+            add(::TimeExtension)
 
             help {
                 colour {
@@ -81,6 +83,8 @@ suspend fun main() = try {
 
         slashCommands {
             enabled = true
+
+            slashRegistry { BetterSlashCommandRegistry() }
 
             env("testGuild")?.toLongOrNull()?.let {
                 defaultGuild(it)

@@ -1,26 +1,23 @@
-package me.qbosst.bossbot.commands
+package me.qbosst.bossbot.commands.hybrid
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
-import dev.kord.common.entity.DiscordMessage
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
-import dev.kord.core.behavior.interaction.InteractionResponseBehavior
 import dev.kord.core.cache.data.MessageData
-import dev.kord.core.cache.data.toData
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
-import me.qbosst.bossbot.commands.builder.EphemeralHybridMessageCreateBuilder
-import me.qbosst.bossbot.commands.builder.PublicHybridMessageCreateBuilder
-import me.qbosst.bossbot.commands.entity.EphemeralHybridMessage
-import me.qbosst.bossbot.commands.entity.PublicHybridMessage
+import me.qbosst.bossbot.commands.hybrid.builder.EphemeralHybridMessageCreateBuilder
+import me.qbosst.bossbot.commands.hybrid.builder.PublicHybridMessageCreateBuilder
+import me.qbosst.bossbot.commands.hybrid.entity.EphemeralHybridMessage
+import me.qbosst.bossbot.commands.hybrid.entity.PublicHybridMessage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 

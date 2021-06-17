@@ -15,7 +15,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.Clock
-import me.qbosst.bossbot.commands.HybridCommandContext
+import me.qbosst.bossbot.commands.hybrid.HybridCommandContext
 import me.qbosst.bossbot.database.dao.SpaceSpeakMessage
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
 import me.qbosst.bossbot.util.STEEL_BLUE

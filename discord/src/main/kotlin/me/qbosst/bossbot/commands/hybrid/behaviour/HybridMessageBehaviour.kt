@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.commands.behaviour
+package me.qbosst.bossbot.commands.hybrid.behaviour
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.MessageChannelBehavior

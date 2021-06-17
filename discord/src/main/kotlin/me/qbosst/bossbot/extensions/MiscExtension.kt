@@ -4,7 +4,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.Color
-import me.qbosst.bossbot.commands.behaviour.edit
+import me.qbosst.bossbot.commands.hybrid.behaviour.edit
 import me.qbosst.bossbot.util.getColour
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.random

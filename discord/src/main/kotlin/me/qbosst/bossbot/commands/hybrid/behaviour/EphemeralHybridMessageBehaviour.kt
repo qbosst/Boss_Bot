@@ -1,36 +1,29 @@
-package me.qbosst.bossbot.commands.behaviour
+package me.qbosst.bossbot.commands.hybrid.behaviour
 
 import dev.kord.core.behavior.MessageBehavior
-import dev.kord.core.behavior.interaction.PublicFollowupMessageBehavior
+import dev.kord.core.behavior.interaction.EphemeralFollowupMessageBehavior
 import dev.kord.core.cache.data.toData
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.Strategizable
 import dev.kord.core.supplier.EntitySupplyStrategy
-import me.qbosst.bossbot.commands.builder.HybridMessageModifyBuilder
-import me.qbosst.bossbot.commands.entity.PublicHybridMessage
+import me.qbosst.bossbot.commands.hybrid.builder.HybridMessageModifyBuilder
+import me.qbosst.bossbot.commands.hybrid.entity.EphemeralHybridMessage
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-interface PublicHybridMessageBehaviour: HybridMessageBehaviour {
-
-    suspend fun delete() = if(isInteraction) {
-        kord.rest.interaction.deleteFollowupMessage(applicationId!!, token!!, id)
-    } else {
-        kord.rest.channel.deleteMessage(channelId = channelId, messageId = id)
-    }
-
+interface EphemeralHybridMessageBehaviour: HybridMessageBehaviour {
     override fun withStrategy(strategy: EntitySupplyStrategy<*>): Strategizable = if(isInteraction) {
-        PublicFollowupMessageBehavior(id, applicationId!!, token!!, channelId, kord, strategy.supply(kord))
+        EphemeralFollowupMessageBehavior(id, applicationId!!, token!!, channelId, kord, strategy.supply(kord))
     } else {
         MessageBehavior(channelId, id, kord, strategy)
     }
 }
 
 @OptIn(ExperimentalContracts::class)
-suspend inline fun PublicHybridMessageBehaviour.edit(
+suspend inline fun EphemeralHybridMessageBehaviour.edit(
     builder: HybridMessageModifyBuilder.() -> Unit
-): PublicHybridMessage {
+): EphemeralHybridMessage {
     contract { callsInPlace(builder, InvocationKind.EXACTLY_ONCE) }
     val builder = HybridMessageModifyBuilder().apply(builder)
 
@@ -46,5 +39,5 @@ suspend inline fun PublicHybridMessageBehaviour.edit(
         }
     }
 
-    return PublicHybridMessage(Message(response.toData(), kord), applicationId, token, kord)
+    return EphemeralHybridMessage(Message(response.toData(), kord), applicationId, token, kord)
 }

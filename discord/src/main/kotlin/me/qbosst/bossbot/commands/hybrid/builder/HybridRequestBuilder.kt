@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.commands.builder
+package me.qbosst.bossbot.commands.hybrid.builder
 
 interface HybridRequestBuilder<M, S> {
     fun toMessageRequest(): M

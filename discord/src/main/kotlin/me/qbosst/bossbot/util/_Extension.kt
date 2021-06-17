@@ -6,7 +6,7 @@ import com.kotlindiscord.kord.extensions.annotations.ExtensionDSL
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.core.event.Event
-import me.qbosst.bossbot.commands.HybridCommand
+import me.qbosst.bossbot.commands.hybrid.HybridCommand
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}

@@ -1,15 +1,12 @@
-package me.qbosst.bossbot.commands
+package me.qbosst.bossbot.commands.hybrid
 
 import com.kotlindiscord.kord.extensions.CommandRegistrationException
 import com.kotlindiscord.kord.extensions.InvalidCommandException
-import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.GroupCommand
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommand
 import com.kotlindiscord.kord.extensions.commands.slash.SlashGroup
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.GuildBehavior
 import mu.KLogger
 import mu.KotlinLogging
 

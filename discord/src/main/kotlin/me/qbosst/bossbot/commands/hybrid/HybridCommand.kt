@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.commands
+package me.qbosst.bossbot.commands.hybrid
 
 import com.kotlindiscord.kord.extensions.CommandRegistrationException
 import com.kotlindiscord.kord.extensions.InvalidCommandException

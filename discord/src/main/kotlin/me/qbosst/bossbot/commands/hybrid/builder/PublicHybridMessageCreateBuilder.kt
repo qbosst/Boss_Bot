@@ -1,4 +1,4 @@
-package me.qbosst.bossbot.commands.builder
+package me.qbosst.bossbot.commands.hybrid.builder
 
 import dev.kord.common.entity.DiscordMessageReference
 import dev.kord.common.entity.Snowflake
@@ -113,6 +113,7 @@ class PublicHybridMessageCreateBuilder :
             embeds = if(_embed.value == null) Optional.Missing() else _embed.map { listOf(it.toRequest()) },
             allowedMentions = _allowedMentions.map { it.build() },
             components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
-        )
+        ),
+        files
     )
 }

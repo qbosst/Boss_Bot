@@ -8,20 +8,13 @@ import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.AllowedMentionType
 import dev.kord.common.entity.ButtonStyle
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.interaction.edit
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.Message
-import dev.kord.core.entity.interaction.PublicFollowupMessage
-import me.qbosst.bossbot.commands.entity.PublicHybridMessage
+import me.qbosst.bossbot.commands.hybrid.entity.PublicHybridMessage
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.notAuthor
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import kotlin.random.Random
 
 class CasinoExtension: Extension() {
     override val name: String get() = "casino"

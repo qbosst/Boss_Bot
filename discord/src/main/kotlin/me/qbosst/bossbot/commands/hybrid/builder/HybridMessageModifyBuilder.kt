@@ -1,38 +1,31 @@
-package me.qbosst.bossbot.commands.builder
+package me.qbosst.bossbot.commands.hybrid.builder
 
-import dev.kord.common.entity.DiscordMessageReference
-import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.Optional
-import dev.kord.common.entity.optional.OptionalBoolean
-import dev.kord.common.entity.optional.OptionalSnowflake
 import dev.kord.common.entity.optional.delegate.delegate
 import dev.kord.common.entity.optional.map
+import dev.kord.common.entity.optional.mapNullable
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.component.MessageComponentBuilder
 import dev.kord.rest.builder.message.AllowedMentionsBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.json.request.FollowupMessageCreateRequest
-import dev.kord.rest.json.request.MessageCreateRequest
-import dev.kord.rest.json.request.MultipartFollowupMessageCreateRequest
-import dev.kord.rest.json.request.MultipartMessageCreateRequest
+import dev.kord.rest.json.request.FollowupMessageModifyRequest
+import dev.kord.rest.json.request.MessageEditPatchRequest
+import dev.kord.rest.json.request.MultipartFollowupMessageModifyRequest
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-class EphemeralHybridMessageCreateBuilder
-    : HybridRequestBuilder<MultipartMessageCreateRequest, MultipartFollowupMessageCreateRequest> {
+class HybridMessageModifyBuilder:
+    HybridRequestBuilder<MessageEditPatchRequest, MultipartFollowupMessageModifyRequest> {
 
     private var _content: Optional<String> = Optional.Missing()
     var content: String? by ::_content.delegate()
 
-    private var _tts: OptionalBoolean = OptionalBoolean.Missing
-    var tts: Boolean? by ::_tts.delegate()
+    private var _embed: Optional<EmbedBuilder?> = Optional.Missing()
+    var embed: EmbedBuilder? by ::_embed.delegate()
 
     private var _allowedMentions: Optional<AllowedMentionsBuilder> = Optional.Missing()
     var allowedMentions: AllowedMentionsBuilder? by ::_allowedMentions.delegate()
-
-    private var _embed: Optional<EmbedBuilder> = Optional.Missing()
-    var embed: EmbedBuilder? by ::_embed.delegate()
 
     val components: MutableList<MessageComponentBuilder> = mutableListOf()
 
@@ -63,36 +56,19 @@ class EphemeralHybridMessageCreateBuilder
         embed = (embed ?: EmbedBuilder()).apply(block)
     }
 
-    fun toMessageRequest(messageReference: Snowflake): MultipartMessageCreateRequest = MultipartMessageCreateRequest(
-        MessageCreateRequest(
-            content = _content,
-            tts = _tts,
-            embed = _embed.map { it.toRequest() },
-            allowedMentions = _allowedMentions.map { it.build() },
-            messageReference = Optional(
-                DiscordMessageReference(
-                    id = OptionalSnowflake.Value(messageReference),
-                    failIfNotExists = OptionalBoolean.Value(true)
-                )
-            ),
-            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
-        )
+    override fun toMessageRequest(): MessageEditPatchRequest = MessageEditPatchRequest(
+        content = _content,
+        embed = _embed.mapNullable { it?.toRequest() },
+        allowedMentions = _allowedMentions.map { it.build() },
+        components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
     )
 
-    override fun toMessageRequest(): MultipartMessageCreateRequest = MultipartMessageCreateRequest(
-        MessageCreateRequest(
+    override fun toSlashRequest(): MultipartFollowupMessageModifyRequest = MultipartFollowupMessageModifyRequest(
+        FollowupMessageModifyRequest(
             content = _content,
-            tts = _tts,
-            embed = _embed.map { it.toRequest() },
+            embeds = if(embed == null) Optional.Missing() else Optional(listOf(embed!!.toRequest())),
             allowedMentions = _allowedMentions.map { it.build() },
             components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
         )
     )
-
-    override fun toSlashRequest(): MultipartFollowupMessageCreateRequest = MultipartFollowupMessageCreateRequest(
-        FollowupMessageCreateRequest(
-
-        )
-    )
-
 }
