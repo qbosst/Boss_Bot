@@ -6,6 +6,7 @@ import dev.kord.core.behavior.MessageBehavior
 import dev.kord.core.behavior.interaction.PublicFollowupMessageBehavior
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.Strategizable
+import dev.kord.core.entity.interaction.EphemeralFollowupMessage
 import dev.kord.core.entity.interaction.PublicFollowupMessage
 import dev.kord.core.supplier.EntitySupplier
 import dev.kord.core.supplier.EntitySupplyStrategy
@@ -41,7 +42,7 @@ class EphemeralHybridMessage(
     override val supplier: EntitySupplier = kord.defaultSupplier
 ): HybridMessage(message), PublicHybridMessageBehaviour {
     override fun withStrategy(strategy: EntitySupplyStrategy<*>): Strategizable = if(isInteraction) {
-        EphemeralHybridMessage(message, applicationId!!, token!!, kord, strategy.supply(kord))
+        EphemeralFollowupMessage(message, applicationId!!, token!!, kord, strategy.supply(kord))
     } else {
         Message(message.data, kord, strategy.supply(kord))
     }
