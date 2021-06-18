@@ -22,24 +22,16 @@ class TimeZoneConverter(
     override val signatureTypeString: String = "timeZone"
 
     override suspend fun parse(arg: String, context: CommandContext): Boolean {
-        val timeZone: TimeZone = parseTimeZone(arg, context)
+        val zones: List<TimeZone> = findZones(arg)
 
-        parsed = timeZone
+        parsed = zones.firstOrNull()
+            ?: throw CommandException("Could not find any time zones.")
+
         return true
     }
 
     override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
         StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
-}
-
-private fun parseTimeZone(arg: String, context: CommandContext): TimeZone {
-    val timeZones = findZones(arg)
-
-    return when(timeZones.size) {
-        0 -> throw CommandException("Could not find any time zones")
-        1 -> timeZones.first()
-        else -> timeZones.first()
-    }
 }
 
 private fun findZones(query: String): List<TimeZone> {
@@ -73,7 +65,7 @@ private fun findZones(query: String): List<TimeZone> {
                 append(')')
             }
 
-            zoneId to "($nameRegex)|$abbreviationRegex)".lowercase().toRegex()
+            zoneId to "($nameRegex)|($abbreviationRegex)".lowercase().toRegex()
         }
         .filter { (_, regex) ->
             queryLower.matches(regex)

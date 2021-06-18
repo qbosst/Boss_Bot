@@ -8,7 +8,6 @@ import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converte
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
-import kotlinx.datetime.TimeZone
 import me.qbosst.bossbot.util.abbreviation
 import me.qbosst.bossbot.util.regex
 import kotlin.time.Duration
@@ -37,7 +36,7 @@ class DurationConverter(
 
 @Converter(
     name = "duration",
-    types = [ConverterType.COALESCING, ConverterType.OPTIONAL, ConverterType.DEFAULTING, ConverterType.SINGLE]
+    types = [ConverterType.COALESCING, ConverterType.DEFAULTING, ConverterType.SINGLE, ConverterType.OPTIONAL]
 )
 class CoalescingDurationConverter(
     override var validator: Validator<Duration> = null

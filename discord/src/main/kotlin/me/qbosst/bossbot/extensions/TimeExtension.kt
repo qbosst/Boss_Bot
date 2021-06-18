@@ -11,7 +11,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaZoneId
 import me.qbosst.bossbot.commands.hybrid.HybridCommandContext
 import me.qbosst.bossbot.converters.TimeZoneConverter
-import me.qbosst.bossbot.converters.optionalCoalescingDuration
 import me.qbosst.bossbot.converters.optionalDuration
 import me.qbosst.bossbot.converters.timeZone
 import me.qbosst.bossbot.database.dao.getUserDAO
@@ -28,24 +27,24 @@ class TimeExtension: Extension() {
             "union arg",
             converters = arrayOf(MemberConverter(), TimeZoneConverter())
         )
-        val duration by optionalDuration("duration", "duration from now")
+        val duration by optionalDuration("duration", "duration from now", required = true)
     }
 
     class TimeUserArgs: Arguments() {
         val user by member("user", "The user's whose time you want to display")
-        val duration by optionalDuration("duration", "duration from now")
+        val duration by optionalDuration("duration", "duration from now", required = true)
     }
 
     class TimeZoneArgs: Arguments() {
         val timeZone by timeZone("timezone", "The time zone you want to see")
-        val duration by optionalDuration("duration", "duration from now")
+        val duration by optionalDuration("duration", "duration from now", required = true)
     }
 
     class TimeNowArgs: Arguments() {
-        val duration by optionalDuration("duration", "duration from now")
+        val duration by optionalDuration("duration", "duration from now", required = true)
     }
 
-    suspend fun HybridCommandContext<*>.handleUser(target: UserBehavior, duration: Duration?) {
+    private suspend fun HybridCommandContext<*>.handleUser(target: UserBehavior, duration: Duration?) {
         val targetZone = target.getUserDAO().timeZone
         when {
             targetZone == null -> replyNoTimeZone(this, target)
@@ -54,7 +53,7 @@ class TimeExtension: Extension() {
         }
     }
 
-    suspend fun HybridCommandContext<*>.handleTimeZone(timeZone: TimeZone, duration: Duration?) {
+    private suspend fun HybridCommandContext<*>.handleTimeZone(timeZone: TimeZone, duration: Duration?) {
         if(duration == null) {
             replyCurrentTime(this, null, timeZone)
         } else {
@@ -64,7 +63,7 @@ class TimeExtension: Extension() {
 
     private suspend fun replyNoTimeZone(ctx: HybridCommandContext<*>, target: UserBehavior) = ctx.publicFollowUp {
         val isSelf = ctx.user!! == target
-        content = if(isSelf) "You do not" else "${target.mention} does not" + " have a time zone setup."
+        content = (if(isSelf) "You do not" else "${target.mention} does not") + " have a time zone setup."
     }
 
     private suspend fun replyCurrentTime(
@@ -97,7 +96,7 @@ class TimeExtension: Extension() {
             else -> "`${timeZone}`"
         }
 
-        content = "The time for $target in `$duration` will be $time"
+        content = "The time for $target in `$duration` will be `$time`"
     }
 
     override suspend fun setup() {
