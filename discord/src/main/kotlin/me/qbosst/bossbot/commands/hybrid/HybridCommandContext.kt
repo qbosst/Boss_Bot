@@ -15,9 +15,6 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.rest.builder.interaction.FollowupMessageBuilder
-import dev.kord.rest.builder.interaction.actionRow
-import dev.kord.rest.builder.message.MessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.builder.EphemeralHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.builder.PublicHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.entity.EphemeralHybridMessage
