@@ -9,12 +9,15 @@ import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.entity.ButtonStyle
+import me.qbosst.bossbot.commands.hybrid.behaviour.edit
+import me.qbosst.bossbot.commands.hybrid.builder.PublicHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.entity.PublicHybridMessage
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.notAuthor
 import me.qbosst.bossbot.util.positiveInt
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.sql.transactions.transaction
 
 class CasinoExtension: Extension() {
     override val name: String get() = "casino"
@@ -63,25 +66,29 @@ class CasinoExtension: Extension() {
                                 } else {
                                     //allowedMentions { add(AllowedMentionType.UserMentions) }
                                     content = "${opponent.mention}, ${user.asUser().tag} has challenged you."
-                                    actionRow {
-                                        button(ButtonStyle.Success) {
+                                    components {
+                                        interactiveButton {
+                                            style = ButtonStyle.Success
                                             label = "Accept"
+                                            ackType = AutoAckType.PUBLIC
 
-                                            action(AutoAckType.PUBLIC) {
+
+                                            action {
                                                 followUp.delete()
                                                 publicFollowUp {
                                                     allowedMentions {}
+                                                    val winningUser = newSuspendedTransaction {
+                                                        if(flippedSide == arguments.betSide) {
+                                                            authorDAO.tokens += arguments.betAmount
+                                                            opponentDAO.tokens -= arguments.betAmount
 
-                                                    val winningUser = if(flippedSide == arguments.betSide) {
-                                                        authorDAO.tokens += arguments.betAmount
-                                                        opponentDAO.tokens -= arguments.betAmount
+                                                            user
+                                                        } else {
+                                                            authorDAO.tokens -= arguments.betAmount
+                                                            opponentDAO.tokens += arguments.betAmount
 
-                                                        user
-                                                    } else {
-                                                        authorDAO.tokens -= arguments.betAmount
-                                                        opponentDAO.tokens += arguments.betAmount
-
-                                                        opponent.asUser()
+                                                            opponent.asUser()
+                                                        }
                                                     }
 
                                                     content = buildString {
@@ -93,10 +100,12 @@ class CasinoExtension: Extension() {
                                             }
                                         }
 
-                                        button(ButtonStyle.Danger) {
+                                        interactiveButton {
+                                            style = ButtonStyle.Danger
                                             label = "Deny"
+                                            ackType = AutoAckType.PUBLIC
 
-                                            action(AutoAckType.PUBLIC) {
+                                            action {
                                                 followUp.delete()
                                                 publicFollowUp {
                                                     allowedMentions {}

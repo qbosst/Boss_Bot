@@ -5,6 +5,7 @@ import com.kotlindiscord.kord.extensions.commands.CommandContext
 import com.kotlindiscord.kord.extensions.commands.MessageCommandContext
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.SlashCommandContext
+import com.kotlindiscord.kord.extensions.components.Components
 import dev.kord.core.Kord
 import dev.kord.core.behavior.MemberBehavior
 import dev.kord.core.behavior.UserBehavior
@@ -14,6 +15,9 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.rest.builder.interaction.FollowupMessageBuilder
+import dev.kord.rest.builder.interaction.actionRow
+import dev.kord.rest.builder.message.MessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.builder.EphemeralHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.builder.PublicHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.entity.EphemeralHybridMessage
@@ -140,5 +144,69 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
 
         val data = MessageData.from(response)
         return PublicHybridMessage(Message(data, kord), interaction?.applicationId, interaction?.token, kord)
+    }
+
+    /**
+     * Convenience function for adding components to your message via the [Components] class.
+     *
+     * @see Components
+     */
+    suspend fun PublicHybridMessageCreateBuilder.components(
+        timeoutSeconds: Long? = null,
+        body: suspend Components.() -> Unit
+    ): Components {
+        val components = Components(context.command.extension)
+
+        body(components)
+        setup(components, timeoutSeconds)
+
+        return components
+    }
+
+    /**
+     * Convenience function for adding components to your message via the [Components] class.
+     *
+     * @see Components
+     */
+    suspend fun EphemeralHybridMessageCreateBuilder.components(
+        timeoutSeconds: Long? = null,
+        body: suspend Components.() -> Unit
+    ): Components {
+        val components = Components(context.command.extension)
+
+        body(components)
+        setup(components, timeoutSeconds)
+
+        return components
+    }
+
+    private suspend fun PublicHybridMessageCreateBuilder.setup(
+        component: Components,
+        timeoutSeconds: Long? = null
+    ) = with(component) {
+        sortIntoRows()
+
+        for (row in rows.filter { it.count { it == null } != it.count() }) {
+            actionRow {
+                row.filterNotNull().forEach { it.apply(this) }
+            }
+        }
+
+        startListening(timeoutSeconds)
+    }
+
+    private suspend fun EphemeralHybridMessageCreateBuilder.setup(
+        component: Components,
+        timeoutSeconds: Long? = null
+    ) = with(component) {
+        sortIntoRows()
+
+        for (row in rows.filter { it.count { it == null } != it.count() }) {
+            actionRow {
+                row.filterNotNull().forEach { it.apply(this) }
+            }
+        }
+
+        startListening(timeoutSeconds)
     }
 }
