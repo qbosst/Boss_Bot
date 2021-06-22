@@ -37,13 +37,7 @@ suspend inline fun PublicHybridMessageBehaviour.edit(
     val response = if(isInteraction) {
         kord.rest.interaction.modifyFollowupMessage(applicationId!!, token!!, id, builder.toSlashRequest())
     } else {
-        // TODO: wait for kord pr kord.rest.channel.editMessage(channelId, id, builder.toMessageRequest())
-        kord.rest.channel.editMessage(channelId, id) {
-            this.content = builder.content
-            this.embed = builder.embed
-            this.allowedMentions = builder.allowedMentions
-            this.components.addAll(builder.components)
-        }
+        kord.rest.channel.editMessage(channelId, id, builder.toMessageRequest())
     }
 
     return PublicHybridMessage(Message(response.toData(), kord), applicationId, token, kord)

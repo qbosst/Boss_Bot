@@ -9,11 +9,10 @@ import com.kotlindiscord.kord.extensions.commands.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import dev.kord.common.entity.ButtonStyle
+import me.qbosst.bossbot.commands.hybrid.behaviour.edit
 import me.qbosst.bossbot.commands.hybrid.entity.PublicHybridMessage
 import me.qbosst.bossbot.database.dao.getUserDAO
-import me.qbosst.bossbot.util.hybridCommand
-import me.qbosst.bossbot.util.notAuthor
-import me.qbosst.bossbot.util.positiveInt
+import me.qbosst.bossbot.util.*
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 class CasinoExtension: Extension() {
@@ -63,17 +62,19 @@ class CasinoExtension: Extension() {
                                 } else {
                                     //allowedMentions { add(AllowedMentionType.UserMentions) }
                                     content = "${opponent.mention}, ${user.asUser().tag} has challenged you."
-                                    components {
+                                    components(30) {
                                         interactiveButton {
                                             style = ButtonStyle.Success
                                             label = "Accept"
-                                            ackType = AutoAckType.PUBLIC
+                                            deferredAck = true
 
+                                            check(isUser(opponent.idLong))
 
                                             action {
-                                                followUp.delete()
-                                                publicFollowUp {
-                                                    allowedMentions {}
+                                                this@components.stop()
+                                                followUp.edit {
+                                                    components {}
+
                                                     val winningUser = newSuspendedTransaction {
                                                         if(flippedSide == arguments.betSide) {
                                                             authorDAO.tokens += arguments.betAmount
@@ -100,12 +101,15 @@ class CasinoExtension: Extension() {
                                         interactiveButton {
                                             style = ButtonStyle.Danger
                                             label = "Deny"
-                                            ackType = AutoAckType.PUBLIC
+                                            deferredAck = true
+
+                                            check(isUser(opponent.idLong))
 
                                             action {
-                                                followUp.delete()
-                                                publicFollowUp {
+                                                this@components.stop()
+                                                followUp.edit {
                                                     allowedMentions {}
+                                                    components {}
                                                     content = "${opponent.mention} has not accepted the bet."
                                                 }
                                             }
