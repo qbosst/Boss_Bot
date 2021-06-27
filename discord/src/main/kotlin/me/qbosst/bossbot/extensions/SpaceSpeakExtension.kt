@@ -8,6 +8,9 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalMember
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.commands.slash.AutoAckType
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
+import com.kotlindiscord.kord.extensions.pagination.pages.Page
+import com.kotlindiscord.kord.extensions.utils.capitalizeWords
 import com.kotlindiscord.kord.extensions.utils.env
 import dev.kord.common.entity.Snowflake
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -18,6 +21,10 @@ import kotlinx.datetime.Clock
 import me.qbosst.bossbot.commands.hybrid.HybridCommandContext
 import me.qbosst.bossbot.database.dao.SpaceSpeakMessage
 import me.qbosst.bossbot.database.tables.SpaceSpeakTable
+import me.qbosst.bossbot.pagination.HybridButtonPaginator
+import me.qbosst.bossbot.pagination.Page
+import me.qbosst.bossbot.pagination.page
+import me.qbosst.bossbot.pagination.paginator
 import me.qbosst.bossbot.util.STEEL_BLUE
 import me.qbosst.bossbot.util.hybridCommand
 import me.qbosst.bossbot.util.idLong
@@ -30,6 +37,7 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import dev.kord.common.Color as Colour
 
@@ -240,54 +248,33 @@ class SpaceSpeakExtension: Extension() {
                 name = "recent"
                 description = "Displays recent messages that have been sent to space from other Discord users"
 
-                val maxPerPage: Long = 3
-
-                fun EmbedBuilder.addRecord(data: GetMessageResponse, isFirst: Boolean) {
-                    field(if(isFirst) "Message ID" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
-                        data.messageId.toString()
-                    }
-
-                    field(if(isFirst) "Launched" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
-                        data.launchDate.toString()
-                    }
-
-                    field(if(isFirst) "Content" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
-                        data.messageText
-                    }
-                }
-
                 action {
-                    val (pageNumber: Long, maxPages: Long, messages: List<GetMessageResponse>) = transaction {
-                        val query = when(val userId = arguments.member?.idLong) {
-                            null -> SpaceSpeakTable.selectAll()
-                            else -> SpaceSpeakTable.select { SpaceSpeakTable.userId.eq(userId) }
-                        }.orderBy(SpaceSpeakTable.id, order = SortOrder.DESC)
+                    paginator(this@SpaceSpeakExtension) {
+                        owner = user?.asUser()
 
-                        val count = query.count()
+                        messages.asSequence().chunked(3).forEach { messages ->
+                            page {
+                                build { locale, pageNum, pages, group, groupIndex, groups ->
+                                    var isFirst = true
+                                    for((id, message) in messages) {
+                                        field(if(isFirst) "Message ID" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                                            id.toString()
+                                        }
 
-                        val maxPages = (count / maxPerPage).let { when {
-                            count % maxPerPage == 0L && it > 0 -> it-1
-                            else -> it
-                        } }
+                                        field(if(isFirst) "Launched" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                                            message.launchDate.toString()
+                                        }
 
-                        val pageNumber = (arguments.pageNumber-1).coerceIn(0, maxPages)
+                                        field(if(isFirst) "Content" else EmbedBuilder.ZERO_WIDTH_SPACE, true) {
+                                            message.messageText
+                                        }
 
-                        val messages = SpaceSpeakMessage.wrapRows(
-                            query.limit(maxPerPage.toInt(), offset = (maxPerPage * pageNumber))
-                        ).map { it.getData() }
-
-                        Triple(pageNumber, maxPages, messages)
-                    }
-
-                    publicSpaceSpeakFollowUp {
-                        var isFirst = true
-                        messages.forEach { message ->
-                            addRecord(message, isFirst)
-                            isFirst = false
+                                        isFirst = false
+                                    }
+                                }
+                            }
                         }
-
-                        footer { text = "Page ${pageNumber+1} / ${maxPages+1}" }
-                    }
+                    }.send()
                 }
             }
         }

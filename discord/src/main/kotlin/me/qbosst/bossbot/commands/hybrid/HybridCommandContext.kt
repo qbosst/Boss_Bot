@@ -16,6 +16,7 @@ import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.core.event.message.MessageCreateEvent
 import me.qbosst.bossbot.commands.hybrid.builder.EphemeralHybridMessageCreateBuilder
+import me.qbosst.bossbot.commands.hybrid.builder.HybridMessageModifyBuilder
 import me.qbosst.bossbot.commands.hybrid.builder.PublicHybridMessageCreateBuilder
 import me.qbosst.bossbot.commands.hybrid.entity.EphemeralHybridMessage
 import me.qbosst.bossbot.commands.hybrid.entity.PublicHybridMessage
@@ -177,13 +178,13 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
         return components
     }
 
-    private suspend fun PublicHybridMessageCreateBuilder.setup(
+    suspend fun PublicHybridMessageCreateBuilder.setup(
         component: Components,
         timeoutSeconds: Long? = null
     ) = with(component) {
         sortIntoRows()
 
-        for (row in rows.filter { it.count { it == null } != it.count() }) {
+        for(row in rows.filter { row -> !row.all { it == null } }) {
             actionRow {
                 row.filterNotNull().forEach { it.apply(this) }
             }
@@ -192,13 +193,28 @@ class HybridCommandContext<T: Arguments>(val context: CommandContext): KoinCompo
         startListening(timeoutSeconds)
     }
 
-    private suspend fun EphemeralHybridMessageCreateBuilder.setup(
+    suspend fun EphemeralHybridMessageCreateBuilder.setup(
         component: Components,
         timeoutSeconds: Long? = null
     ) = with(component) {
         sortIntoRows()
 
-        for (row in rows.filter { it.count { it == null } != it.count() }) {
+        for(row in rows.filter { row -> !row.all { it == null } }) {
+            actionRow {
+                row.filterNotNull().forEach { it.apply(this) }
+            }
+        }
+
+        startListening(timeoutSeconds)
+    }
+
+    suspend fun HybridMessageModifyBuilder.setup(
+        component: Components,
+        timeoutSeconds: Long? = null
+    ) = with(component) {
+        sortIntoRows()
+
+        for(row in rows.filter { row -> !row.all { it == null } }) {
             actionRow {
                 row.filterNotNull().forEach { it.apply(this) }
             }
