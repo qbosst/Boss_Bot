@@ -2,6 +2,7 @@ package me.qbosst.bossbot.extensions
 
 import com.kotlindiscord.kord.extensions.commands.converters.impl.MemberConverter
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalCoalescingRegex
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalUnion
 import com.kotlindiscord.kord.extensions.commands.parser.Arguments
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -10,9 +11,7 @@ import dev.kord.core.entity.Member
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaZoneId
 import me.qbosst.bossbot.commands.hybrid.HybridCommandContext
-import me.qbosst.bossbot.converters.TimeZoneConverter
-import me.qbosst.bossbot.converters.optionalDuration
-import me.qbosst.bossbot.converters.timeZone
+import me.qbosst.bossbot.converters.*
 import me.qbosst.bossbot.database.dao.getUserDAO
 import me.qbosst.bossbot.util.hybridCommand
 import java.time.ZonedDateTime
@@ -27,21 +26,21 @@ class TimeExtension: Extension() {
             "union arg",
             converters = arrayOf(MemberConverter(), TimeZoneConverter())
         )
-        val duration by optionalDuration("duration", "duration from now", required = true)
+        val duration by optionalCoalescingDuration("duration", "duration from now", required = true)
     }
 
     class TimeUserArgs: Arguments() {
         val user by member("user", "The user's whose time you want to display")
-        val duration by optionalDuration("duration", "duration from now", required = true)
+        val duration by optionalCoalescingDuration("duration", "duration from now", required = true)
     }
 
     class TimeZoneArgs: Arguments() {
         val timeZone by timeZone("timezone", "The time zone you want to see")
-        val duration by optionalDuration("duration", "duration from now", required = true)
+        val duration by optionalCoalescingDuration("duration", "duration from now", required = true)
     }
 
     class TimeNowArgs: Arguments() {
-        val duration by optionalDuration("duration", "duration from now", required = true)
+        val duration by optionalCoalescingDuration("duration", "duration from now", required = true)
     }
 
     private suspend fun HybridCommandContext<*>.handleUser(target: UserBehavior, duration: Duration?) {
