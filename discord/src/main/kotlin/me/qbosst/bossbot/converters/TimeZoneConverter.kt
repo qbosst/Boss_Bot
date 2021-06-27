@@ -7,6 +7,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.parser.Argument
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
+import com.kotlindiscord.kord.extensions.parser.StringParser
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import kotlinx.datetime.TimeZone
@@ -22,7 +23,12 @@ class TimeZoneConverter(
 
     override val signatureTypeString: String = "timeZone"
 
-    override suspend fun parse(arg: String, context: CommandContext): Boolean {
+    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+
+    override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
+        val arg: String = named ?: parser?.parseNext()?.data ?: return false
+
         val zones: List<TimeZone> = findZones(arg)
 
         parsed = zones.firstOrNull()
@@ -30,9 +36,6 @@ class TimeZoneConverter(
 
         return true
     }
-
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
 }
 
 private fun findZones(query: String): List<TimeZone> {

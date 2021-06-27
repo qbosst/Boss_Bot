@@ -8,6 +8,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.parser.Argument
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
+import com.kotlindiscord.kord.extensions.parser.StringParser
 import dev.kord.rest.builder.interaction.OptionsBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import me.qbosst.bossbot.util.abbreviation
@@ -24,16 +25,18 @@ class DurationConverter(
 ): SingleConverter<Duration>() {
     override val signatureTypeString: String = "duration"
 
-    override suspend fun parse(arg: String, context: CommandContext): Boolean {
+    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+
+    override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
+        val arg: String = named ?: parser?.parseNext()?.data ?: return false
+
         val parsedTime: Duration = parseTime(arg)
             ?: throw CommandException("That is not a valid duration.")
         this.parsed = parsedTime
 
         return true
     }
-
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
 }
 
 @Converter(
@@ -45,16 +48,17 @@ class CoalescingDurationConverter(
 ): CoalescingConverter<Duration>() {
     override val signatureTypeString: String = "duration"
 
-    override suspend fun parse(args: List<String>, context: CommandContext): Int {
-        val parsedTime: Duration = parseTime(args.joinToString(" "))
+    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
+
+    override suspend fun parse(parser: StringParser?, context: CommandContext, named: List<String>?): Int {
+        val args: String = named?.joinToString(" ") ?: parser?.consumeRemaining() ?: return 0
+        val parsedTime: Duration = parseTime(args)
             ?: throw CommandException("That is not a valid duration.")
         this.parsed = parsedTime
 
-        return args.size
+        return args.length
     }
-
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
-        StringChoiceBuilder(arg.displayName, arg.description).apply { required = true }
 }
 
 private fun parseTime(time: String): Duration? {
