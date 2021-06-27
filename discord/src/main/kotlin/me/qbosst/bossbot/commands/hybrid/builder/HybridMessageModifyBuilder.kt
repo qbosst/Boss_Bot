@@ -3,6 +3,7 @@ package me.qbosst.bossbot.commands.hybrid.builder
 import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.delegate.delegate
 import dev.kord.common.entity.optional.map
+import dev.kord.common.entity.optional.mapList
 import dev.kord.common.entity.optional.mapNullable
 import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.component.MessageComponentBuilder
@@ -11,6 +12,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.json.request.FollowupMessageModifyRequest
 import dev.kord.rest.json.request.MessageEditPatchRequest
 import dev.kord.rest.json.request.MultipartFollowupMessageModifyRequest
+import java.io.InputStream
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -27,7 +29,8 @@ class HybridMessageModifyBuilder:
     private var _allowedMentions: Optional<AllowedMentionsBuilder> = Optional.Missing()
     var allowedMentions: AllowedMentionsBuilder? by ::_allowedMentions.delegate()
 
-    val components: MutableList<MessageComponentBuilder> = mutableListOf()
+    private var _components: Optional<MutableList<MessageComponentBuilder>> = Optional.Missing()
+    var components: MutableList<MessageComponentBuilder>? by ::_components.delegate()
 
     @OptIn(ExperimentalContracts::class)
     inline fun actionRow(builder: ActionRowBuilder.() -> Unit) {
@@ -35,7 +38,9 @@ class HybridMessageModifyBuilder:
             callsInPlace(builder, InvocationKind.EXACTLY_ONCE)
         }
 
-        components.add(ActionRowBuilder().apply(builder))
+        components = (components ?: mutableListOf()).also {
+            it.add((ActionRowBuilder().apply(builder)))
+        }
     }
 
 
@@ -60,7 +65,7 @@ class HybridMessageModifyBuilder:
         content = _content,
         embed = _embed.mapNullable { it?.toRequest() },
         allowedMentions = _allowedMentions.map { it.build() },
-        components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
+        components = _components.mapList { it.build() }
     )
 
     override fun toSlashRequest(): MultipartFollowupMessageModifyRequest = MultipartFollowupMessageModifyRequest(
@@ -68,7 +73,7 @@ class HybridMessageModifyBuilder:
             content = _content,
             embeds = if(embed == null) Optional.Missing() else Optional(listOf(embed!!.toRequest())),
             allowedMentions = _allowedMentions.map { it.build() },
-            components = Optional.missingOnEmpty(components.map(MessageComponentBuilder::build))
+            components = _components.mapList { it.build() }
         )
     )
 }
